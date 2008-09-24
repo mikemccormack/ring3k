@@ -129,4 +129,4 @@ clean:
 	$(RM) *.exe *.o *.s *.a *.bat *.dll
 	$(RM) win2k/*.a win2k/*.s win2k/*.lib win2k/*.dll win2k/*.o
 	$(RM) winxp/*.a winxp/*.s winxp/*.lib winxp/*.dll winxp/*.o
-	$(RM) 
+	$(RM) $(ISO)
