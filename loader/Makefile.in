@@ -1,0 +1,151 @@
+# nt loader
+#
+# Copyright 2006-2008 Mike McCormack
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+#
+
+XML_INCLUDES=-I/usr/include/libxml2
+INCLUDE_DIRS=-I. -I../include $(XML_INCLUDES) -I../libudis86
+CFLAGS_COMMON=-Wall -O2 -D__i386__ -m32 -fshort-wchar -fno-strict-aliasing $(INCLUDE_DIRS)
+CFLAGS_COMMON+=-DMEM_TRACE
+CFLAGS=-Wpointer-arith
+CPPFLAGS=$(CFLAGS_COMMON)
+LIBS=-lxml2 -lstdc++ ../libudis86/libudis86.a
+LDFLAGS=-m32 -rdynamic
+
+HEADERS = \
+	debug.h \
+	mem.h \
+	ntcall.h \
+	object.h \
+	section.h
+
+C_SOURCES = \
+	ptrace_if.c \
+
+CPP_SOURCES = \
+	atom.cpp \
+	block.cpp \
+	completion.cpp \
+	debug.cpp \
+	driver.cpp \
+	event.cpp \
+	fiber.cpp \
+	file.cpp \
+	job.cpp \
+	kthread.cpp \
+	mailslot.cpp \
+	mem.cpp \
+	mutant.cpp \
+	namedpipe.cpp \
+	ntcall.cpp \
+	ntgdi.cpp \
+	ntl.cpp \
+	ntuser.cpp \
+	objdir.cpp \
+	object.cpp \
+	platform.cpp \
+	port.cpp \
+	profile.cpp \
+	process.cpp \
+	ptrace_base.cpp \
+	reg.cpp \
+	section.cpp \
+	semaphore.cpp \
+	skas.cpp \
+	symlink.cpp \
+	syscall.cpp \
+	thread.cpp \
+	timer.cpp \
+	token.cpp \
+	tt.cpp \
+	unicode.cpp
+
+OBJECTS = $(C_SOURCES:.c=.o) $(CPP_SOURCES:.cpp=.o)
+
+TARGET = ntl
+
+.%.dpp: %.cpp
+	$(CC) $(INCLUDE_DIRS) -MM $< > $@
+
+.%.d: %.c
+	$(CC) $(INCLUDE_DIRS) -MM $< > $@
+
+.PHONY: all clean count stat test
+
+all: $(TARGET) enc fiber ttclient
+
+DEPFILES = $(C_SOURCES:%.c=.%.d) $(CPP_SOURCES:%.cpp=.%.dpp)
+
+include $(DEPFILES)
+
+$(TARGET): $(OBJECTS)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
+
+ttclient: client.c
+	$(CC) -o $@ $^ -static -nostartfiles -nodefaultlibs -Wl,-Ttext=0xa0000000
+
+count:
+	wc $(HEADERS) $(C_SOURCES) $(CPP_SOURCES)
+
+enc: enc.c
+	$(CC) -o enc -Wall enc.c
+
+fiber: fiber_test.o fiber.o platform.o
+	$(CXX) -o $@ $^ -lstdc++
+
+clean:
+	rm -rf drive c:
+	rm -f $(TARGET) *.o core enc fiber ttclient *.orig *.rej $(DEPFILES)
+
+stat:
+	@/usr/bin/perl syscall_stat.pl
+	@echo -n "Total LOC:     "
+	@cat $(HEADERS) $(C_SOURCE) $(CPP_SOURCES) | wc --lines
+
+TESTLIST = \
+	completion \
+	event \
+	file \
+	gdi \
+	heap \
+	job \
+	mailslot \
+	mutant \
+	object \
+	port \
+	process \
+	reg \
+	section \
+	seh \
+	sema \
+	syscall \
+	thread \
+	timer \
+	token \
+	virtual \
+	wine-port
+
+test.skas:
+	@echo "Skas3 tests"
+	for tc in $(TESTLIST) ; do echo $$tc ; ./runtest -q $$tc || exit 1 ; done
+
+test.tt:
+	@echo "Thread tracing tests"
+	for tc in $(TESTLIST) ; do echo $$tc ; ./runtest -q -t $$tc || exit 1 ; done
+
+test: test.skas test.tt
+

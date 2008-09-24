@@ -1,0 +1,5 @@
+* Why use -m32 on 64bit?
+
+  In order to get the right sizes for API structres that contain pointers and ULONG_PTR values,
+  it's necessary to compile with -m32.
+

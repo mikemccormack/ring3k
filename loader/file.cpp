@@ -1,0 +1,1159 @@
+/*
+ * nt loader
+ *
+ * Copyright 2006-2008 Mike McCormack
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ */
+
+
+#include <unistd.h>
+
+#include <stdio.h>
+#include <stdarg.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <linux/types.h>
+#include <linux/dirent.h>
+#include <linux/unistd.h>
+#include <sys/syscall.h>
+
+#include "ntstatus.h"
+#define WIN32_NO_STATUS
+#include "windef.h"
+#include "winternl.h"
+#include "winioctl.h"
+
+#include "debug.h"
+#include "object.h"
+#include "object.inl"
+#include "mem.h"
+#include "ntcall.h"
+#include "file.h"
+
+// FIXME: use unicode tables
+WCHAR lowercase(const WCHAR ch)
+{
+	if (ch >= 'A' && ch <='Z')
+		return ch | 0x20;
+	return ch;
+}
+
+io_object_t::io_object_t() :
+	completion_port( 0 ),
+	completion_key( 0 )
+{
+}
+
+void io_object_t::set_completion_port( completion_port_t *port, ULONG key )
+{
+	if (completion_port)
+	{
+		release( completion_port );
+		completion_port = 0;
+	}
+	completion_port = port;
+	completion_key = 0;
+}
+
+NTSTATUS io_object_t::set_position( LARGE_INTEGER& ofs )
+{
+	return STATUS_OBJECT_TYPE_MISMATCH;
+}
+
+file_t::~file_t()
+{
+	close( fd );
+}
+
+file_t::file_t( int f ) :
+	fd( f )
+{
+}
+
+NTSTATUS file_t::read( PVOID Buffer, ULONG Length, ULONG *bytes_read )
+{
+	NTSTATUS r = STATUS_SUCCESS;
+	ULONG ofs = 0;
+	while (ofs < Length)
+	{
+		BYTE *p = (BYTE*)Buffer+ofs;
+		size_t len = Length - ofs;
+
+		r = current->process->vm->get_kernel_address( &p, &len );
+		if (r != STATUS_SUCCESS)
+			break;
+
+		int ret = ::read( fd, p, len );
+		if (ret < 0)
+		{
+			r = STATUS_IO_DEVICE_ERROR;
+			break;
+		}
+
+		ofs += len;
+	}
+
+	*bytes_read = ofs;
+
+	return r;
+}
+
+NTSTATUS file_t::write( PVOID Buffer, ULONG Length, ULONG *written )
+{
+	NTSTATUS r = STATUS_SUCCESS;
+	ULONG ofs = 0;
+	while (ofs< Length)
+	{
+		BYTE *p = (BYTE*)Buffer+ofs;
+		size_t len = Length - ofs;
+
+		NTSTATUS r = current->process->vm->get_kernel_address( &p, &len );
+		if (r != STATUS_SUCCESS)
+			break;
+
+		int ret = ::write( fd, p, len );
+		if (ret < 0)
+		{
+			r = STATUS_IO_DEVICE_ERROR;
+			break;
+		}
+
+		ofs += len;
+	}
+
+	*written = ofs;
+
+	return r;
+}
+
+NTSTATUS file_t::set_position( LARGE_INTEGER& ofs )
+{
+	int ret;
+
+	ret = lseek( fd, ofs.QuadPart, SEEK_SET );
+	if (ret < 0)
+	{
+		dprintf("seek failed\n");
+		return STATUS_UNSUCCESSFUL;
+	}
+	return STATUS_SUCCESS;
+}
+
+class directory_entry_t;
+
+typedef list_anchor<directory_entry_t,0> dirlist_t;
+typedef list_iter<directory_entry_t,0> dirlist_iter_t;
+typedef list_element<directory_entry_t> dirlist_element_t;
+
+class directory_entry_t {
+public:
+	dirlist_element_t entry[1];
+	unicode_string_t name;
+	struct stat st;
+};
+
+class directory_t : public file_t
+{
+	int count;
+	directory_entry_t *ptr;
+	dirlist_t entries;
+	unicode_string_t mask;
+protected:
+	void reset();
+	void add_entry(const char *name);
+public:
+	directory_t( int fd );
+	~directory_t();
+	NTSTATUS query_directory_file();
+	NTSTATUS read( PVOID Buffer, ULONG Length, ULONG *bytes_read );
+	NTSTATUS write( PVOID Buffer, ULONG Length, ULONG *bytes_read );
+	virtual NTSTATUS query_information( FILE_ATTRIBUTE_TAG_INFORMATION& info );
+	directory_entry_t* get_next();
+	bool match(unicode_string_t &name) const;
+	void scandir();
+	bool is_firstscan() const;
+	NTSTATUS set_mask(unicode_string_t *mask);
+	int get_num_entries() const;
+};
+
+directory_t::directory_t( int fd ) :
+	file_t(fd),
+	count(-1),
+	ptr(0)
+{
+}
+
+directory_t::~directory_t()
+{
+}
+
+NTSTATUS directory_t::read( PVOID Buffer, ULONG Length, ULONG *bytes_read )
+{
+	return STATUS_OBJECT_TYPE_MISMATCH;
+}
+
+NTSTATUS directory_t::write( PVOID Buffer, ULONG Length, ULONG *bytes_read )
+{
+	return STATUS_OBJECT_TYPE_MISMATCH;
+}
+
+int getdents(unsigned int fd, struct dirent *dirp, unsigned int count)
+{
+	int r;
+	__asm__ __volatile__ (
+		"int $0x80\n"
+		: "=r"(r) : "a"(__NR_getdents), "b"(fd), "c"(dirp), "d"(count) :
+	);
+	return r;
+}
+
+void directory_t::reset()
+{
+	ptr = 0;
+	count = 0;
+
+	while (!entries.empty())
+	{
+		directory_entry_t *x = entries.head();
+		entries.unlink(x);
+		delete x;
+	}
+}
+
+bool directory_t::match(unicode_string_t &name) const
+{
+	if (mask.Length == 0)
+		return true;
+
+	// check for dot pseudo files
+	bool pseudo_file = (name.Length == 2 && name.Buffer[0] == '.') ||
+		(name.Length == 4 && name.Buffer[0] == '.' && name.Buffer[1] == '.' );
+
+	int i = 0, j = 0;
+	while (i < mask.Length/2 && j < name.Length/2)
+	{
+		// asterisk matches everything
+		if (mask.Buffer[i] == '*')
+			return true;
+
+		// question mark matches one character
+		if (mask.Buffer[i] == '?')
+		{
+			if (pseudo_file)
+				return false;
+			i++;
+			j++;
+			continue;
+		}
+
+		// double quote matches separator
+		if (mask.Buffer[i] == '"' && j != 0 && name.Buffer[j] == '.')
+		{
+			i++;
+			j++;
+			continue;
+		}
+
+		// right angle matches anything except a dot
+		if (mask.Buffer[i] == '>' && name.Buffer[j] != '.')
+		{
+			i++;
+			j++;
+			continue;
+		}
+
+		// right angle matches strings without a dot
+		if (mask.Buffer[i] == '<')
+		{
+			while (name.Buffer[j] != '.' && j < name.Length)
+				j++;
+			i++;
+			continue;
+		}
+
+		if (pseudo_file)
+			return false;
+
+		// match characters
+		//dprintf("%c <> %c\n", mask.Buffer[i], name.Buffer[j]);
+		if (lowercase(mask.Buffer[i]) != lowercase(name.Buffer[j]))
+			return false;
+
+		i++;
+		j++;
+	}
+
+	// left over characters are a mismatch
+	if (i != mask.Length/2 || j != name.Length/2)
+		return false;
+
+	return true;
+}
+
+void directory_t::add_entry(const char *name)
+{
+	char fullname[MAX_PATH];
+	sprintf(fullname, "/proc/self/fd/%d/%s", get_fd(), name);
+	dprintf("adding dir entry: %s\n", name);
+	directory_entry_t *ent = new directory_entry_t;
+	ent->name.copy(name);
+	if (0 != stat(fullname, &ent->st))
+	{
+		delete ent;
+		return;
+	}
+	if (!match(ent->name))
+	{
+		delete ent;
+		return;
+	}
+	dprintf("matched mask %pus\n", &mask);
+	//dprintf("mode = %o\n", ent->st.st_mode);
+	entries.append(ent);
+	count++;
+}
+
+int directory_t::get_num_entries() const
+{
+	return count;
+}
+
+void directory_t::scandir()
+{
+	unsigned char buffer[0x1000];
+	int r;
+
+	reset();
+
+	dprintf("reading entries:\n");
+	// . and .. always come first
+	add_entry(".");
+	add_entry("..");
+
+	while (1)
+	{
+		struct dirent *de = (struct dirent*) buffer;
+		r = ::getdents( get_fd(), de, sizeof buffer );
+		if (r <= 0)
+			break;
+
+		int ofs = 0;
+		while (ofs<r)
+		{
+			de = (struct dirent*) &buffer[ofs];
+			//fprintf(stderr, "%ld %d %s\n", de->d_off, de->d_reclen, de->d_name);
+			if (de->d_off <= 0)
+				break;
+			ofs += de->d_reclen;
+			if (!strcmp(de->d_name,".") || !strcmp(de->d_name, ".."))
+				continue;
+			add_entry(de->d_name);
+		}
+	}
+}
+
+NTSTATUS directory_t::set_mask(unicode_string_t *string)
+{
+	mask.copy(string);
+	return STATUS_SUCCESS;
+}
+
+// scan for the first time after construction
+bool directory_t::is_firstscan() const
+{
+	return (count == -1);
+}
+
+directory_entry_t* directory_t::get_next()
+{
+	if (!ptr)
+	{
+		ptr = entries.head();
+		return ptr;
+	}
+
+	if (ptr == entries.tail())
+		return 0;
+
+	ptr = ptr->entry[0].get_next();
+
+	return ptr;
+}
+
+NTSTATUS directory_t::query_information( FILE_ATTRIBUTE_TAG_INFORMATION& info )
+{
+	info.FileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+	info.ReparseTag = 0;
+	return STATUS_SUCCESS;
+}
+
+int file_t::get_fd()
+{
+	return fd;
+}
+
+NTSTATUS file_t::query_information( FILE_BASIC_INFORMATION& info )
+{
+	info.FileAttributes = FILE_ATTRIBUTE_ARCHIVE;
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS file_t::query_information( FILE_STANDARD_INFORMATION& info )
+{
+	struct stat st;
+	if (0<fstat( fd, &st ))
+		return STATUS_UNSUCCESSFUL;
+	info.EndOfFile.QuadPart = st.st_size;
+	info.AllocationSize.QuadPart = (st.st_size+0x1ff)&~0x1ff;
+	if (S_ISDIR(st.st_mode))
+		info.Directory = TRUE;
+	else
+		info.Directory = FALSE;
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS file_t::query_information( FILE_ATTRIBUTE_TAG_INFORMATION& info )
+{
+	info.FileAttributes = FILE_ATTRIBUTE_ARCHIVE;
+	info.ReparseTag = 0;
+	return STATUS_SUCCESS;
+}
+
+char *unicode_string_to_utf8( UNICODE_STRING *us )
+{
+	char *str;
+	int i;
+
+	str = new char[ us->Length/2 + 1 ];
+	if (str)
+	{
+		for (i=0; i<us->Length/2; i++)
+			str[i] = us->Buffer[i];
+		str[i] = 0;
+	}
+	return str;
+}
+
+char *get_unix_name( POBJECT_ATTRIBUTES oa )
+{
+	const WCHAR prefix[] = { '\\','?','?','\\' };
+	UNICODE_STRING str, *us;
+	char *file;
+	int i;
+
+	us = oa->ObjectName;
+	if (!us)
+		return NULL;
+	if (us->Length < sizeof prefix)
+		return NULL;
+	if (memcmp(us->Buffer, prefix, sizeof prefix))
+		return NULL;
+
+	str.Length = us->Length - sizeof prefix;
+	str.Buffer = &us->Buffer[ sizeof prefix/2 ];
+	file = unicode_string_to_utf8( &str );
+	if (!file)
+		return NULL;
+
+	for (i=0; file[i]; i++)
+	{
+		if (file[i] == '\\')
+		{
+			file[i] = '/';
+			continue;
+		}
+
+		// make filename lower case if necessary
+		if (!(oa->Attributes & OBJ_CASE_INSENSITIVE))
+			continue;
+		file[i] = lowercase(file[i]);
+	}
+
+	return file;
+}
+
+int stat_unicode( POBJECT_ATTRIBUTES oa, struct stat *st )
+{
+	char *file;
+	int r = -1;
+
+	file = get_unix_name( oa );
+	if (file)
+	{
+		r = stat( file, st );
+		dprintf("%s -> %d\n", file, r);
+		delete file;
+	}
+	else
+		dprintf("failed to translate nt path %pus\n", oa->ObjectName );
+	return r;
+}
+
+int open_unicode_file( POBJECT_ATTRIBUTES oa, int flags, bool &created )
+{
+	char *name;
+	int r = -1;
+
+	name = get_unix_name( oa );
+	if (name)
+	{
+		dprintf("open file : %s\n", name);
+		r = open( name, flags&~O_CREAT );
+		if (r < 0 && (flags & O_CREAT))
+		{
+			dprintf("create file : %s\n", name);
+			r = open( name, flags, 0666 );
+			if (r >= 0)
+				created = true;
+		}
+		delete name;
+	}
+	return r;
+}
+
+int open_unicode_dir( POBJECT_ATTRIBUTES oa, int flags, bool &created )
+{
+	char *name;
+	int r = -1;
+
+	name = get_unix_name( oa );
+	if (name)
+	{
+		if (flags & O_CREAT)
+		{
+			dprintf("create dir : %s\n", name);
+			r = mkdir( name, 0777 );
+			if (r == 0)
+				created = true;
+		}
+		dprintf("open name : %s\n", name);
+		r = open( name, flags & ~O_CREAT );
+		dprintf("r = %d\n", r);
+		delete name;
+	}
+	return r;
+}
+
+NTSTATUS open_file(
+	file_t *&file,
+	OBJECT_ATTRIBUTES *oa,
+	ULONG Attributes,
+	ULONG Options,
+	ULONG CreateDisposition,
+	bool &created )
+{
+	int fd;
+
+	if (!oa->ObjectName)
+		return STATUS_OBJECT_PATH_NOT_FOUND;
+
+	dprintf("root = %p name = %pus\n", oa->RootDirectory, oa->ObjectName );
+
+	int mode = O_RDONLY;
+	switch (CreateDisposition)
+	{
+	case FILE_OPEN:
+		mode = O_RDONLY;
+		break;
+	case FILE_CREATE:
+		mode = O_CREAT;
+		break;
+	case FILE_OPEN_IF:
+		mode = O_CREAT;
+		break;
+	default:
+		dprintf("CreateDisposition = %ld\n", CreateDisposition);
+		return STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (Options & FILE_DIRECTORY_FILE)
+	{
+		fd = open_unicode_dir( oa, mode, created );
+		if (fd == -1)
+			return STATUS_OBJECT_PATH_NOT_FOUND;
+
+		dprintf("fd = %d\n", fd );
+		file = new directory_t( fd );
+		if (!file)
+		{
+			close( fd );
+			return STATUS_NO_MEMORY;
+		}
+	}
+	else
+	{
+		fd = open_unicode_file( oa, mode, created );
+		if (fd == -1)
+			return STATUS_OBJECT_PATH_NOT_FOUND;
+
+		file = new file_t( fd );
+		if (!file)
+		{
+			close( fd );
+			return STATUS_NO_MEMORY;
+		}
+	}
+
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS open_file( file_t *&file, OBJECT_ATTRIBUTES *oa )
+{
+	bool created;
+	return open_file( file, oa, 0, 0, FILE_OPEN, created );
+}
+
+NTSTATUS NTAPI NtCreateFile(
+	PHANDLE FileHandle,
+	ACCESS_MASK DesiredAccess,
+	POBJECT_ATTRIBUTES ObjectAttributes,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PLARGE_INTEGER AllocationSize,
+	ULONG Attributes,
+	ULONG ShareAccess,
+	ULONG CreateDisposition,
+	ULONG CreateOptions,
+	PVOID EaBuffer,
+	ULONG EaLength )
+{
+	object_attributes_t oa;
+	IO_STATUS_BLOCK iosb;
+	NTSTATUS r;
+
+	r = oa.copy_from_user( ObjectAttributes );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	dprintf("root %p attr %08lx %pus\n",
+			oa.RootDirectory, oa.Attributes, oa.ObjectName);
+
+	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	r = verify_for_write( FileHandle, sizeof *FileHandle );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	if (!(CreateOptions & FILE_DIRECTORY_FILE))
+		Attributes &= ~FILE_ATTRIBUTE_DIRECTORY;
+
+	file_t *file = 0;
+	bool created = false;
+	r = open_file( file, &oa, Attributes, CreateOptions, CreateDisposition, created );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	if (r == STATUS_SUCCESS)
+	{
+		r = alloc_user_handle( file, DesiredAccess, FileHandle );
+		release( file );
+	}
+
+	iosb.Status = r;
+	iosb.Information = created ? FILE_CREATED : FILE_OPENED;
+
+	copy_to_user( IoStatusBlock, &iosb, sizeof iosb );
+
+	return r;
+}
+
+NTSTATUS NTAPI NtOpenFile(
+	PHANDLE FileHandle,
+	ACCESS_MASK DesiredAccess,
+	POBJECT_ATTRIBUTES ObjectAttributes,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	ULONG ShareAccess,
+	ULONG OpenOptions )
+{
+	return NtCreateFile( FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock,
+				0, 0, ShareAccess, FILE_OPEN, OpenOptions, 0, 0 );
+}
+
+NTSTATUS NTAPI NtFsControlFile(
+	HANDLE FileHandle,
+	HANDLE Event,
+	PIO_APC_ROUTINE ApcRoutine,
+	PVOID ApcContext,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	ULONG FsControlCode,
+	PVOID InputBuffer,
+	ULONG InputBufferLength,
+	PVOID OutputBuffer,
+	ULONG OutputBufferLength )
+{
+	dprintf("%p %p %p %p %p %08lx %p %lu %p %lu\n", FileHandle,
+			Event, ApcRoutine, ApcContext, IoStatusBlock, FsControlCode,
+			InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength );
+	switch ( FsControlCode )
+	{
+	case FSCTL_IS_VOLUME_MOUNTED:
+		dprintf("FSCTL_IS_VOLUME_MOUNTED\n");
+		return STATUS_INVALID_HANDLE;
+	}
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS NTAPI NtDeviceIoControlFile(
+	HANDLE File,
+	HANDLE Event,
+	PIO_APC_ROUTINE ApcRoutine,
+	PVOID ApcContext,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	ULONG IoControlCode,
+	PVOID InputBuffer,
+	ULONG InputBufferLength,
+	PVOID OutputBuffer,
+	ULONG OutputBufferLength )
+{
+	dprintf("%p %p %p %p %p %08lx %p %lu %p %lu\n",
+			File, Event, ApcRoutine, ApcContext, IoStatusBlock, IoControlCode,
+			InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength );
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS NTAPI NtWriteFile(
+	HANDLE FileHandle,
+	HANDLE Event,
+	PIO_APC_ROUTINE ApcRoutine,
+	PVOID ApcContext,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PVOID Buffer,
+	ULONG Length,
+	PLARGE_INTEGER ByteOffset,
+	PULONG Key )
+{
+
+	dprintf("%p %p %p %p %p %p %lu %p %p\n", FileHandle, Event, ApcRoutine,
+			ApcContext, IoStatusBlock, Buffer, Length, ByteOffset, Key);
+
+	io_object_t *io = 0;
+	NTSTATUS r;
+
+	r = object_from_handle( io, FileHandle, 0 );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	ULONG ofs = 0;
+	r = io->write( Buffer, Length, &ofs );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	IO_STATUS_BLOCK iosb;
+	iosb.Status = r;
+	iosb.Information = ofs;
+
+	copy_to_user( IoStatusBlock, &iosb, sizeof iosb );
+
+	return r;
+}
+
+NTSTATUS NTAPI NtQueryAttributesFile(
+	POBJECT_ATTRIBUTES ObjectAttributes,
+	PFILE_BASIC_INFORMATION FileInformation )
+{
+	object_attributes_t oa;
+	NTSTATUS r;
+	FILE_BASIC_INFORMATION info;
+	struct stat st;
+
+	dprintf("%p %p\n", ObjectAttributes, FileInformation);
+
+	r = oa.copy_from_user( ObjectAttributes );
+	if (r)
+		return r;
+
+	dprintf("root %p attr %08lx %pus\n",
+			oa.RootDirectory, oa.Attributes, oa.ObjectName);
+
+	if (!oa.ObjectName || !oa.ObjectName->Buffer)
+		return STATUS_INVALID_PARAMETER;
+
+	if (0 == stat_unicode( &oa, &st ))
+	{
+		memset( &info, 0, sizeof info );
+		info.FileAttributes = FILE_ATTRIBUTE_ARCHIVE;
+		dprintf("found %pus\n", oa.ObjectName);
+		r = copy_to_user( FileInformation, &info, sizeof info );
+	}
+	else
+		r = STATUS_OBJECT_PATH_NOT_FOUND;
+
+	return r;
+}
+
+NTSTATUS NTAPI NtQueryVolumeInformationFile(
+	HANDLE FileHandle,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PVOID VolumeInformation,
+	ULONG VolumeInformationLength,
+	FS_INFORMATION_CLASS VolumeInformationClass )
+{
+	dprintf("%p %p %p %lu %u\n", FileHandle, IoStatusBlock, VolumeInformation,
+			VolumeInformationLength, VolumeInformationClass );
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS NTAPI NtReadFile(
+	HANDLE FileHandle,
+	HANDLE EventHandle,
+	PIO_APC_ROUTINE ApcRoutine,
+	PVOID ApcContext,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PVOID Buffer,
+	ULONG Length,
+	PLARGE_INTEGER ByteOffset,
+	PULONG Key)
+{
+	dprintf("%p %p %p %p %p %p %lu %p %p\n", FileHandle, EventHandle,
+			ApcRoutine, ApcContext, IoStatusBlock,
+			Buffer, Length, ByteOffset, Key);
+
+	NTSTATUS r;
+	io_object_t *io = 0;
+
+	r = object_from_handle( io, FileHandle, GENERIC_READ );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	ULONG ofs = 0;
+	r = io->read( Buffer, Length, &ofs );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	IO_STATUS_BLOCK iosb;
+	iosb.Status = r;
+	iosb.Information = ofs;
+
+	r = copy_to_user( IoStatusBlock, &iosb, sizeof iosb );
+
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS NTAPI NtDeleteFile(
+	POBJECT_ATTRIBUTES ObjectAttributes)
+{
+	object_attributes_t oa;
+	NTSTATUS r;
+
+	dprintf("%p\n", ObjectAttributes);
+
+	r = oa.copy_from_user( ObjectAttributes );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	dprintf("root %p attr %08lx %pus\n",
+			oa.RootDirectory, oa.Attributes, oa.ObjectName);
+
+	char *name = get_unix_name( &oa );
+	if (0 > unlink( name ) &&
+		0 > rmdir( name ))
+	{
+		// check errno
+		return STATUS_ACCESS_DENIED;
+	}
+
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS NTAPI NtFlushBuffersFile(
+	HANDLE FileHandle,
+	PIO_STATUS_BLOCK IoStatusBlock)
+{
+	dprintf("%p %p\n", FileHandle, IoStatusBlock);
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS NTAPI NtCancelIoFile(
+	HANDLE FileHandle,
+	PIO_STATUS_BLOCK IoStatusBlock)
+{
+	dprintf("%p %p\n", FileHandle, IoStatusBlock);
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS NTAPI NtSetInformationFile(
+	HANDLE FileHandle,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PVOID FileInformation,
+	ULONG FileInformationLength,
+	FILE_INFORMATION_CLASS FileInformationClass)
+{
+	io_object_t *file = 0;
+	NTSTATUS r;
+	ULONG len = 0;
+	union {
+		FILE_DISPOSITION_INFORMATION dispos;
+		FILE_COMPLETION_INFORMATION completion;
+		FILE_POSITION_INFORMATION position;
+	} info;
+
+	r = object_from_handle( file, FileHandle, 0 );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	switch (FileInformationClass)
+	{
+	case FileDispositionInformation:
+		len = sizeof info.dispos;
+		break;
+	case FileCompletionInformation:
+		len = sizeof info.completion;
+		break;
+	case FilePositionInformation:
+		len = sizeof info.position;
+		break;
+	default:
+		dprintf("Unknown information class %d\n", FileInformationClass );
+		return STATUS_INVALID_PARAMETER;
+	}
+
+	r = copy_from_user( &info, FileInformation, len );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	completion_port_t *completion_port = 0;
+
+	switch (FileInformationClass)
+	{
+	case FileDispositionInformation:
+		dprintf("delete = %d\n", info.dispos.DeleteFile);
+		break;
+	case FileCompletionInformation:
+		r = object_from_handle( completion_port, info.completion.CompletionPort, IO_COMPLETION_MODIFY_STATE );
+		if (r != STATUS_SUCCESS)
+			return r;
+		file->set_completion_port( completion_port, info.completion.CompletionKey );
+		break;
+	case FilePositionInformation:
+		r = file->set_position( info.position.CurrentByteOffset );
+		break;
+	default:
+		break;
+	}
+
+	return r;
+}
+
+NTSTATUS NTAPI NtQueryInformationFile(
+	HANDLE FileHandle,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PVOID FileInformation,
+	ULONG FileInformationLength,
+	FILE_INFORMATION_CLASS FileInformationClass)
+{
+	dprintf("%p %p %p %lu %u\n", FileHandle, IoStatusBlock,
+			FileInformation, FileInformationLength, FileInformationClass);
+
+	file_t *file = 0;
+	NTSTATUS r;
+
+	r = object_from_handle( file, FileHandle, 0 );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	union {
+		FILE_BASIC_INFORMATION basic_info;
+		FILE_STANDARD_INFORMATION std_info;
+		FILE_ATTRIBUTE_TAG_INFORMATION attrib_info;
+	} info;
+	ULONG len;
+	memset( &info, 0, sizeof info );
+
+	switch (FileInformationClass)
+	{
+	case FileBasicInformation:
+		len = sizeof info.basic_info;
+		r = file->query_information( info.basic_info );
+		break;
+	case FileStandardInformation:
+		len = sizeof info.std_info;
+		r = file->query_information( info.std_info );
+		break;
+	case FileAttributeTagInformation:
+		len = sizeof info.attrib_info;
+		r = file->query_information( info.attrib_info );
+		break;
+	default:
+		dprintf("Unknown information class %d\n", FileInformationClass );
+		r = STATUS_INVALID_PARAMETER;
+	}
+
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	if (len > FileInformationLength)
+		 len = FileInformationLength;
+
+	return copy_to_user( FileInformation, &info, len );
+}
+
+NTSTATUS NTAPI NtSetQuotaInformationFile(
+	HANDLE FileHandle,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PFILE_USER_QUOTA_INFORMATION FileInformation,
+	ULONG FileInformationLength)
+{
+	dprintf("%p %p %p %lu\n", FileHandle, IoStatusBlock,
+			FileInformation, FileInformationLength);
+
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS NTAPI NtQueryQuotaInformationFile(HANDLE,PIO_STATUS_BLOCK,PFILE_USER_QUOTA_INFORMATION,ULONG,BOOLEAN,PFILE_QUOTA_LIST_INFORMATION,ULONG,PSID,BOOLEAN)
+{
+	dprintf("\n");
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS NTAPI NtLockFile(
+	HANDLE FileHandle,
+	HANDLE EventHandle,
+	PIO_APC_ROUTINE ApcRoutine,
+	PVOID ApcContext,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PULARGE_INTEGER LockOffset,
+	PULARGE_INTEGER LockLength,
+	ULONG Key,
+	BOOLEAN FailImmediately,
+	BOOLEAN ExclusiveLock)
+{
+	dprintf("just returns success...\n");
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS NTAPI NtUnlockFile(
+	HANDLE FileHandle,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PULARGE_INTEGER LockOffset,
+	PULARGE_INTEGER LockLength,
+	ULONG Key)
+{
+	dprintf("just returns success...\n");
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS NTAPI NtQueryDirectoryFile(
+	HANDLE DirectoryHandle,
+	HANDLE Event,
+	PIO_APC_ROUTINE ApcRoutine,
+	PVOID ApcContext,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PVOID FileInformation,
+	ULONG FileInformationLength,
+	FILE_INFORMATION_CLASS FileInformationClass,
+	BOOLEAN ReturnSingleEntry,
+	PUNICODE_STRING FileName,
+	BOOLEAN RestartScan)
+{
+	NTSTATUS r;
+
+	directory_t *dir = 0;
+	r = object_from_handle( dir, DirectoryHandle, 0 );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	// default (empty) mask matches all...
+	unicode_string_t mask;
+	if (FileName)
+	{
+		r = mask.copy_from_user( FileName );
+		if (r != STATUS_SUCCESS)
+			return r;
+
+		dprintf("Filename = %pus (len=%d)\n", &mask, mask.Length);
+	}
+
+	if (FileInformationClass != FileBothDirectoryInformation)
+	{
+		dprintf("unimplemented FileInformationClass %d\n", FileInformationClass);
+		return STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (dir->is_firstscan())
+	{
+		r = dir->set_mask(&mask);
+		if (r != STATUS_SUCCESS)
+			return r;
+	}
+
+	if (dir->is_firstscan() || RestartScan)
+		dir->scandir();
+
+	if (dir->get_num_entries() == 0)
+		return STATUS_NO_SUCH_FILE;
+
+	directory_entry_t *de = dir->get_next();
+	if (!de)
+		return STATUS_NO_MORE_FILES;
+
+	FILE_BOTH_DIRECTORY_INFORMATION info;
+	memset( &info, 0, sizeof info );
+
+	if (S_ISDIR(de->st.st_mode))
+		info.FileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+	else
+		info.FileAttributes = FILE_ATTRIBUTE_ARCHIVE;
+	info.FileNameLength = de->name.Length;
+	info.EndOfFile.QuadPart = de->st.st_size;
+	info.AllocationSize.QuadPart = de->st.st_blocks * 512;
+
+	r = copy_to_user( FileInformation, &info, sizeof info );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	const ULONG ofs = FIELD_OFFSET(FILE_BOTH_DIRECTORY_INFORMATION, FileName);
+	PWSTR p = (PWSTR)((PBYTE)FileInformation + ofs);
+	r = copy_to_user( p, de->name.Buffer, de->name.Length );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	IO_STATUS_BLOCK iosb;
+	iosb.Status = r;
+	iosb.Information = ofs + de->name.Length;
+
+	copy_to_user( IoStatusBlock, &iosb, sizeof iosb );
+
+	return r;
+}
+
+NTSTATUS NTAPI NtQueryFullAttributesFile(
+	POBJECT_ATTRIBUTES ObjectAttributes,
+	PFILE_NETWORK_OPEN_INFORMATION FileInformation)
+{
+	object_attributes_t oa;
+	NTSTATUS r;
+
+	r = oa.copy_from_user( ObjectAttributes );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	dprintf("name = %pus\n", oa.ObjectName);
+
+	return STATUS_NOT_IMPLEMENTED;
+}

@@ -1,0 +1,115 @@
+
+ Ring 3 Kernel
+
+ Copyright (C) 2006-2008 Mike McCormack
+
+About
+-----
+
+This project aims to load the userspace of an NT system
+into a user space controlled by a usermode kernel.
+
+Why?
+----
+
+There are several aims for this project:
+
+* understand how the Windows kernel-userland interface works
+* provide an alternate method of virtualization
+* reduce the scope of reimplementation as compared to Wine
+* make application's address space indistinguishable from native Windows
+
+Requirements
+------------
+
+* A Linux (tm) 2.6.x kernel patches applied.
+* A Windows 2000 (tm) CD
+* the mingw cross compiler (for tests)
+* glibc with the NPTL version of pthreads
+* gcc 4.2.1 or so
+* libxml2 (for registry code)
+* cabextract (extract windows cab files)
+* isoinfo from http://cdrecord.berlios.de (read the CD)
+
+Instructions
+------------
+
+To run smss.exe, from the top level directory, do:
+
+./configure
+make
+cd loader
+ln -s /path/to/your/win2k.iso
+make test
+./runit
+
+To run a test (for example the semaphore test):
+
+./runtest sema
+
+To run all the working tests, do:
+
+make test
+
+Files
+-----
+documents/  - a few notes
+loader/     - implementation of the NT userspace loader (an NT-like kernel)
+ntext2fs/   - NT filesystem simulation and maintainence utils
+tests/      - test cases that run on both NT and the loader
+libudis86/  - the udis86 disassembler
+
+Development
+-----------
+
+Development of new code and bug fixes should be done with test cases.
+The test case should show how Windows functions, and should test the code
+that has been written as much as possible.
+
+Using QEMU to run tests
+-----------------------
+
+Optionally, install kqemu
+
+One time setup:
+
+1. Create a 2G fake partition:
+    dd if=/dev/zero of=win2k.img bs=1024 count=2M
+
+2  Install Windows 2000:
+    qemu -hda win2k.img -cdrom win2k.iso -boot d -m 64
+
+3. Run QEMU:
+
+	make qemu
+
+   OR
+
+	qemu -hda win2k.img -cdrom nttest.iso -m 64
+
+4. To run a test, login and start cmd.exe.  To run the thread test, type:
+
+	d:
+	hostnt thread.exe
+
+5. If you wish to rebuild a test case, do:
+
+	make
+	make cdrom
+
+   To use the new ISO in QEMU, press <ALT><CTRL>2, to switch to the QEMU
+   console and type:
+
+	eject cdrom
+
+   You need to make windows notice that there's no disk in the drive first by.
+   Do this by pressing <ALT><CTRL>1, and try run the test case by up arrowing
+   to hostnt thread.exe then pressing <ENTER>.  When you get a message box
+   saying "There is no disk in drive...", switch back to the console using
+   <ALT><CTRL>2, and type:
+
+	change cdrom nttest.iso
+
+   Then <ALT><CTRL>1 back to Windows and select "Try Again"
+   by up arrowing twice on the dialog and pressing enter.
+

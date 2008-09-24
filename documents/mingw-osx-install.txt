@@ -1,0 +1,44 @@
+
+Build and install gmp 4.2.2
+---------------------------
+./configure --prefix=/opt/gmp-4.2.2 --enable-shared
+sudo make install
+
+Build and install mpfr 2.3.1
+----------------------------
+./configure --prefix=/opt/mpfr-2.3.1 --enable-shared --with-gmp=/opt/gmp-4.2.2
+sudo make install
+
+Build and install gcc 4.3.0 (native)
+------------------------------------
+mkdir gcc-4.3.0-build
+../gcc-4.3.0/configure --prefix=/opt/gcc-4.3.0 --enable-threads --disable-nls --enable-languages=c,c++ --with-gmp=/opt/gmp-4.2.2 --with-mpfr=/opt/mpfr-2.3.1/
+sudo make install
+
+Build and install binutils (mingw32 cross)
+------------------------------------------
+mkdir binutils-2.18.50-build
+../binutils-2.18.50/configure --prefix=/opt/mingw32 --target=i686-pc-mingw32
+sudo make install
+
+Download and extract mingw-runtime-3.14-src.tar.gz
+--------------------------------------------------
+cp -R mingw-runtime-3.14/include /opt/mingw32/i686-pc-mingw32/
+
+Download w32api-3.11.tar.gz
+cd /opt/mingw32/i686-pc-mingw32/
+tar zxvf w32api-3.11.tar.gz
+
+Build and install gcc (mingw32 cross)
+-------------------------------------
+
+mkdir gcc-4.3.0-mingw-build
+cd gcc-4.3.0-mingw-build
+PATH=$PATH:/opt/mingw32/bin CC=/opt/gcc-4.3.0/bin/gcc ../gcc-4.3.0/configure --with-gcc --target=i686-pc-mingw32 --prefix=/opt/mingw32 --enable-threads --disable-nls --enable-languages=c --disable-long-long --with-gmp=/opt/gmp-4.2.2 --with-mpfr=/opt/mpfr-2.3.1
+PATH=$PATH:/opt/mingw32/bin make
+sudo make install
+
+Build and install the mingw runtime
+-----------------------------------
+PATH=/opt/mingw32/bin:$PATH AS=i686-pc-mingw32-as RANLIB=i686-pc-mingw32-ranlib CC=i686-pc-mingw32-gcc AR=i686-pc-mingw32-ar DLLTOOL=i686-pc-mingw32-dlltool LD=i686-pc-mingw32-ld ./configure --target=i686-pc-mingw32 --prefix=/opt/mingw32/i686-pc-mingw32/
+

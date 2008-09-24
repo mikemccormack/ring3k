@@ -1,0 +1,44 @@
+# adapted from libudis86 Makefile
+
+CC      = gcc
+CFLAGS  = -Wall -O2
+AR      = ar
+RM      = rm
+PERL    = perl
+
+.SUFFIXES: .c .o
+.c.o:
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+OBJS = mnemonics.o \
+	opcmap.o \
+	input.o \
+	decode.o \
+	syn.o \
+	syn-intel.o \
+	syn-att.o \
+	udis86.o
+
+.PHONY: all clean
+
+all: libudis86.a
+
+.%.dpp: %.cpp
+	$(CC) $(INCLUDE_DIRS) -MM $< > $@
+
+.%.d: %.c
+	$(CC) $(INCLUDE_DIRS) -MM $< > $@
+
+DEPFILES = $(C_SOURCES:%.c=.%.d) $(CPP_SOURCES:%.cpp=.%.dpp)
+
+include $(DEPFILES)
+
+libudis86.a: $(OBJS)
+	$(AR) -r libudis86.a $(OBJS)
+
+mnemonics.c mnemonsic.h: mnemonics.dat
+	$(PERL) mnemonics.pl < mnemonics.dat
+
+clean:
+	$(RM) -f core *.o *.a mnemonics.c mnemonics.h
+

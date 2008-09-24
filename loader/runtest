@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# Copyright 2007 (C) Mike McCormack
+#
+# Test launching script
+#
+
+loader="./ntl"
+while test "x$1" != "x"
+do
+	case $1 in
+	-q)
+		quiet=1
+		shift
+		;;
+	-s)
+		tt=1
+		shift
+		;;
+	*)
+		t="$1.exe"
+		shift
+		;;
+	esac
+done
+
+# build the test
+dir=`pwd`
+cd ../tests
+if make -s $t
+then
+    make_ok=1
+else
+    make_ok=0
+fi
+cd "$dir"
+if [ $make_ok = 0 ]
+then
+	echo "Failed to build $t"
+	exit 1
+fi
+
+if [ ! -d drive ]
+then
+	sh extract_disk.sh
+fi
+
+# copy the test into the NT directory
+cp ../tests/$t drive/tests
+ntexepath="\\??\\c:\\tests\\$t"
+exec "$loader" ${tt:+"-s"} ${quiet:+"-q"} "$ntexepath"

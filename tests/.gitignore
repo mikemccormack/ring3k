@@ -1,0 +1,9 @@
+Makefile
+*.exe
+*.o
+*.s
+*.a
+.*.d
+*.bat
+*.lib
+*.dll

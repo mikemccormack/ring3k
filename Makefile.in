@@ -1,0 +1,30 @@
+#
+# top level Makefile
+# Copyright 2007 Mike McCormack
+#
+
+.PHONY: all loader_dir ntext2fs_dir tests_dir cdrom clean
+
+ISO = tests/nttests.iso
+
+all: libudis86_dir loader_dir ntext2fs_dir tests_dir
+
+test: all
+	cd loader && make test
+
+loader_dir:
+	cd loader && make
+
+tests_dir:
+	cd tests && make
+
+libudis86_dir:
+	cd libudis86 && make
+
+clean:
+	cd libudis86 && make clean
+	cd loader && make clean
+	cd tests && make clean
+
+qemu: cdrom
+	qemu -hda ../win2k.img -cdrom $(ISO) -m 64

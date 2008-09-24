@@ -1,0 +1,46 @@
+Things to do:
+
+- make all waits safe for terminate (and suspend)
+  write a test for thread exit issues and fix
+
+- implement named pipes
+  test program for named pipes
+
+- implement mailslots
+  test program for mailslots
+
+- figure out how ConnectNamePipe, WaitNamedPipe, CallNamedPipe work
+
+- implement NtQueryInformationToken 0x20 11 (nil) 0 0x6f5fc
+
+- separate registry binary and hex values so
+  hex can be written <x n="foo">1</x>
+
+- document registry format
+
+- use file_t* instead of fds in blocks and sections
+
+- check memory leaks
+
+- create a context_t to manage registers
+
+- default registry values
+
+- read/write native registry format
+
+- documentation in textinfo
+
+- make object store hierachical
+
+
+Semi Completed:
+- timers 
+- preemptive scheduling
+- registry
+- directories/files
+- memory
+- tokens/security
+- object symbolic links
+- figure out what SeRmCommandPort is -> SeRm = Security Reference Monitor
+  Implement a port server in kernel
+

@@ -1,0 +1,308 @@
+<?xml version="1.0"?>
+<k n="REGISTRY">
+ <k n="Machine">
+  <k n="Security">
+   <k n="Policy">
+    <k n="PolRevision">
+    </k>
+    <k n="PolMod">
+    </k>
+    <k n="PolAdtLg">
+    </k>
+    <k n="PolAdtEv">
+    </k>
+    <k n="PolPrDmn">
+    </k>
+    <k n="PolPrDms">
+    </k>
+    <k n="PolPdAcn">
+    </k>
+    <k n="PolAcDmn">
+    </k>
+    <k n="PolRepSc">
+    </k>
+    <k n="PolRepAc">
+    </k>
+    <k n="DefQuota">
+    </k>
+    <k n="PolAdtFL">
+    </k>
+    <k n="SecDesc">
+    </k>
+    <k n="PolDnDDN">
+    </k>
+    <k n="PolDnTrn">
+    </k>
+    <k n="PolDnDmg">
+    </k>
+   </k>
+  </k>
+  <k n="SOFTWARE">
+   <k n="Policies">
+    <k n="Microsoft">
+     <k n="Windows">
+      <k n="System">
+      </k>
+     </k>
+    </k>
+   </k>
+   <k n="Microsoft">
+    <k n="Rpc">
+    </k>
+    <k n="Windows">
+     <k n="CurrentVersion">
+      <s n="CommonFilesDir">C:\Program Files\CommonFiles</s>
+      <s n="ProgramFilesDir">C:\Program Files</s>
+      <k n="policies">
+       <k n="system">
+        <x t="4" n="VerboseStatus">01000000</x>
+       </k>
+      </k>
+      <k n="Explorer">
+      </k>
+     </k>
+    </k>
+    <k n="Windows NT">
+     <k n="CurrentVersion">
+      <s n="CSDVersion">Service Pack 1</s>
+      <k n="ProfileList">
+       <s n="DefaultUserProfile">Default User</s>
+       <s n="AllUsersProfile">All Users</s>
+       <s t="2" n="ProfilesDirectory">%SystemDrive%\Documents and Settings</s>
+      </k>
+      <k n="IniFileMapping">
+      </k>
+      <k n="Diagnostics">
+       <x t="4" n="AppMgmtDebugLevel">4b000000</x>
+       <x t="4" n="AppMgmtDebugBreak">00000000</x>
+      </k>
+      <k n="Winlogon">
+       <k n="Notify">
+       </k>
+      </k>
+      <k n="Windows">
+       <s n="AppInit_DLLs"></s>
+      </k>
+     </k>
+    </k>
+   </k>
+  </k>
+  <k n="HARDWARE">
+   <k n="DESCRIPTION">
+    <k n="System">
+     <k n="CentralProcessor">
+      <k n="0">
+       <x t="4" n="~MHz">bf010000</x>
+       <x t="7" n="ComponentInformation">00000000000000000000000001000000</x>
+       <x t="9" n="ConfigurationData">ffffffffffffffff0000000000000000</x>
+       <x t="4" n="FeatureSet">ff2f0000</x>
+       <s n="Identifier">x86 Family 6 Model 8 Stepping 1</s>
+       <x t="7" n="UpdateSignature">000000000e000000</x>
+       <x t="4" n="Update Status">06000000</x>
+       <s n="VendorIdentifier">GenuineIntel</s>
+      </k>
+     </k>
+    </k>
+   </k>
+  </k>
+  <k n="System">
+   <k n="Select">
+    <x t="4" n="Current">01000000</x>
+    <x t="4" n="Default">01000000</x>
+    <x t="4" n="Failed">00000000</x>
+    <x t="4" n="LastKnownGood">02000000</x>
+   </k>
+   <k n="CurrentControl001">
+   </k>
+   <k n="CurrentControlSet">
+    <k n="Enum">
+    </k>
+    <k n="Services">
+     <k n="WinSock2">
+      <k n="Parameters">
+       <s n="WinSock_Registry_Version">2.0</s>
+      </k>
+     </k>
+     <k n="DNS">
+     </k>
+     <k n="EventLog">
+      <k n="Application">
+       <k n="Error Instrument">
+        <x t="4" n="TypesSupported">07000000</x>
+        <s n="EventMessageFile">%SystemRoot%\System32\User32.dll</s>
+       </k>
+      </k>
+     </k>
+     <k n="DnsCache">
+     </k>
+     <k n="Tcpip">
+      <k n="Parameters">
+       <s n="NV Hostname">mike-up94heby9k</s>
+       <x t="4" n="AllowUnqualifiedQuery">00000000</x>
+       <x t="4" n="PrioritizeRecordData">10000000</x>
+      </k>
+     </k>
+    </k>
+    <k n="Control">
+     <k n="ServiceGroupOrder">
+      <x t="7" n="List">530079007300740065006d0020005200650073006500720076006500640000000000</x>
+     </k>
+     <k n="Keyboard Layouts">
+      <k n="00000409">
+       <s n="Layout File">KBDUS.DLL</s>
+       <s n="Layout Text">US</s>
+      </k>
+     </k>
+     <k n="Class">
+     </k>
+     <k n="SecurityProviders">
+      <s n="SecurityProviders">msapsspc.dll, schannel.dll, digest.dll, msnsspc.dll</s>
+     </k>
+     <k n="Nls">
+      <k n="CodePage">
+       <s n="473">c_437.nls</s>
+      </k>
+      <k n="Language">
+      </k>
+      <k n="Language Groups">
+      </k>
+      <k n="Locale">
+       <s n="00000409">1</s>
+       <k n="Alternate Sorts">
+       </k>
+      </k>
+     </k>
+     <k n="Lsa">
+      <x t="4" n="SecureBoot">01000000</x>
+      <x t="7" n="Authentication Packages">6d007300760031005f00300000000000</x>
+      <x t="7" n="Security Packages">6b00650072006200650072006f00730000006d007300760031005f003000000073006300680061006e006e0065006c00000000</x>
+      <k n="JD" c="cf845301">
+       <x t="3" n="Lookup">8a2acfa6dd7d</x>
+      </k>
+      <k n="GBG" c="cf845301">
+      </k>
+      <k n="Skew1" c="cf845301">
+      </k>
+      <k n="Data" c="cf845301">
+      </k>
+     </k>
+     <k n="ComputerName">
+      <k n="ActiveComputerName">
+       <s n="ComputerName">MIKE-UP94HEBY9K</s>
+      </k>
+      <k n="ComputerName">
+       <s n="ComputerName">MIKE-UP94HEBY9K</s>
+      </k>
+     </k>
+     <k n="Error Message Instrument">
+      <x t="4" n="EnableLogging">01000000</x>
+      <x t="4" n="LogSeverity">00000000</x>
+      <x t="4" n="EnableDefaultReply">01000000</x>
+     </k>
+     <k n="PriorityControl">
+      <x t="4" n="Win32PrioritySeparation">02000000</x>
+     </k>
+     <k n="WOW">
+      <s n="DefaultSeparateVDM">no</s>
+     </k>
+     <k n="ProductOptions">
+      <s n="ProductType">WinNT</s>
+      <s n="xProductType">ServerNT</s>
+     </k>
+     <k n="Session Manager">
+      <x t="4" n="AllowProtectedRenames">01000000</x>
+      <x t="7" n="BootExecute">6e006100740069007600650000000000</x>
+      <x t="7" n="ExcludeFromKnownDlls">0000</x>
+      <x t="7" n="ObjectDirectories">5c00570069006e0064006f007700730000005c0052007000630043006f006e00740072006f006c0000000000</x>
+      <x t="4" n="ProtectionMode">9dffffff</x>
+      <k n="Environment">
+       <s t="2" n="ComSpec">%SystemRoot%\system32\cmd.exe</s>
+       <s n="NUMBER_OF_PROCESSORS">1</s>
+       <s n="OS">Windows_NT</s>
+       <s n="PROCESSOR_ARCHITECTURE">x86</s>
+       <s n="PROCESSOR_ARCHITECTURE">x86</s>
+       <s n="PROCESSOR_IDENTIFIER">x86 Family 6 Model 8 Stepping 1, GenuineIntel</s>
+       <s n="PROCESSOR_LEVEL">6</s>
+       <s n="PROCESSOR_REVISION">0801</s>
+       <s t="2" n="Path">%SystemRoot%\system32;%SystemRoot%</s>
+       <s n="SAFEBOOT_OPTION">0</s>
+       <s t="2" n="TEMP">%SystemRoot%\TEMP</s>
+       <s t="2" n="TMP">%SystemRoot%\TEMP</s>
+       <s t="2" n="windir">%SystemRoot%</s>
+      </k>
+      <k n="Memory Management">
+       <x t="7" n="PagingFiles">43003a005c007000610067006500660069006c0065002e007300790073002000320038003800200035003700360000000000</x>
+      </k>
+      <k n="DOS Devices">
+       <s n="AUX">\DosDevices\COM1</s>
+       <s n="MAILSLOT">\Device\MailSlot</s>
+       <s n="NUL">\Device\Null</s>
+       <s n="PIPE">\Device\NamedPipe</s>
+       <s n="PRN">\DosDevices\LPT1</s>
+       <s n="UNC">\Device\Mup</s>
+      </k>
+      <k n="KnownDLLs">
+       <s n="advapi32">advapi32.dll</s>
+       <s n="gdi32">gdi32.dll</s>
+       <s t="2" n="DllDirectory">%SystemRoot%\system32</s>
+       <s n="kernel32">kernel32.dll</s>
+       <s n="user32">user32.dll</s>
+      </k>
+      <k n="SubSystems">
+       <x t="2" n="Debug">0000</x>
+       <s t="2" n="Kmode">%SystemRoot%\system32\win32k.sys</s>
+       <x t="7" n="Optional">4f0073003200000050006f0073006900780000000000</x>
+       <s t="2" n="Os2">%SystemRoot%\system32\os2ss.exe</s>
+       <s t="2" n="Posix">%SystemRoot%\system32\ps2ss.exe</s>
+       <x t="7" n="Required">440065006200750067000000570069006e0064006f007700730000000000</x>
+       <s t="2" n="Windows">%SystemRoot%\system32\csrss.exe ObjectDirectory=\Windows SharedSection=1024,3072,512 Windows=On SubSystemType=Windows ServerDll=basesrv,1 ServerDll=winsrv:UserServerDllInitialization,3 ServerDll=winsrv:ConServerDllInitialization,2 ProfileControl=Off MaxRequestThreads=16</s>
+       <k n="CSRSS"/>
+      </k>
+      <k n="SFC">
+       <s n="CommonFilesDir">C:\Program Files\Common Files</s>
+       <s n="ProgramFilesDir">C:\Program Files</s>
+      </k>
+     </k>
+     <k n="Windows">
+      <x t="4" n="CSDVersion">00000100</x>
+      <x t="4" n="ErrorMode">00000000</x>
+      <x t="4" n="NoInteractiveServices">00000000</x>
+      <s t="2" n="SystemDirectory">%SystemRoot%\system32</s>
+     </k>
+    </k>
+   </k>
+   <k n="Setup">
+    <s n="SystemPartition">\Device\HarddiskVolume1</s>
+   </k>
+  </k>
+ </k>
+ <k n="USER">
+  <k n="S-1-5-18">
+   <k n="Software">
+    <k n="Microsoft">
+     <k n="Windows">
+      <k n="CurrentVersion">
+       <k n="Explorer">
+        <k n="User Shell Folders">
+         <s t="2" n="Common AppData">%ALLUSERSPROFILE%\Application Data</s>
+         <s t="2" n="Personal">%ALLUSERSPROFILE%\My Documents</s>
+         <s t="2" n="Local Settings">%ALLUSERSPROFILE%\Local Settings</s>
+        </k>
+       </k>
+      </k>
+     </k>
+    </k>
+   </k>
+   <k n="Keyboard Layout">
+    <k n="Preload">
+     <s n="1">00000409</s>
+    </k>
+   </k>
+   <k n="Control Panel">
+    <k n="International">
+     <s n="Locale">00000409</s>
+    </k>
+   </k>
+  </k>
+ </k>
+</k>

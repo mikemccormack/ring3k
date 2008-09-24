@@ -1,0 +1,108 @@
+/*
+ * native test suite
+ *
+ * Copyright 2006-2008 Mike McCormack
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ */
+
+#include <stdarg.h>
+#include "ntapi.h"
+#include "log.h"
+
+void test_mailslot(void)
+{
+	NTSTATUS r;
+	HANDLE mailslot;
+	IO_STATUS_BLOCK iosb;
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us;
+
+	r = NtCreateMailslotFile( 0, 0, 0, 0, 0, 0, 0, 0);
+	ok(r == STATUS_ACCESS_VIOLATION, "return wrong %08lx\n", r);
+
+	r = NtCreateMailslotFile( &mailslot, 0, 0, 0, 0, 0, 0x100, 0);
+	ok(r == STATUS_ACCESS_VIOLATION, "return wrong %08lx\n", r);
+
+	r = NtCreateMailslotFile( &mailslot, 0, 0, &iosb, 0, 0, 0x100, 0);
+	ok(r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateMailslotFile( &mailslot, FILE_ALL_ACCESS, 0, &iosb, FILE_SYNCHRONOUS_IO_NONALERT, 0x100, 0x100, 0);
+	ok(r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	oa.Length = 0;
+	oa.RootDirectory = 0;
+	oa.ObjectName = 0;
+	oa.Attributes = 0;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	r = NtCreateMailslotFile( &mailslot, 0, &oa, &iosb, 0, 0, 0, 0);
+	ok(r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	oa.Length = sizeof oa;
+
+	r = NtCreateMailslotFile( &mailslot, 0, &oa, &iosb, 0, 0, 0, 0);
+	ok(r == STATUS_OBJECT_PATH_SYNTAX_BAD, "return wrong %08lx\n", r);
+
+	us.Buffer = L"\\";
+	us.Length = 2;
+	us.MaximumLength = 0;
+
+	oa.ObjectName = &us;
+
+	r = NtCreateMailslotFile( &mailslot, 0, &oa, &iosb, 0, 0, 0, 0);
+	ok(r == STATUS_OBJECT_TYPE_MISMATCH, "return wrong %08lx\n", r);
+
+	us.Buffer = L"\\mailslot\\foo";
+	us.Length = 13;
+	us.MaximumLength = 0;
+
+	r = NtCreateMailslotFile( &mailslot, 0, &oa, &iosb, 0, 0, 0, 0);
+	ok(r == STATUS_OBJECT_NAME_INVALID, "return wrong %08lx\n", r);
+
+	us.Buffer = L"\\??\\mailslot\\foo";
+	us.Length = 16;
+
+	r = NtCreateMailslotFile( &mailslot, 0, &oa, &iosb, 0, 0, 0, 0);
+	ok(r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
+
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+
+	r = NtCreateMailslotFile( &mailslot, 0, &oa, &iosb, 0, 0, 0, 0);
+	ok(r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
+
+	r = NtCreateMailslotFile( &mailslot, 0, &oa, &iosb, FILE_CREATE, 0, 0, 0);
+	ok(r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
+
+	r = NtCreateMailslotFile( &mailslot, FILE_ALL_ACCESS, &oa, &iosb, 0, 0, 0, 0);
+	ok(r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
+
+	us.Buffer = L"\\??\\mailslot\\foo";
+	us.Length = 16*2;
+
+	r = NtCreateMailslotFile( &mailslot, FILE_ALL_ACCESS, &oa, &iosb, 0, 0, 0, 0);
+	ok(r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = NtClose( mailslot );
+	ok(r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+}
+
+void NtProcessStartup( void )
+{
+	log_init();
+	test_mailslot();
+	log_fini();
+}

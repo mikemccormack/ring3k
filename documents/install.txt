@@ -1,0 +1,4 @@
+TODO: determine how the install procedes
+
+usetup.exe (i386\usetup.exe) appears to be an NT native program.
+Seems like it is invoked by the loader.
