@@ -96,7 +96,7 @@ $(TARGET): $(OBJECTS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
 ttclient: client.c
-	$(CC) -o $@ $^ -static -nostartfiles -nodefaultlibs -Wl,-Ttext=0xa0000000
+	$(CC) -m32 -o $@ $^ -static -nostartfiles -nodefaultlibs -Wl,-Ttext=0xa0000000
 
 count:
 	wc $(HEADERS) $(C_SOURCES) $(CPP_SOURCES)
@@ -105,7 +105,7 @@ enc: enc.c
 	$(CC) -o enc -Wall enc.c
 
 fiber: fiber_test.o fiber.o platform.o
-	$(CXX) -o $@ $^ -lstdc++
+	$(CXX) -m32 -o $@ $^ -lstdc++
 
 clean:
 	rm -rf drive c:
