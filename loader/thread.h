@@ -28,25 +28,6 @@
 #include "token.h"
 #include "mem.h"
 
-#if 1
-// x86 kernel
-#define CS_LDT_ENTRY 14
-#define DS_LDT_ENTRY 15
-#define GS_LDT_ENTRY 6
-#define FS_LDT_ENTRY 7
-#else
-// x86-64 kernel
-#define CS_LDT_ENTRY 4
-#define DS_LDT_ENTRY 5
-#define GS_LDT_ENTRY 12
-#define FS_LDT_ENTRY 13
-#endif
-
-#define CS_SELECTOR ((CS_LDT_ENTRY << 3) | 3)
-#define DS_SELECTOR ((DS_LDT_ENTRY << 3) | 3)
-#define GS_SELECTOR ((GS_LDT_ENTRY << 3) | 3)
-#define FS_SELECTOR ((FS_LDT_ENTRY << 3) | 3)
-
 #define PAGE_SIZE 0x1000
 
 class thread_t;

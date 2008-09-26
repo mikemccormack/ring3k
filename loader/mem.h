@@ -53,6 +53,7 @@ public:
 	virtual mblock* find_block( BYTE *addr ) = 0;
 	virtual const char *get_symbol( BYTE *address ) = 0;
 	virtual void run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec ) = 0;
+	virtual void init_context( CONTEXT& ctx ) = 0;
 };
 
 unsigned int allocate_core_memory(unsigned int size);
@@ -186,6 +187,7 @@ public:
 	virtual mblock* find_block( BYTE *addr );
 	virtual const char *get_symbol( BYTE *address );
 	virtual void run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec ) = 0;
+	virtual void init_context( CONTEXT& ctx ) = 0;
 };
 
 extern struct address_space_impl *(*pcreate_address_space)();

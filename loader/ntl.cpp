@@ -135,15 +135,8 @@ NTSTATUS create_initial_process( thread_t **t, OBJECT_ATTRIBUTES *oa )
 	init_teb.StackCommitMax = (BYTE*)init_teb.StackCommit - PAGE_SIZE;
 
 	/* initialize the first thread's context */
-	memset( &ctx, 0, sizeof ctx );
-	ctx.ContextFlags = CONTEXT_CONTROL;
+	p->vm->init_context( ctx );
 	ctx.Eip = (DWORD) get_entry_point( p );
-	ctx.SegFs = FS_SELECTOR;
-	ctx.SegCs = CS_SELECTOR;
-	ctx.SegSs = DS_SELECTOR;
-	ctx.SegDs = DS_SELECTOR;
-	ctx.SegEs = DS_SELECTOR;
-	ctx.EFlags = 0x216;
 	ctx.Esp = (DWORD) pstack + stack_size - 8;
 
 	/* when starting nt processes, make the PEB the first arg of NtProcessStartup */

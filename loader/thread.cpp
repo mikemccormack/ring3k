@@ -220,18 +220,10 @@ ULONG runlist_entry_t::num_active_threads()
 
 int thread_impl_t::set_initial_regs( void *start, void *stack)
 {
-	memset( &ctx, 0, sizeof ctx );
-
-	ctx.ContextFlags = CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_CONTROL;
+	process->vm->init_context( ctx );
 
 	ctx.Eip = (DWORD) start;
 	ctx.Esp = (DWORD) stack;
-	ctx.SegFs = FS_SELECTOR;
-	ctx.SegDs = DS_SELECTOR;
-	ctx.SegEs = DS_SELECTOR;
-	ctx.SegSs = DS_SELECTOR;
-	ctx.SegCs = CS_SELECTOR;
-	ctx.EFlags = 0x00000296;
 
 	context_changed = TRUE;
 
@@ -787,12 +779,6 @@ int thread_impl_t::run()
 			dprintf("%04lx: thread state wrong (%d)!\n", trace_id(), ThreadState);
 			assert (0);
 		}
-
-		// HACK: seems that somewhere in ntdll, the DS/ES registers are set to 0x20
-		// causing a crash when executing instructions like REP STOSD
-		ctx.SegDs = DS_SELECTOR;
-		ctx.SegEs = DS_SELECTOR;
-		ctx.SegSs = DS_SELECTOR;
 
 		// run for 10ms
 		LARGE_INTEGER timeout;

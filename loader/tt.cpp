@@ -76,6 +76,7 @@ public:
 	virtual int mmap( BYTE *address, size_t length, int prot, int flags, int file, off_t offset );
 	virtual int munmap( BYTE *address, size_t length );
 	virtual void run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec );
+	virtual unsigned short get_userspace_fs();
 };
 
 pid_t tt_address_space_impl::get_child_pid()
@@ -127,10 +128,16 @@ pid_t tt_address_space_impl::create_tracee( int& in_fd, int& out_fd )
 
 	::ptrace( PTRACE_ATTACH, pid, 0, 0 );
 	int status;
-	if (0 && pid != wait4( pid, &status, WUNTRACED, NULL ))
+	if (pid != wait4( pid, &status, WUNTRACED, NULL ))
 		return -1;
 
 	r = ::ptrace( PTRACE_CONT, pid, 0, 0 );
+
+	// read a single character from the stub to synchronize
+	do {
+		char dummy;
+		r = read(out_fd, &dummy, 1);
+	} while (r == -1 && errno == EINTR);
 
 	//fprintf(stderr, "created process %d\n", pid );
 
@@ -240,6 +247,12 @@ void tt_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int single_
 
 	suspend();
 	ptrace_address_space_impl::run( TebBaseAddress, ctx, single_step, timeout, exec );
+}
+
+unsigned short tt_address_space_impl::get_userspace_fs()
+{
+	suspend();
+	return stub_regs[FS];
 }
 
 void tt_address_space_impl::suspend()

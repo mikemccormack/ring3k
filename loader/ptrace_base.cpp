@@ -254,17 +254,17 @@ void ptrace_address_space_impl::set_itimer_signal()
 
 void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec )
 {
-	set_userspace_fs(TebBaseAddress);
+	set_userspace_fs(TebBaseAddress, ctx->SegFs);
 
 	alarm_timeout( timeout );
 
 	while (1)
 	{
 		int status = ptrace_run( ctx, 0 );
-		if ( WIFSIGNALED(status) )
+		if (WIFSIGNALED(status))
 			break;
 
-		if (WIFEXITED(status) )
+		if (WIFEXITED(status))
 			break;
 
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGSEGV)
@@ -295,20 +295,44 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 	cancel_timer();
 }
 
-int ptrace_address_space_impl::set_userspace_fs(void *TebBaseAddress)
+unsigned short ptrace_address_space_impl::get_userspace_code_seg()
+{
+	unsigned short cs;
+	__asm__ __volatile__ ( "\n\tmovw %%cs, %0\n" : "=r"( cs ) : );
+	return cs;
+}
+
+unsigned short ptrace_address_space_impl::get_userspace_data_seg()
+{
+	unsigned short cs;
+	__asm__ __volatile__ ( "\n\tmovw %%ds, %0\n" : "=r"( cs ) : );
+	return cs;
+}
+
+void ptrace_address_space_impl::init_context( CONTEXT& ctx )
+{
+	memset( &ctx, 0, sizeof ctx );
+	ctx.SegFs = get_userspace_fs();
+	ctx.SegDs = get_userspace_data_seg();
+	ctx.SegEs = get_userspace_data_seg();
+	ctx.SegSs = get_userspace_data_seg();
+	ctx.SegCs = get_userspace_code_seg();
+	ctx.EFlags = 0x00000296;
+}
+
+int ptrace_address_space_impl::set_userspace_fs(void *TebBaseAddress, ULONG fs)
 {
 	struct user_desc ldt;
 	int r;
 
 	memset( &ldt, 0, sizeof ldt );
-	ldt.entry_number = FS_LDT_ENTRY;
+	ldt.entry_number = (fs >> 3);
 	ldt.base_addr = (unsigned long) TebBaseAddress;
 	ldt.limit = 0xfff;
 	ldt.seg_32bit = 1;
 
 	r = ptrace_set_thread_area( get_child_pid(), &ldt );
 	if (r<0)
-		die("set %%fs failed, errno = %d child = %d\n", errno, get_child_pid());
-
+		die("set %%fs failed, fs = %ld errno = %d child = %d\n", fs, errno, get_child_pid());
 	return r;
 }

@@ -53,6 +53,7 @@ class skas3_address_space_impl: public ptrace_address_space_impl
 {
 	static int num_address_spaces;
 	int fd;
+	static unsigned short user_fs;
 public:
 	static pid_t child_pid;
 	skas3_address_space_impl(int _fd);
@@ -61,10 +62,14 @@ public:
 	virtual int mmap( BYTE *address, size_t length, int prot, int flags, int file, off_t offset );
 	virtual int munmap( BYTE *address, size_t length );
 	virtual void run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec );
+	static pid_t create_tracee(void);
+	static void init_fs(void);
+	virtual unsigned short get_userspace_fs();
 };
 
 pid_t skas3_address_space_impl::child_pid = -1;
 int skas3_address_space_impl::num_address_spaces;
+unsigned short skas3_address_space_impl::user_fs;
 
 // target for timer signals
 pid_t skas3_address_space_impl::get_child_pid()
@@ -77,36 +82,89 @@ int do_fork_child(void *arg)
 	_exit(1);
 }
 
-pid_t create_tracee(void)
+/* from Wine */
+struct modify_ldt_s
 {
-	const int stack_size = 0x1000;
-	void *stack;
-	int status;
-	pid_t pid;
+    unsigned int  entry_number;
+    unsigned long base_addr;
+    unsigned int  limit;
+    unsigned int  seg_32bit : 1;
+    unsigned int  contents : 2;
+    unsigned int  read_exec_only : 1;
+    unsigned int  limit_in_pages : 1;
+    unsigned int  seg_not_present : 1;
+    unsigned int  usable : 1;
+    unsigned int  garbage : 25;
+};
 
-	stack = mmap_anon( 0, stack_size, PROT_READ | PROT_WRITE );
+static inline int set_thread_area( struct modify_ldt_s *ptr )
+{
+    int res;
+    __asm__ __volatile__( "pushl %%ebx\n\t"
+                          "movl %3,%%ebx\n\t"
+                          "int $0x80\n\t"
+                          "popl %%ebx"
+                          : "=a" (res), "=m" (*ptr)
+                          : "0" (243) /* SYS_set_thread_area */, "q" (ptr), "m" (*ptr) );
+    if (res >= 0) return res;
+    errno = -res;
+    return -1;
+}
 
-#ifdef HAVE_CLONE
-	pid = clone( do_fork_child, (char*) stack + stack_size,
-					   CLONE_FILES | CLONE_VM | CLONE_STOPPED | SIGCHLD, NULL );
-#else
-	pid = fork();
-#endif
-
-	if (pid == -1)
-		return pid;
-	if (pid == 0)
+// allocate fs in the current process
+void skas3_address_space_impl::init_fs(void)
+{
+	unsigned short fs;
+	__asm__ __volatile__ ( "\n\tmovw %%fs, %0\n" : "=r"( fs ) : );
+	if (fs != 0)
 	{
-		// parent will take over here
-		::ptrace( PTRACE_TRACEME, 0, 0, 0 );
-		kill( getpid(), SIGCHLD );
-		// the next line should not be reached
-		_exit(1);
+		user_fs = fs;
+		return;
 	}
 
-	::ptrace( PTRACE_ATTACH, pid, 0, 0 );
-	if (0 && pid != wait4( pid, &status, WUNTRACED, NULL ))
+	struct modify_ldt_s ldt;
+	memset( &ldt, 0, sizeof ldt );
+	ldt.entry_number = -1;
+	int r = set_thread_area( &ldt );
+	if (r<0)
+		die("alloc %%fs failed, errno = %d\n", errno);
+	user_fs = (ldt.entry_number << 3) | 3;
+}
+
+unsigned short skas3_address_space_impl::get_userspace_fs()
+{
+	return user_fs;
+}
+
+pid_t skas3_address_space_impl::create_tracee(void)
+{
+	pid_t pid;
+
+	// init fs before forking
+	init_fs();
+
+	// clone this process
+	const int stack_size = 0x1000;
+	void *stack = mmap_anon( 0, stack_size, PROT_READ | PROT_WRITE );
+	pid = clone( do_fork_child, (char*) stack + stack_size,
+		CLONE_FILES | CLONE_STOPPED | SIGCHLD, NULL );
+	if (pid == -1)
+	{
+		dprintf("clone failed (%d)\n", errno);
+		return pid;
+	}
+	if (pid == 0)
+	{
+		// using CLONE_STOPPED we should never get here
+		die("CLONE_STOPPED\n");
+	}
+
+	int r = ::ptrace( PTRACE_ATTACH, pid, 0, 0 );
+	if (r < 0)
+	{
+		dprintf("ptrace_attach failed (%d)\n", errno);
 		return -1;
+	}
 
 	return pid;
 }
@@ -124,7 +182,7 @@ void skas3_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sing
 	/* load the process address space into the child process */
 	int r = ptrace_set_address_space( child_pid, fd );
 	if (r < 0)
-		die("ptrace_set_address_space failed %d\n", r);
+		die("ptrace_set_address_space failed %d (%d)\n", r, errno);
 
 	ptrace_address_space_impl::run( TebBaseAddress, ctx, single_step, timeout, exec );
 }
@@ -149,7 +207,7 @@ address_space_impl* create_skas3_address_space()
 	{
 		// Set up the signal handler and unmask it first.
 		// The child's signal handler will be unmasked too.
-		skas3_address_space_impl::child_pid = create_tracee();
+		skas3_address_space_impl::child_pid = skas3_address_space_impl::create_tracee();
 	}
 
 	int fd = ptrace_alloc_address_space_fd();

@@ -147,5 +147,5 @@ test.tt:
 	@echo "Thread tracing tests"
 	for tc in $(TESTLIST) ; do echo $$tc ; ./runtest -q -t $$tc || exit 1 ; done
 
-test: test.tt
+test: test.skas test.tt
 

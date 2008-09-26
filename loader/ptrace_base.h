@@ -37,7 +37,11 @@ protected:
 	virtual void handle( int signal );
 	virtual void run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec );
 	virtual void alarm_timeout(LARGE_INTEGER& timeout);
-	virtual int set_userspace_fs(void *TebBaseAddress);
+	virtual int set_userspace_fs(void *TebBaseAddress, ULONG fs);
+	virtual void init_context( CONTEXT& ctx );
+	virtual unsigned short get_userspace_fs() = 0;
+	virtual unsigned short get_userspace_data_seg();
+	virtual unsigned short get_userspace_code_seg();
 };
 
 

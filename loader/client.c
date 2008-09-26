@@ -90,12 +90,75 @@ int sys_mprotect( const void *start, size_t len, int prot )
 	return r;
 }
 
+/* from Wine */
+struct modify_ldt_s
+{
+    unsigned int  entry_number;
+    unsigned long base_addr;
+    unsigned int  limit;
+    unsigned int  seg_32bit : 1;
+    unsigned int  contents : 2;
+    unsigned int  read_exec_only : 1;
+    unsigned int  limit_in_pages : 1;
+    unsigned int  seg_not_present : 1;
+    unsigned int  usable : 1;
+    unsigned int  garbage : 25;
+};
+
+static inline int set_thread_area( struct modify_ldt_s *ptr )
+{
+    int res;
+    __asm__ __volatile__( "pushl %%ebx\n\t"
+                          "movl %3,%%ebx\n\t"
+                          "int $0x80\n\t"
+                          "popl %%ebx"
+                          : "=a" (res), "=m" (*ptr)
+                          : "0" (243) /* SYS_set_thread_area */, "q" (ptr), "m" (*ptr) );
+    return res;
+}
+
 void dprintf(const char *string)
 {
 	int n = 0;
 	while (string[n])
 		n++;
 	sys_write( 2, string, n );
+}
+
+// allocate fs in the current process
+void init_fs(void)
+{
+	unsigned short fs;
+
+	// check is somebody set fs already
+	__asm__ __volatile__ ( "\n\tmovw %%fs, %0\n" : "=r"( fs ) : );
+	if (fs != 0)
+		return;
+
+	// allocate fs
+	struct modify_ldt_s ldt;
+	ldt.entry_number = 0;
+	ldt.base_addr = 0;
+	ldt.limit = 0;
+	ldt.seg_32bit = 0;
+	ldt.contents = 0;
+	ldt.read_exec_only = 0;
+	ldt.limit_in_pages = 0;
+	ldt.seg_not_present = 0;
+	ldt.usable = 0;
+	ldt.garbage = 0;
+	ldt.entry_number = -1;
+
+	int r = set_thread_area( &ldt );
+	if (r<0)
+	{
+		dprintf("failed to allocate an ldt\n");
+		return;
+	}
+
+	// set fs to the selector we allocated
+	fs = (ldt.entry_number << 3) | 3;
+	__asm__ __volatile__ ( "\n\tmovw %0, %%fs\n" : : "r"( fs ) );
 }
 
 char *append_string( char *target, const char *source )
@@ -164,6 +227,14 @@ int _start( void )
 	struct tt_req req;
 	struct tt_reply reply;
 	int r, finished = 0;
+
+	init_fs();
+
+	// write a single character to synchronize
+	do {
+		char ch = '.';
+		r = sys_write(1, &ch, sizeof ch);
+	} while (r == -EINTR);
 
 	while (!finished)
 	{
