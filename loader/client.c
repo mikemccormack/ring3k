@@ -63,6 +63,15 @@ int sys_close( int fd )
 	return r;
 }
 
+int sys_exit( int ret )
+{
+	int r;
+	__asm__ __volatile__(
+		"\tint $0x80\n"
+	: "=a" (r) : "a" (SYS_exit), "b" (ret) );
+	return r;
+}
+
 void* sys_mmap( void *start, size_t length, int prot, int flags, int fd, off_t offset )
 {
 	void* r;
@@ -274,6 +283,6 @@ int _start( void )
 	}
 
 	dprintf("exit!\n");
-
-	return !finished;
+	sys_exit(1);
+	return 0;
 }
