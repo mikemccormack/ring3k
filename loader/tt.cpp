@@ -126,7 +126,7 @@ pid_t tt_address_space_impl::create_tracee( int& in_fd, int& out_fd )
 	in_fd = infds[1];
 	out_fd = outfds[0];
 
-	::ptrace( PTRACE_ATTACH, pid, 0, 0 );
+	// wait for the child
 	int status;
 	if (pid != wait4( pid, &status, WUNTRACED, NULL ))
 		return -1;
@@ -269,6 +269,8 @@ void tt_address_space_impl::suspend()
 	{
 		int status;
 		pid_t pid = wait4( child_pid, &status, WUNTRACED, NULL );
+		if (pid < 0)
+			die("wait failed\n");
 		if (pid != child_pid)
 			continue;
 		if (WIFEXITED(status) )
