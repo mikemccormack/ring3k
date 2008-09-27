@@ -82,6 +82,14 @@ int ptrace_address_space_impl::set_context( PCONTEXT ctx )
 	regs[EBP] = ctx->Ebp;
 	regs[EFL] = ctx->EFlags;
 
+        // hack - ignore the data and code segments passed from userspace
+        // ntdll uses values that disagree with what Linux supports
+        regs[DS] = get_userspace_data_seg();
+        regs[ES] = get_userspace_data_seg();
+        regs[SS] = get_userspace_data_seg();
+        regs[SS] = get_userspace_data_seg();
+        regs[CS] = get_userspace_code_seg();
+
 	return ptrace_set_regs( get_child_pid(), regs );
 }
 
