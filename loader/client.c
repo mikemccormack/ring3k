@@ -270,6 +270,9 @@ int _start( void )
 		case tt_req_exit:
 			reply.r = 0;
 			finished = 1;
+		default:
+			dprintf("protocol error\n");
+			sys_exit(1);
 		}
 
 		do {
