@@ -120,11 +120,16 @@ dd if=/dev/null of=drive/winnt/security/edb007ec.log bs=1024 count=1024
 for file in $sys32files
 do
 	# copy a file from the ISO
-	isoinfo -x "/I386/$file" -i "$iso" > "$tmp"
-	if test \! -s "$tmp"
+	if isoinfo -x "/I386/$file" -i "$iso" > "$tmp"
 	then
-		echo "Failed to extract $file"
-		continue
+		if test \! -s "$tmp"
+		then
+			echo "Failed to extract $file"
+			exit 1
+		fi
+	else
+		echo "Failed to read $iso"
+		exit 1
 	fi
 
 	# extract the file
