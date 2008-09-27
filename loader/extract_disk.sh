@@ -90,7 +90,7 @@ sys32files="
  WSOCK32.DL_
 "
 
-tmp="/tmp/win2k-temp.cab"
+tmp=".$$.win2k-temp.cab"
 root="drive"
 target="$root/winnt/system32"
 iso="win2k.iso"
@@ -125,10 +125,12 @@ do
 		if test \! -s "$tmp"
 		then
 			echo "Failed to extract $file"
+			rm -f "$tmp"
 			exit 1
 		fi
 	else
 		echo "Failed to read $iso"
+		rm -f "$tmp"
 		exit 1
 	fi
 
@@ -143,6 +145,7 @@ do
 		echo "Copying    $lower"
 		cp "$tmp" "$target/$lower"
 	fi
+	rm -f "$tmp"
 done
 
 cat > "$root/winnt/system.ini" <<EOF
