@@ -172,8 +172,6 @@ pid_t skas3_address_space_impl::create_tracee(void)
 skas3_address_space_impl::skas3_address_space_impl(int _fd) :
 	fd(_fd)
 {
-	if (num_address_spaces == 0)
-		set_itimer_signal();
 	num_address_spaces++;
 }
 
@@ -237,6 +235,7 @@ bool init_skas()
 	}
 	close( fd );
 	dprintf("using skas3\n");
+	ptrace_address_space_impl::set_signals();
 	pcreate_address_space = &create_skas3_address_space;
 	return true;
 }

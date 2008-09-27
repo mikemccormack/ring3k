@@ -232,6 +232,7 @@ void ptrace_address_space_impl::handle( int signal )
 {
 	//dprintf("signal %d\n", signal);
 	pid_t pid = get_child_pid();
+	assert( pid != -1);
 #ifdef HAVE_SIGQUEUE
 	sigval val;
 	val.sival_int = 0;
@@ -241,7 +242,7 @@ void ptrace_address_space_impl::handle( int signal )
 #endif
 }
 
-void ptrace_address_space_impl::set_itimer_signal()
+void ptrace_address_space_impl::set_signals()
 {
 	struct sigaction sa;
 

@@ -27,7 +27,6 @@ class ptrace_address_space_impl: public address_space_impl
 {
 protected:
 	static ptrace_address_space_impl *sig_target;
-	static void set_itimer_signal();
 	static void cancel_timer();
 	static void sigitimer_handler(int signal);
 	int get_context( PCONTEXT ctx );
@@ -42,6 +41,8 @@ protected:
 	virtual unsigned short get_userspace_fs() = 0;
 	virtual unsigned short get_userspace_data_seg();
 	virtual unsigned short get_userspace_code_seg();
+public:
+	static void set_signals();
 };
 
 

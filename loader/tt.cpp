@@ -90,8 +90,6 @@ pid_t tt_address_space_impl::create_tracee( int& in_fd, int& out_fd )
 	pid_t pid;
 	int infds[2], outfds[2];
 
-	set_itimer_signal();
-
 	r = pipe( infds );
 	if (r != 0)
 		return 0;
@@ -159,6 +157,7 @@ tt_address_space_impl::~tt_address_space_impl()
 	//dprintf(stderr,"~tt_address_space_impl()\n");
 	destroy();
 	ptrace( PTRACE_KILL, child_pid, 0, 0 );
+	assert( child_pid != -1 );
 	kill( child_pid, SIGTERM );
 	child_pid = -1;
 }
@@ -170,7 +169,7 @@ address_space_impl* create_tt_address_space()
 	// The child's signal handler will be unmasked too.
 	int in_fd = -1, out_fd = -1;
 	pid_t pid = tt_address_space_impl::create_tracee( in_fd, out_fd );
-	if (!pid)
+	if (pid < 0)
 		return 0;
 
 	return new tt_address_space_impl( pid, in_fd, out_fd );
@@ -263,7 +262,8 @@ void tt_address_space_impl::suspend()
 	// no signals!
 	assert( sig_target == 0 );
 
-	kill( child_pid, SIGHUP );
+	assert( child_pid != -1 );
+	kill( child_pid, SIGSTOP );
 
 	while (1)
 	{
@@ -276,7 +276,7 @@ void tt_address_space_impl::suspend()
 		if (WIFEXITED(status) )
 			die("Client died\n");
 
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGHUP)
+		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGSTOP)
 		{
 			break;
 		}
@@ -313,6 +313,7 @@ void tt_address_space_impl::run_stub()
 bool init_tt()
 {
 	dprintf("using tt\n");
+	ptrace_address_space_impl::set_signals();
 	pcreate_address_space = &create_tt_address_space;
 	return true;
 }
