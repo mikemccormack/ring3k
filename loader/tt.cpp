@@ -69,6 +69,7 @@ protected:
 	void run_stub();
 	void suspend();
 public:
+	static void wait_for_signal( pid_t pid, int signal );
 	static pid_t create_tracee( int& in_fd, int& out_fd );
 	tt_address_space_impl( pid_t pid, int in_fd, int out_fd );
 	virtual pid_t get_child_pid();
@@ -84,6 +85,29 @@ pid_t tt_address_space_impl::get_child_pid()
 	return child_pid;
 }
 
+void tt_address_space_impl::wait_for_signal( pid_t pid, int signal )
+{
+	while (1)
+	{
+		int r, status = 0;
+		r = wait4( pid, &status, WUNTRACED, NULL );
+		if (r < 0)
+			die("wait_for_signal: wait4() failed %d\n", errno);
+		if (r != pid)
+			continue;
+		if (WIFEXITED(status) )
+			die("Client died\n");
+
+		if (WIFSTOPPED(status) && WEXITSTATUS(status) == signal)
+			return;
+
+		dprintf("stray signal %d\n", WEXITSTATUS(status));
+
+		// start the child again so we can get the next signal
+		ptrace( PTRACE_CONT, pid, 0, 0 );
+	}
+}
+
 pid_t tt_address_space_impl::create_tracee( int& in_fd, int& out_fd )
 {
 	int r;
@@ -92,15 +116,18 @@ pid_t tt_address_space_impl::create_tracee( int& in_fd, int& out_fd )
 
 	r = pipe( infds );
 	if (r != 0)
-		return 0;
+		return -1;
 
 	r = pipe( outfds );
 	if (r != 0)
-		return 0;
+		return -1;
 
 	pid = fork();
 	if (pid == -1)
+	{
+		dprintf("fork() failed %d\n", errno);
 		return pid;
+	}
 	if (pid == 0)
 	{
 		// close stdin and stdout
@@ -124,10 +151,7 @@ pid_t tt_address_space_impl::create_tracee( int& in_fd, int& out_fd )
 	in_fd = infds[1];
 	out_fd = outfds[0];
 
-	// wait for the child
-	int status;
-	if (pid != wait4( pid, &status, WUNTRACED, NULL ))
-		return -1;
+	wait_for_signal( pid, SIGTRAP );
 
 	r = ::ptrace( PTRACE_CONT, pid, 0, 0 );
 
@@ -265,26 +289,7 @@ void tt_address_space_impl::suspend()
 	assert( child_pid != -1 );
 	kill( child_pid, SIGSTOP );
 
-	while (1)
-	{
-		int status;
-		pid_t pid = wait4( child_pid, &status, WUNTRACED, NULL );
-		if (pid < 0)
-			die("wait failed\n");
-		if (pid != child_pid)
-			continue;
-		if (WIFEXITED(status) )
-			die("Client died\n");
-
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGSTOP)
-		{
-			break;
-		}
-		dprintf("stray signal %d\n", WEXITSTATUS(status));
-
-		// start the child again so we can get the next signal
-		ptrace( PTRACE_CONT, child_pid, 0, 0 );
-	}
+	wait_for_signal( child_pid, SIGSTOP );
 
 	if (state == stub_running)
 	{
