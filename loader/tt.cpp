@@ -58,8 +58,7 @@ class tt_address_space_impl: public ptrace_address_space_impl
 protected:
 	int userside_req( int type );
 public:
-	static pid_t create_tracee();
-	tt_address_space_impl( pid_t pid );
+	tt_address_space_impl();
 	virtual pid_t get_child_pid();
 	virtual ~tt_address_space_impl();
 	virtual int mmap( BYTE *address, size_t length, int prot, int flags, int file, off_t offset );
@@ -72,17 +71,15 @@ pid_t tt_address_space_impl::get_child_pid()
 	return child_pid;
 }
 
-pid_t tt_address_space_impl::create_tracee()
+tt_address_space_impl::tt_address_space_impl()
 {
 	int r;
 	pid_t pid;
 
 	pid = fork();
 	if (pid == -1)
-	{
-		dprintf("fork() failed %d\n", errno);
-		return pid;
-	}
+		die("fork() failed %d\n", errno);
+
 	if (pid == 0)
 	{
 		::ptrace( PTRACE_TRACEME, 0, 0, 0 );
@@ -94,17 +91,16 @@ pid_t tt_address_space_impl::create_tracee()
 	// trace through exec after traceme
 	wait_for_signal( pid, SIGTRAP );
 	r = ::ptrace( PTRACE_CONT, pid, 0, 0 );
+	if (r < 0)
+		die("PTRACE_CONT failed (%d)\n", errno);
 
 	// client should hit a breakpoint
 	wait_for_signal( pid, SIGTRAP );
+	r = ptrace_get_regs( pid, stub_regs );
+	if (r < 0)
+		die("constructor: ptrace_get_regs failed (%d)\n", errno);
 
-	return pid;
-}
-
-tt_address_space_impl::tt_address_space_impl(pid_t pid) :
-	child_pid(pid)
-{
-	//dprintf("tt_address_space_impl()\n");
+	child_pid = pid;
 }
 
 tt_address_space_impl::~tt_address_space_impl()
@@ -123,11 +119,7 @@ address_space_impl* create_tt_address_space()
 	//dprintf("create_tt_address_space\n");
 	// Set up the signal handler and unmask it first.
 	// The child's signal handler will be unmasked too.
-	pid_t pid = tt_address_space_impl::create_tracee();
-	if (pid < 0)
-		return 0;
-
-	return new tt_address_space_impl( pid );
+	return new tt_address_space_impl();
 }
 
 int tt_address_space_impl::userside_req( int type )
@@ -144,11 +136,10 @@ int tt_address_space_impl::userside_req( int type )
 	if (r < 0)
 		die("ptrace( PTRACE_CONT ) failed\n");
 
-	wait_for_signal( child_pid, SIGSTOP );
-
+	wait_for_signal( child_pid, SIGTRAP );
 	r = ptrace_get_regs( child_pid, stub_regs );
 	if (r < 0)
-		die("failed to save stub registers\n");
+		die("ptrace_get_regs failed (%d)\n", errno);
 
 	return stub_regs[EAX];
 }
