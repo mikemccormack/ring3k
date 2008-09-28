@@ -55,7 +55,6 @@ Files
 -----
 documents/  - a few notes
 loader/     - implementation of the NT userspace loader (an NT-like kernel)
-ntext2fs/   - NT filesystem simulation and maintainence utils
 tests/      - test cases that run on both NT and the loader
 libudis86/  - the udis86 disassembler
 
