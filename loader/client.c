@@ -234,54 +234,35 @@ int do_prot( struct tt_req_prot *req )
 int _start( void )
 {
 	struct tt_req req;
-	struct tt_reply reply;
-	int r, finished = 0;
+	int r = 0, finished = 0;
 
 	init_fs();
 
-	// write a single character to synchronize
-	do {
-		char ch = '.';
-		r = sys_write(1, &ch, sizeof ch);
-	} while (r == -EINTR);
-
 	while (!finished)
 	{
-		do {
-			r = sys_read( 0, &req, sizeof req );
-		} while (r == -EINTR);
-		if (r != sizeof req)
-		{
-			dprintf("sys_read failed\n");
-			break;
-		}
+		// throw an exception
+		// the trace client will trap and fill req
+		__asm__ __volatile__(
+                          "int $3\n\t"
+                          : : "a"(r), "b"(&req) );
 
 		switch (req.type)
 		{
 		case tt_req_map:
-			reply.r = do_mmap( &req.u.map );
+			r = do_mmap( &req.u.map );
 			break;
 		case tt_req_umap:
-			reply.r = do_umap( &req.u.umap );
+			r = do_umap( &req.u.umap );
 			break;
 		case tt_req_prot:
-			reply.r = do_prot( &req.u.prot );
+			r = do_prot( &req.u.prot );
 			break;
 		case tt_req_exit:
-			reply.r = 0;
+			r = 0;
 			finished = 1;
 		default:
 			dprintf("protocol error\n");
 			sys_exit(1);
-		}
-
-		do {
-			r = sys_write(1, &reply, sizeof reply);
-		} while (r == -EINTR);
-		if (r != sizeof reply)
-		{
-			dprintf("write failed\n");
-			break;
 		}
 	}
 

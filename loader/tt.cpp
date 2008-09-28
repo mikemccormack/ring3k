@@ -53,30 +53,17 @@
 
 class tt_address_space_impl: public ptrace_address_space_impl
 {
-	enum stub_state {
-		stub_running,
-		stub_suspended,
-	};
 	long stub_regs[FRAME_SIZE];
-	char buffer[64]; // same size as tt stub's buffer
-	stub_state state;
-	int in_fd;
-	int out_fd;
 	pid_t child_pid;
 protected:
-	//int ptrace_run( PCONTEXT ctx, int single_step );
-	int readwrite( struct tt_req *req );
-	void run_stub();
-	void suspend();
+	int userside_req( int type );
 public:
-	static void wait_for_signal( pid_t pid, int signal );
-	static pid_t create_tracee( int& in_fd, int& out_fd );
-	tt_address_space_impl( pid_t pid, int in_fd, int out_fd );
+	static pid_t create_tracee();
+	tt_address_space_impl( pid_t pid );
 	virtual pid_t get_child_pid();
 	virtual ~tt_address_space_impl();
 	virtual int mmap( BYTE *address, size_t length, int prot, int flags, int file, off_t offset );
 	virtual int munmap( BYTE *address, size_t length );
-	virtual void run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec );
 	virtual unsigned short get_userspace_fs();
 };
 
@@ -85,46 +72,10 @@ pid_t tt_address_space_impl::get_child_pid()
 	return child_pid;
 }
 
-void tt_address_space_impl::wait_for_signal( pid_t pid, int signal )
-{
-	while (1)
-	{
-		int r, status = 0;
-		r = wait4( pid, &status, WUNTRACED, NULL );
-		if (r < 0)
-		{
-			if (errno == EINTR)
-				continue;
-			die("wait_for_signal: wait4() failed %d\n", errno);
-		}
-		if (r != pid)
-			continue;
-		if (WIFEXITED(status) )
-			die("Client died\n");
-
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == signal)
-			return;
-
-		dprintf("stray signal %d\n", WEXITSTATUS(status));
-
-		// start the child again so we can get the next signal
-		ptrace( PTRACE_CONT, pid, 0, 0 );
-	}
-}
-
-pid_t tt_address_space_impl::create_tracee( int& in_fd, int& out_fd )
+pid_t tt_address_space_impl::create_tracee()
 {
 	int r;
 	pid_t pid;
-	int infds[2], outfds[2];
-
-	r = pipe( infds );
-	if (r != 0)
-		return -1;
-
-	r = pipe( outfds );
-	if (r != 0)
-		return -1;
 
 	pid = fork();
 	if (pid == -1)
@@ -134,46 +85,23 @@ pid_t tt_address_space_impl::create_tracee( int& in_fd, int& out_fd )
 	}
 	if (pid == 0)
 	{
-		// close stdin and stdout
-		close(0);
-		close(1);
-
-		dup2( infds[0], STDIN_FILENO );
-		close( infds[1] );
-
-		dup2( outfds[1], STDOUT_FILENO );
-		close( outfds[0] );
-
 		::ptrace( PTRACE_TRACEME, 0, 0, 0 );
 		r = ::execl("./ttclient", "./ttclient", NULL );
 		// the next line should not be reached
 		die("exec failed %d\n", r);
 	}
 
-	close( infds[0] );
-	close( outfds[1] );
-	in_fd = infds[1];
-	out_fd = outfds[0];
-
+	// trace through exec after traceme
 	wait_for_signal( pid, SIGTRAP );
-
 	r = ::ptrace( PTRACE_CONT, pid, 0, 0 );
 
-	// read a single character from the stub to synchronize
-	do {
-		char dummy;
-		r = read(out_fd, &dummy, 1);
-	} while (r == -1 && errno == EINTR);
-
-	//fprintf(stderr, "created process %d\n", pid );
+	// client should hit a breakpoint
+	wait_for_signal( pid, SIGTRAP );
 
 	return pid;
 }
 
-tt_address_space_impl::tt_address_space_impl(pid_t pid, int in, int out) :
-	state(stub_running),
-	in_fd(in),
-	out_fd(out),
+tt_address_space_impl::tt_address_space_impl(pid_t pid) :
 	child_pid(pid)
 {
 	//dprintf("tt_address_space_impl()\n");
@@ -195,128 +123,63 @@ address_space_impl* create_tt_address_space()
 	//dprintf("create_tt_address_space\n");
 	// Set up the signal handler and unmask it first.
 	// The child's signal handler will be unmasked too.
-	int in_fd = -1, out_fd = -1;
-	pid_t pid = tt_address_space_impl::create_tracee( in_fd, out_fd );
+	pid_t pid = tt_address_space_impl::create_tracee();
 	if (pid < 0)
 		return 0;
 
-	return new tt_address_space_impl( pid, in_fd, out_fd );
+	return new tt_address_space_impl( pid );
 }
 
-int tt_address_space_impl::readwrite( struct tt_req *req )
+int tt_address_space_impl::userside_req( int type )
 {
+	struct tt_req *ureq = (struct tt_req *) stub_regs[EBX];
 	int r;
 
-	// getting a signal here can deadlock
-	assert( sig_target == 0 );
+	ptrace( PTRACE_POKEDATA, child_pid, &ureq->type, type );
 
-	// send the buffer to the stub
-	do {
-		r = write(in_fd, req, sizeof *req);
-	} while (r == -1 && errno == EINTR);
-	if (r != sizeof *req)
-	{
-		fprintf(stderr, "write failed %d\n", r);
-		return r;
-	}
-
-	// read the stub's response
-	struct tt_reply reply;
-	do {
-		r = read(out_fd, &reply, sizeof reply);
-	} while (r == -1 && errno == EINTR);
-	if (r != sizeof reply)
-	{
-		fprintf(stderr, "read failed\n");
-		return r;
-	}
-
-	return reply.r;
-}
-
-int tt_address_space_impl::mmap( BYTE *address, size_t length, int prot, int flags, int file, off_t offset )
-{
-	//dprintf("tt_address_space_impl::mmap()\n");
-	run_stub();
-
-	struct tt_req req;
-	struct tt_req_map &map = req.u.map;
-
-	req.type = tt_req_map;
-	map.pid = getpid();
-	map.fd = file;
-	map.addr = (int) address;
-	map.len = length;
-	map.ofs = offset;
-	map.prot = prot;
-	// send our pid to the stub
-	//dprintf("tt_address_space_impl::mmap()\n");
-	return readwrite( &req );
-}
-
-int tt_address_space_impl::munmap( BYTE *address, size_t length )
-{
-	//dprintf("tt_address_space_impl::munmap()\n");
-	run_stub();
-	struct tt_req req;
-	struct tt_req_umap &umap = req.u.umap;
-
-	req.type = tt_req_umap;
-	umap.addr = (int) address;
-	umap.len = length;
-
-	return readwrite( &req );
-}
-
-void tt_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec )
-{
-	//dprintf("tt_address_space_impl::run()\n");
-
-	suspend();
-	ptrace_address_space_impl::run( TebBaseAddress, ctx, single_step, timeout, exec );
-}
-
-unsigned short tt_address_space_impl::get_userspace_fs()
-{
-	suspend();
-	return stub_regs[FS];
-}
-
-void tt_address_space_impl::suspend()
-{
-	if (state == stub_suspended)
-		return;
-
-	// no signals!
-	assert( sig_target == 0 );
-
-	assert( child_pid != -1 );
-	kill( child_pid, SIGSTOP );
-
-	wait_for_signal( child_pid, SIGSTOP );
-
-	if (state == stub_running)
-	{
-		//dprintf("saving registers\n");
-		int r = ptrace_get_regs( child_pid, stub_regs );
-		if (r < 0)
-			die("failed to save stub registers\n");
-	}
-
-	state = stub_suspended;
-}
-
-void tt_address_space_impl::run_stub()
-{
-	int r;
-	suspend();
 	r = ptrace_set_regs( child_pid, stub_regs );
 	if (r < 0)
 		die("ptrace_set_regs failed\n");
 	r = ::ptrace( PTRACE_CONT, child_pid, 0, 0 );
 	if (r < 0)
 		die("ptrace( PTRACE_CONT ) failed\n");
-	state = stub_running;
+
+	wait_for_signal( child_pid, SIGSTOP );
+
+	r = ptrace_get_regs( child_pid, stub_regs );
+	if (r < 0)
+		die("failed to save stub registers\n");
+
+	return stub_regs[EAX];
+}
+
+int tt_address_space_impl::mmap( BYTE *address, size_t length, int prot, int flags, int file, off_t offset )
+{
+	//dprintf("tt_address_space_impl::mmap()\n");
+
+	// send our pid to the stub
+	struct tt_req *ureq = (struct tt_req *) stub_regs[EBX];
+	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.pid, getpid() );
+	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.fd, file );
+	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.addr, (int) address );
+	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.len, length );
+	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.ofs, offset );
+	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.prot, prot );
+	return userside_req( tt_req_map );
+}
+
+int tt_address_space_impl::munmap( BYTE *address, size_t length )
+{
+	//dprintf("tt_address_space_impl::munmap()\n");
+	struct tt_req *ureq = (struct tt_req *) stub_regs[EBX];
+	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.addr, (int) address );
+	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.len, length );
+	return userside_req( tt_req_umap );
+}
+
+unsigned short tt_address_space_impl::get_userspace_fs()
+{
+	return stub_regs[FS];
 }
 
 bool init_tt()

@@ -164,9 +164,37 @@ int ptrace_address_space_impl::get_context( PCONTEXT ctx )
 	return 0;
 }
 
+void ptrace_address_space_impl::wait_for_signal( pid_t pid, int signal )
+{
+	while (1)
+	{
+		int r, status = 0;
+		r = wait4( pid, &status, WUNTRACED, NULL );
+		if (r < 0)
+		{
+			if (errno == EINTR)
+				continue;
+			die("wait_for_signal: wait4() failed %d\n", errno);
+		}
+		if (r != pid)
+			continue;
+		if (WIFEXITED(status) )
+			die("Client died\n");
+
+		if (WIFSTOPPED(status) && WEXITSTATUS(status) == signal)
+			return;
+
+		dprintf("stray signal %d\n", WEXITSTATUS(status));
+
+		// start the child again so we can get the next signal
+		r = ptrace( PTRACE_CONT, pid, 0, 0 );
+		if (r < 0)
+			die("PTRACE_CONT failed %d\n", errno);
+	}
+}
+
 int ptrace_address_space_impl::ptrace_run( PCONTEXT ctx, int single_step )
 {
-	pid_t r_pid;
 	int r, status = 0;
 
 	sig_target = this;
@@ -181,11 +209,17 @@ int ptrace_address_space_impl::ptrace_run( PCONTEXT ctx, int single_step )
 		die("PTRACE_CONT failed (%d)\n", errno);
 
 	/* wait until it needs our attention */
-	do {
-		r_pid = wait4( get_child_pid(), &status, WUNTRACED, NULL );
-	} while (r_pid == -1 && errno == EINTR);
-	if (r_pid == -1)
-		die("wait failed %d\n", errno);
+	while (1)
+	{
+		r = wait4( get_child_pid(), &status, WUNTRACED, NULL );
+		if (r == -1 && errno == EINTR)
+			continue;
+		if (r < 0)
+			die("wait4 failed (%d)\n", errno);
+		if (r != get_child_pid())
+			continue;
+		break;
+	}
 
 	r = get_context( ctx );
 	if (r < 0)

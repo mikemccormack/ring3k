@@ -41,6 +41,7 @@ protected:
 	virtual unsigned short get_userspace_fs() = 0;
 	virtual unsigned short get_userspace_data_seg();
 	virtual unsigned short get_userspace_code_seg();
+	static void wait_for_signal( pid_t pid, int signal );
 public:
 	static void set_signals();
 };
