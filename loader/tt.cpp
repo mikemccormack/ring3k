@@ -92,7 +92,11 @@ void tt_address_space_impl::wait_for_signal( pid_t pid, int signal )
 		int r, status = 0;
 		r = wait4( pid, &status, WUNTRACED, NULL );
 		if (r < 0)
+		{
+			if (errno == EINTR)
+				continue;
 			die("wait_for_signal: wait4() failed %d\n", errno);
+		}
 		if (r != pid)
 			continue;
 		if (WIFEXITED(status) )
