@@ -724,18 +724,12 @@ ntcalldesc winxp_calls[] = {
 	DEC( NtWriteRequestData, 6 ),
 	IMP( NtWriteVirtualMemory, 5 ),
 	IMP( NtYieldExecution, 0 ),
+	NUL( NtCreateKeyedEvent ),
 
-	//NUL( NtCreateChannel ),
-	//NUL( NtListenChannel ),
-	//NUL( NtOpenChannel ),
-	//NUL( NtReplyWaitSendChannel ),
-	//NUL( NtSendWaitReplyChannel ),
-	//NUL( NtSendContextChannel ),
-
-
-	// 0x117 NUL( NtCreateKeyedEvent ),
-	// 0x11a NUL( NtWaitForKeyedEvent ),
-	// 0x11b NUL( NtQueryPortInformationProcess )
+	NUL( NtOpenKeyedEvent ),
+	NUL( NtReleaseKeyedEvent ),
+	NUL( NtWaitForKeyedEvent ),
+	NUL( NtQueryPortInformationProcess )
 };
 
 // see http://www.fengyuan.com/article/win32ksyscall.html
