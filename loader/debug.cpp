@@ -335,7 +335,7 @@ BYTE *unassemble( BYTE *address )
 	while (ud_disassemble(&info.ud_obj))
 	{
 		insn_addr = (BYTE*)(ULONG) ud_insn_off(&info.ud_obj);
-		fprintf(stderr,"%p %10s %s\n", insn_addr,
+		fprintf(stderr,"%p %20s %s\n", insn_addr,
 				 ud_insn_hex(&info.ud_obj), ud_insn_asm(&info.ud_obj));
 		insn_addr += ud_insn_len(&info.ud_obj);
 		if (!--i)
