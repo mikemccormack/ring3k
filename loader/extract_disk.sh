@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 #
 
-sys32files="
+win2ksys32files="
  ADVAPI32.DL_
  AUTOCHK.EXE
  BASESRV.DL_
@@ -90,15 +90,93 @@ sys32files="
  WSOCK32.DL_
 "
 
-tmp=".$$.win2k-temp.cab"
+winxpsys32files="
+ ADVAPI32.DL_
+ AUTOCHK.EXE
+ BASESRV.DL_
+ C_1252.NL_
+ C_850.NL_
+ C_437.NL_
+ CGA80WOA.FO_
+ CGA40WOA.FO_
+ CSRSRV.DL_
+ CSRSS.EX_
+ CMD.EX_
+ COMCTL32.DL_
+ CRYPT32.DL_
+ CRYPTDLL.DL_
+ CTYPE.NL_
+ DIGEST.DL_
+ DNSAPI.DL_
+ DOSAPP.FO_
+ EGA80WOA.FO_
+ EGA40WOA.FO_
+ GDI32.DL_
+ IMM32.DL_
+ KBDUS.DLL
+ KERNEL32.DL_
+ KERBEROS.DL_
+ L_INTL.NL_
+ LOCALE.NL_
+ LSASRV.DL_
+ LSASS.EX_
+ MSVCIRT.DL_
+ MSVCRT40.DL_
+ NDDEAPI.DL_
+ NETAPI32.DL_
+ NETRAP.DL_
+ NTDLL.DLL
+ NTDSAPI.DL_
+ PROFMAP.DL_
+ RPCRT4.DL_
+ SAMLIB.DL_
+ SAMSRV.DL_
+ SAVEDUMP.EX_
+ SCESRV.DL_
+ SECUR32.DL_
+ SERVICES.EX_
+ SFC.DL_
+ SFCFILES.DL_
+ SHELL32.DL_
+ SHLWAPI.DL_
+ SMSS.EX_
+ SORTKEY.NL_
+ SORTTBLS.NL_
+ UMPNPMGR.DL_
+ USER32.DL_
+ USERENV.DL_
+ UNICODE.NL_
+ WINSRV.DL_
+ WINLOGON.EX_
+ WINSTA.DL_
+ WLDAP32.DL_
+ WS2_32.DL_
+ WS2HELP.DL_
+ WSOCK32.DL_
+"
+
+tmp=".$$.temp.cab"
 root="drive"
 target="$root/winnt/system32"
+win2kiso="win2k.iso"
+winxpiso="winxp.iso"
 iso="win2k.iso"
 
-if test \! -f "$iso"
+if test -f "$win2kiso"
 then
-	echo "Missing a Windows 2000 ISO image to extract files from"
-	exit 1
+	echo "Windows 2000 ISO found"
+	iso="$win2kiso"
+	sys32files="$win2ksys32files"
+else
+	if test -f $winxpiso
+	then
+		echo "Windows XP ISO found"
+		iso="$winxpiso"
+		sys32files="$winxpsys32files"
+	else
+		echo "Missing a Windows 2000 or XP ISO image to extract files from"
+		exit 1
+	fi
 fi
 
 mkdir -p "$target"

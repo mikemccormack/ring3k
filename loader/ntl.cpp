@@ -51,6 +51,7 @@ process_list_t processes;
 thread_t *current;
 object_t *ntdll_section;
 int option_debug = 0;
+ULONG KiIntSystemCall = 0;
 
 void sleep_timeout(LARGE_INTEGER timeout)
 {
@@ -139,6 +140,8 @@ NTSTATUS create_initial_process( thread_t **t, OBJECT_ATTRIBUTES *oa )
 	ctx.Eip = (DWORD) get_entry_point( p );
 	ctx.Esp = (DWORD) pstack + stack_size - 8;
 
+	dprintf("entry point = %08lx\n", ctx.Eip);
+
 	/* when starting nt processes, make the PEB the first arg of NtProcessStartup */
 	r = p->vm->copy_to_user( (BYTE*) ctx.Esp + 4, &p->PebBaseAddress, sizeof p->PebBaseAddress );
 
@@ -176,6 +179,10 @@ NTSTATUS init_ntdll( void )
 	r = create_section( &ntdll_section, file, 0, SEC_IMAGE, PAGE_EXECUTE_READWRITE );
 	if (r != STATUS_SUCCESS)
 		die("failed to map ntdll\n");
+
+	KiIntSystemCall = get_proc_address( ntdll_section, "KiIntSystemCall" );
+	dprintf("KiIntSystemCall = %08lx\n", KiIntSystemCall);
+	init_syscalls(KiIntSystemCall != 0);
 
 	release( file );
 

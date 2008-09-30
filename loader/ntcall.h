@@ -27,6 +27,7 @@
 extern "C" {
 #endif
 
+void init_syscalls(bool xp);
 NTSTATUS do_nt_syscall(ULONG id, ULONG func, ULONG *uargs, ULONG retaddr);
 NTSTATUS copy_to_user( void *dest, const void *src, size_t len );
 NTSTATUS copy_from_user( void *dest, const void *src, size_t len );
@@ -82,6 +83,7 @@ void free_registry( void );
 
 // from ntl.cpp
 extern int option_trace;
+extern ULONG KiIntSystemCall;
 
 // from section.cpp
 const char *get_section_symbol( object_t *section, ULONG address );

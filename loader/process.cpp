@@ -199,7 +199,7 @@ void kshm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 
 kshm_tracer kshm_trace;
 
-NTSTATUS get_shared_memory_block( address_space *vm )
+NTSTATUS get_shared_memory_block( process_t *p )
 {
 	BYTE *shm = NULL;
 	NTSTATUS r;
@@ -224,13 +224,18 @@ NTSTATUS get_shared_memory_block( address_space *vm )
 		shared_memory_address->NtMinorVersion = 0;
 		shared_memory_address->ImageNumberLow = 0x14c;
 		shared_memory_address->ImageNumberHigh = 0x14c;
+
+		// Windows XP's ntdll needs the system call address in shared memory
+		ULONG kisc = (ULONG) p->pntdll + KiIntSystemCall;
+		if (KiIntSystemCall)
+			shared_memory_address->SystemCall = kisc;
 	}
 
-	r = shared_section->mapit( vm, shm, 0, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READONLY );
+	r = shared_section->mapit( p->vm, shm, 0, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READONLY );
 	if (r != STATUS_SUCCESS)
 		return r;
 
-	if (0) trace_memory( vm, shm, kshm_trace );
+	if (0) trace_memory( p->vm, shm, kshm_trace );
 
 	assert( shm == (BYTE*) 0x7ffe0000 );
 
@@ -415,11 +420,6 @@ NTSTATUS create_process( process_t **pprocess, object_t *section )
 	if (!p->vm)
 		die("create_address_space failed\n");
 
-	/* map the NT shared memory block first, so it gets the right address */
-	r = get_shared_memory_block( p->vm );
-	if (r != STATUS_SUCCESS)
-		return r;
-
 	addref( section );
 	p->exe = section;
 
@@ -429,6 +429,11 @@ NTSTATUS create_process( process_t **pprocess, object_t *section )
 		return r;
 
 	r = mapit( p->vm, ntdll_section, p->pntdll );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	/* map the NT shared memory block early, so it gets the right address */
+	r = get_shared_memory_block( p );
 	if (r != STATUS_SUCCESS)
 		return r;
 
