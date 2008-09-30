@@ -1309,11 +1309,11 @@ NTSTATUS thread_impl_t::create( CONTEXT *ctx, INITIAL_TEB *init_teb, BOOLEAN sus
 	sz.QuadPart = PAGE_SIZE;
 	r = create_section( &teb_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
 	if (r != STATUS_SUCCESS)
-		goto fail;
+		return r;
 
 	r = teb_section->mapit( process->vm, addr, 0, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE );
 	if (r != STATUS_SUCCESS)
-		goto fail;
+		return r;
 
 	teb = (PTEB) teb_section->get_kernel_address();
 
@@ -1343,17 +1343,18 @@ NTSTATUS thread_impl_t::create( CONTEXT *ctx, INITIAL_TEB *init_teb, BOOLEAN sus
 	if (!pKiUserApcDispatcher)
 		die("failed to find KiUserApcDispatcher in ntdll\n");
 
+	dprintf("LdrInitializeThunk = %p pKiUserApcDispatcher = %p\n",
+		pLdrInitializeThunk, pKiUserApcDispatcher );
+
 	// FIXME: should set initial registers then queue an APC
 
 	/* set up the stack */
 	stack = (BYTE*) ctx->Esp - sizeof init_stack;
 
 	/* setup the registers */
-	{
 	int err = set_initial_regs( pKiUserApcDispatcher, stack );
 	if (0>err)
 		dprintf("set_initial_regs failed (%d)\n", err);
-	}
 
 	memset( &init_stack, 0, sizeof init_stack );
 	init_stack.pntdll = process->pntdll;  /* set to pexe if running a win32 program */
@@ -1373,9 +1374,6 @@ NTSTATUS thread_impl_t::create( CONTEXT *ctx, INITIAL_TEB *init_teb, BOOLEAN sus
 	if (0) trace_memory( process->vm, addr, teb_trace );
 
 	return STATUS_SUCCESS;
-
-fail:
-	return r;
 }
 
 NTSTATUS NTAPI NtCreateThread(
