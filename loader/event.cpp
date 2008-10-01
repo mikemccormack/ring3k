@@ -489,3 +489,12 @@ NTSTATUS NTAPI NtSetHighWaitLowThread(void)
 	dprintf("\n");
 	return STATUS_NO_EVENT_PAIR;
 }
+
+NTSTATUS NTAPI NtOpenKeyedEvent(
+	PHANDLE EventHandle,
+	ACCESS_MASK DesiredAccess,
+	POBJECT_ATTRIBUTES ObjectAttributes)
+{
+	// hack: just open an event for the moment
+	return nt_open_object<event_t>( EventHandle, DesiredAccess, ObjectAttributes );
+}

@@ -726,7 +726,7 @@ ntcalldesc winxp_calls[] = {
 	IMP( NtYieldExecution, 0 ),
 	NUL( NtCreateKeyedEvent ),
 
-	NUL( NtOpenKeyedEvent ),
+	IMP( NtOpenKeyedEvent, 3 ),
 	NUL( NtReleaseKeyedEvent ),
 	NUL( NtWaitForKeyedEvent ),
 	NUL( NtQueryPortInformationProcess )
