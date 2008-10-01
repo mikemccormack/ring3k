@@ -100,9 +100,38 @@ void test_mailslot(void)
 	ok(r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 }
 
+// creation of \??\MAILSLOT is usually done at startup by smss.exe
+// create it for tests
+void create_mailslot_link( void )
+{
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us, target;
+	WCHAR link[] = L"\\??\\MAILSLOT";
+	WCHAR targetname[] = L"\\Device\\MailSlot";
+	HANDLE symlink;
+
+	us.Buffer = link;
+	us.Length = sizeof link - 2;
+	us.MaximumLength = 0;
+
+	oa.Length = sizeof oa;
+	oa.RootDirectory = 0;
+	oa.ObjectName = &us;
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	target.Buffer = targetname;
+	target.Length = sizeof targetname - 2;
+	target.MaximumLength = target.Length;
+
+	NtCreateSymbolicLinkObject( &symlink, DIRECTORY_ALL_ACCESS, &oa, &target );
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
+	create_mailslot_link();
 	test_mailslot();
 	log_fini();
 }
