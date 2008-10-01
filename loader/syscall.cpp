@@ -544,7 +544,7 @@ ntcalldesc winxp_calls[] = {
 
 	NUL( NtQueryBootOrder ),
 	NUL( NtQueryBootOptions ),
-	DEC( NtQueryDebugFilterState, 2 ),
+	IMP( NtQueryDebugFilterState, 2 ),
 	IMP( NtQueryDefaultLocale, 2 ),
 
 	/* 0x90 */

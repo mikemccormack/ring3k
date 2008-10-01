@@ -314,3 +314,11 @@ NTSTATUS NTAPI NtAllocateLocallyUniqueId(
 		id.QuadPart++;
 	return r;
 }
+
+NTSTATUS NTAPI NtQueryDebugFilterState(
+	ULONG Component,
+	ULONG Level)
+{
+	dprintf("%08lx %08lx\n", Component, Level);
+	return STATUS_SUCCESS;
+}
