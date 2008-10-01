@@ -1789,10 +1789,34 @@ void test_port_multi_thread( void )
 	NtClose( port );
 }
 
+// creation of \RPC Control is done by smss.exe
+// create it for tests
+void create_rpc_control_link( void )
+{
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us;
+	WCHAR dirname[] = L"\\RPC Control";
+	HANDLE dir;
+
+	us.Buffer = dirname;
+	us.Length = sizeof dirname - 2;
+	us.MaximumLength = 0;
+
+	oa.Length = sizeof oa;
+	oa.RootDirectory = 0;
+	oa.ObjectName = &us;
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	NtCreateDirectoryObject( &dir, DIRECTORY_ALL_ACCESS, &oa );
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
 
+	create_rpc_control_link();
 	test_create_port();
 	test_port_server();
 	test_port_server_reject();
