@@ -24,7 +24,7 @@
 #include "list.h"
 #include "unicode.h"
 
-struct object_t;
+class object_t;
 
 typedef list_anchor<object_t, 0> object_list_t;
 typedef list_element<object_t> object_entry_t;
@@ -73,7 +73,7 @@ public:
 	virtual ~watch_t();
 };
 
-struct sync_object_t : public object_t {
+class sync_object_t : public object_t {
 private:
 	watch_list_t watchers;
 public:
@@ -86,10 +86,11 @@ public:
 	void notify_watchers();
 };
 
-typedef struct _object_info_t {
+class object_info_t {
+public:
 	object_t *object;
 	ACCESS_MASK access;
-} object_info_t;
+};
 
 class handle_table_t {
 	static const unsigned int max_handles = 0x100;
