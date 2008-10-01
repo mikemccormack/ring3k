@@ -304,6 +304,8 @@ int main(int argc, char **argv)
 	create_directory_object( (PWSTR) L"\\Security" );
 	create_sync_event( (PWSTR) L"\\Security\\LSA_AUTHENTICATION_INITIALIZED" );
 	create_sync_event( (PWSTR) L"\\SeLsaInitEvent" );
+	// XP
+	create_sync_event( (PWSTR) L"\\KernelObjects\\CritSecOutOfMemoryEvent" );
 	create_kthread();
 
 	us.copy( argv[n] );
