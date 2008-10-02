@@ -33,6 +33,8 @@
 #include "object.inl"
 #include "ntcall.h"
 
+object_list_t object_list;
+
 object_dir_t::object_dir_t()
 {
 }
@@ -86,6 +88,75 @@ object_t *create_directory_object( PCWSTR name )
 		obj = 0;
 	}
 	return obj;
+}
+
+NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
+{
+	if (!oa || !oa->ObjectName || !oa->ObjectName->Buffer || !oa->ObjectName->Buffer[0])
+		return STATUS_OBJECT_PATH_SYNTAX_BAD;
+
+	for( object_iter_t i(object_list); i; i.next() )
+	{
+		object_t *obj = i;
+
+		if (!obj->name.compare( oa->ObjectName, oa->Attributes & OBJ_CASE_INSENSITIVE ))
+			continue;
+
+		addref( obj );
+		*out = obj;
+		return STATUS_SUCCESS;
+	}
+
+	return STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+NTSTATUS name_object( object_t *obj, const OBJECT_ATTRIBUTES *oa )
+{
+	object_t *existing = NULL;
+	NTSTATUS r;
+
+	if (!oa)
+		 return STATUS_SUCCESS;
+
+	obj->attr = oa->Attributes;
+	if (!oa->ObjectName)
+		 return STATUS_SUCCESS;
+	if (!oa->ObjectName->Buffer)
+		 return STATUS_SUCCESS;
+
+	r = find_object_by_name( &existing, oa );
+	if (r == STATUS_SUCCESS)
+	{
+		release( existing );
+		return STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	r = obj->name.copy( oa->ObjectName );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	if (0)
+		dprintf("name is -> %pus", &obj->name );
+
+	object_list.append( obj );
+
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS get_named_object( object_t **out, const OBJECT_ATTRIBUTES *oa )
+{
+	object_t *obj;
+	NTSTATUS r;
+
+	if (!oa || !oa->ObjectName || !oa->ObjectName->Buffer || !oa->ObjectName->Buffer[0])
+		return STATUS_OBJECT_PATH_SYNTAX_BAD;
+
+	r = find_object_by_name( &obj, oa );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	*out = obj;
+	return STATUS_SUCCESS;
 }
 
 NTSTATUS NTAPI NtCreateDirectoryObject(

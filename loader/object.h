@@ -119,9 +119,9 @@ static inline void release( object_t *obj )
 }
 
 object_t *create_directory_object( PCWSTR name );
-NTSTATUS name_object( object_t *obj, OBJECT_ATTRIBUTES *oa );
-NTSTATUS get_named_object( object_t **out, OBJECT_ATTRIBUTES *oa );
-NTSTATUS find_object_by_name( object_t **out, OBJECT_ATTRIBUTES *oa );
+NTSTATUS name_object( object_t *obj, const OBJECT_ATTRIBUTES *oa );
+NTSTATUS get_named_object( object_t **out, const OBJECT_ATTRIBUTES *oa );
+NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa );
 
 template<typename T> NTSTATUS object_from_handle(T*& out, HANDLE handle, ACCESS_MASK access);
 
