@@ -35,6 +35,15 @@
 
 object_list_t object_list;
 
+class object_dir_impl_t : public object_dir_t
+{
+	object_list_t object_list;
+public:
+	object_dir_impl_t();
+	virtual ~object_dir_impl_t();
+	virtual bool access_allowed( ACCESS_MASK access, ACCESS_MASK handle_access );
+};
+
 object_dir_t::object_dir_t()
 {
 }
@@ -43,17 +52,20 @@ object_dir_t::~object_dir_t()
 {
 }
 
-bool object_dir_t::access_allowed( ACCESS_MASK required, ACCESS_MASK handle )
+object_dir_impl_t::object_dir_impl_t()
+{
+}
+
+object_dir_impl_t::~object_dir_impl_t()
+{
+}
+
+bool object_dir_impl_t::access_allowed( ACCESS_MASK required, ACCESS_MASK handle )
 {
 	return check_access( required, handle,
 			 DIRECTORY_QUERY | DIRECTORY_TRAVERSE,
 			 DIRECTORY_CREATE_OBJECT | DIRECTORY_CREATE_SUBDIRECTORY,
 			 DIRECTORY_ALL_ACCESS );
-}
-
-object_dir_t* object_dir_from_object( object_t *obj )
-{
-	return dynamic_cast<object_dir_t*>(obj);
 }
 
 class object_dir_factory : public object_factory
@@ -65,7 +77,7 @@ public:
 
 NTSTATUS object_dir_factory::alloc_object(object_t** obj)
 {
-	*obj = new object_dir_t;
+	*obj = new object_dir_impl_t;
 	if (!*obj)
 		return STATUS_NO_MEMORY;
 	return STATUS_SUCCESS;
@@ -73,7 +85,7 @@ NTSTATUS object_dir_factory::alloc_object(object_t** obj)
 
 object_t *create_directory_object( PCWSTR name )
 {
-	object_dir_t *obj = new object_dir_t;
+	object_dir_impl_t *obj = new object_dir_impl_t;
 
 	unicode_string_t us;
 	us.copy(name);
@@ -195,14 +207,10 @@ NTSTATUS NTAPI NtQueryDirectoryObject(
 	if (r != STATUS_SUCCESS)
 		return r;
 
-	object_t* obj;
-	r = object_from_handle( obj, DirectoryHandle, DIRECTORY_QUERY );
+	object_dir_t* dir = 0;
+	r = object_from_handle( dir, DirectoryHandle, DIRECTORY_QUERY );
 	if (r != STATUS_SUCCESS)
 		return r;
-
-	object_dir_t* dir = object_dir_from_object( obj );
-	if (!dir)
-		return STATUS_OBJECT_TYPE_MISMATCH;
 
 	dprintf("fixme\n");
 

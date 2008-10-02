@@ -24,10 +24,12 @@
 #include "object.h"
 
 class object_dir_t : public object_t {
+protected:
+	friend class object_t;
 public:
 	object_dir_t();
 	virtual ~object_dir_t();
-	virtual bool access_allowed( ACCESS_MASK access, ACCESS_MASK handle_access );
+	virtual bool access_allowed( ACCESS_MASK access, ACCESS_MASK handle_access ) = 0;
 };
 
 #endif // __NTNATIVE_OBJDIR_H__
