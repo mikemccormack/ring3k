@@ -196,11 +196,10 @@ object_factory::~object_factory()
 {
 }
 
-object_t::object_t()
+object_t::object_t() :
+	refcount( 1 ),
+	attr( 0 )
 {
-	refcount = 1;
-	attr = 0;
-	//obj_init_link( this );
 }
 
 object_t::~object_t()
