@@ -90,6 +90,7 @@ object_t *create_directory_object( PCWSTR name )
 	unicode_string_t us;
 	us.copy(name);
 	OBJECT_ATTRIBUTES oa;
+	memset( &oa, 0, sizeof oa );
 	oa.Length = sizeof oa;
 	oa.Attributes = OBJ_CASE_INSENSITIVE;
 	oa.ObjectName = &us;
