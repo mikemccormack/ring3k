@@ -639,15 +639,15 @@ ntcalldesc winxp_calls[] = {
 
 	NUL( NtSetBootOptions ),
 	IMP( NtSetContextThread, 2 ),
+	NUL( NtSetDebugFilterState ),
 	IMP( NtSetDefaultHardErrorPort, 1 ),
-	DEC( NtSetDefaultLocale, 2 ),
 
+	DEC( NtSetDefaultLocale, 2 ),
 	DEC( NtSetDefaultUILanguage, 1 ),
 	DEC( NtSetEaFile, 4 ),
 	IMP( NtSetEvent, 2 ),
-	NUL( NtSetBoostPriority ),
 
-	NUL( NtSetBootOptions ),
+	NUL( NtSetEventBoostPriority ),
 	IMP( NtSetHighEventPair, 1 ),
 	IMP( NtSetHighWaitLowEventPair, 1 ),
 	NUL( NtSetInformationDebugObject ),
@@ -663,7 +663,7 @@ ntcalldesc winxp_calls[] = {
 	DEC( NtSetInformationToken, 4 ),
 	DEC( NtSetIntervalProfile, 2 ),
 
-	DEC( NtSetIoCompletion, 4 ),
+	IMP( NtSetIoCompletion, 5 ),
 	DEC( NtSetLdtEntries, 4 ),
 	IMP( NtSetLowEventPair, 1 ),
 	IMP( NtSetLowWaitHighEventPair, 1 ),
