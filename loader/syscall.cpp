@@ -733,7 +733,7 @@ ntcalldesc winxp_calls[] = {
 };
 
 // see http://www.fengyuan.com/article/win32ksyscall.html
-ntcalldesc ntgdicalls[] = {
+ntcalldesc win2k_uicalls[] = {
 /*1000*/ NUL(NtGdiAbortDoc),
 /*1001*/ NUL(NtGdiAbortPath),
 /*1002*/ IMP(NtGdiAddFontResourceW, 6),
@@ -1375,10 +1375,685 @@ ntcalldesc ntgdicalls[] = {
 /*127e*/ NUL(NtGdiUpdateTransform),
 };
 
+ntcalldesc winxp_uicalls[] = {
+/*1000*/ NUL(NtGdiAbortDoc),
+/*1001*/ NUL(NtGdiAbortPath), // 1
+/*1002*/ IMP(NtGdiAddFontResourceW, 6),
+/*1003*/ NUL(NtGdiAddRemoteFontToDC), // 4
+/*1004*/ NUL(NtGdiAddFontMemResourceEx), // 5
+/*1005*/ NUL(NtGdiRemoveMergeFont), // 2
+/*1006*/ NUL(NtGdiAddRemoteMMInstanceToDC), // 3
+/*1007*/ NUL(NtGdiAlphaBlend), // 12
+/*1008*/ NUL(NtGdiAngleArc), // 6
+/*1009*/ NUL(NtGdiAnyLinkedFonts), // 0
+/*100a*/ NUL(NtGdiFontIsLinked), // 1
+/*100b*/ NUL(NtGdiArcInternal), // 10
+/*100c*/ NUL(NtGdiBeginPath), // 1
+/*100d*/ IMP(NtGdiBitBlt, 11),
+/*100e*/ NUL(NtGdiCancelDC), // 1
+/*100f*/ NUL(NtGdiCheckBitmapBits), // 8
+/*1010*/ NUL(NtGdiCloseFigure), // 1
+/*1011*/ NUL(NtGdiClearBitmapAttributes), // 2
+/*1012*/ NUL(NtGdiClearBrushAttributes), // 2
+/*1013*/ NUL(NtGdiColorCorrectPalette), // 6
+/*1014*/ NUL(NtGdiCombineRgn), // 4
+/*1015*/ NUL(NtGdiCombineTransform), // 3
+/*1016*/ NUL(NtGdiComputeXformCoefficients), // 1
+/*1017*/ NUL(NtGdiConsoleTextOut), // 4
+/*1018*/ NUL(NtGdiConvertMetafileRect), // 2
+/*1019*/ IMP(NtGdiCreateBitmap, 5),
+/*101a*/ NUL(NtGdiCreateClientObj), // 1
+/*101b*/ NUL(NtGdiCreateColorSpace), // 1
+/*101c*/ NUL(NtGdiCreateColorTransform), // 8
+/*101d*/ NUL(NtGdiCreateCompatibleBitmap), // 3
+/*101c*/ IMP(NtGdiCreateCompatibleDC, 1),
+/*101f*/ NUL(NtGdiCreateDIBBrush), // 6
+/*1020*/ IMP(NtGdiCreateDIBitmapInternal, 11),
+/*1021*/ IMP(NtGdiCreateDIBSection, 9),
+/*1022*/ NUL(NtGdiCreateEllipticRgn), // 4
+/*1023*/ NUL(NtGdiCreateHalftonePalette), // 1
+/*1024*/ NUL(NtGdiCreateHatchBrushInternal), // 3
+/*1025*/ NUL(NtGdiCreateMetafileDC), // 1
+/*1026*/ NUL(NtGdiCreatePaletteInternal), // 2
+/*1027*/ NUL(NtGdiCreatePatternBrushInternal), // 3
+/*1028*/ NUL(NtGdiCreatePen), // 4
+/*1029*/ NUL(NtGdiCreateRectRgn), // 4
+/*102a*/ NUL(NtGdiCreateRoundRectRgn), // 6
+/*102b*/ NUL(NtGdiCreateServerMetaFile), // 6
+/*102c*/ IMP(NtGdiCreateSolidBrush, 2),
+/*102d*/ NUL(NtGdiD3dContextCreate), // 4
+/*102e*/ NUL(NtGdiD3dContextDestroy), // 1
+/*102f*/ NUL(NtGdiD3dContextDestroyAll), // 1
+/*1030*/ NUL(NtGdiD3dValidateTextureStageState), // 1
+/*1031*/ NUL(NtGdiD3dDrawPrimitives2), // 7
+/*1032*/ NUL(NtGdiDdGetDriverState), // 1
+/*1033*/ NUL(NtGdiDdAddAttachedSurface), // 3
+/*1034*/ NUL(NtGdiDdAlphaBlt), // 3
+/*1035*/ NUL(NtGdiDdAttachSurface), // 2
+/*1036*/ NUL(NtGdiDdBeginMoCompFrame), // 2
+/*1037*/ NUL(NtGdiDdBlt), // 3
+/*1038*/ NUL(NtGdiDdCanCreateSurface), // 2
+/*1039*/ NUL(NtGdiDdCanCreateD3DBuffer), // 2
+/*103a*/ NUL(NtGdiDdColorControl), // 2
+/*103b*/ NUL(NtGdiDdCreateDirectDrawObject), // 1
+/*103c*/ NUL(NtGdiDdCreateSurface), // 8
+/*103d*/ NUL(NtGdiDdCreateD3DBuffer), // 8
+/*103e*/ NUL(NtGdiDdCreateMoComp), // 2
+/*103f*/ NUL(NtGdiDdCreateSurfaceObject), // 6
+/*1040*/ NUL(NtGdiDdDeleteDirectDrawObject), // 1
+/*1041*/ NUL(NtGdiDdDeleteSurfaceObject), // 1
+/*1042*/ NUL(NtGdiDdDestroyMoComp), // 2
+/*1043*/ NUL(NtGdiDdDestroySurface), // 2
+/*1044*/ NUL(NtGdiDdDestroyD3DBuffer), // 1
+/*1045*/ NUL(NtGdiDdEndMoCompFrame), // 2
+/*1046*/ NUL(NtGdiDdFlip), // 5
+/*1047*/ NUL(NtGdiDdFlipToGDISurface), // 2
+/*1048*/ NUL(NtGdiDdGetAvailDriverMemory), // 2
+/*1049*/ NUL(NtGdiDdGetBltStatus), // 2
+/*104a*/ NUL(NtGdiDdGetDC), // 2
+/*104b*/ NUL(NtGdiDdGetDriverInfo), // 2
+/*104c*/ NUL(NtGdiDdGetDxHandle), // 3
+/*104d*/ NUL(NtGdiDdGetFlipStatus), // 2
+/*104e*/ NUL(NtGdiDdGetInternalMoCompInfo), // 2
+/*104f*/ NUL(NtGdiDdGetMoCompBuffInfo), // 2
+/*1050*/ NUL(NtGdiDdGetMoCompGuids), // 2
+/*1051*/ NUL(NtGdiDdGetMoCompFormats), // 2
+/*1052*/ NUL(NtGdiDdGetScanLine), // 2
+/*1053*/ NUL(NtGdiDdLock), // 3
+/*1054*/ NUL(NtGdiDdLockD3D), // 2
+/*1055*/ NUL(NtGdiDdQueryDirectDrawObject), // 11
+/*1056*/ NUL(NtGdiDdQueryMoCompStatus), // 2
+/*1057*/ NUL(NtGdiDdReenableDirectDrawObject), // 2
+/*1058*/ NUL(NtGdiDdReleaseDC), // 1
+/*1059*/ NUL(NtGdiDdRenderMoComp), // 2
+/*105a*/ NUL(NtGdiDdResetVisrgn), // 2
+/*105b*/ NUL(NtGdiDdSetColorKey), // 2
+/*105c*/ NUL(NtGdiDdSetExclusiveMode), // 2
+/*105d*/ NUL(NtGdiDdSetGammaRamp), // 3
+/*105e*/ NUL(NtGdiDdCreateSurfaceEx), // 3
+/*105f*/ NUL(NtGdiDdSetOverlayPosition), // 3
+/*1060*/ NUL(NtGdiDdUnattachSurface), // 2
+/*1061*/ NUL(NtGdiDdUnlock), // 2
+/*1062*/ NUL(NtGdiDdUnlockD3D), // 2
+/*1063*/ NUL(NtGdiDdUpdateOverlay), // 3
+/*1064*/ NUL(NtGdiDdWaitForVerticalBlank), // 2
+/*1065*/ NUL(NtGdiDvpCanCreateVideoPort), // 2
+/*1066*/ NUL(NtGdiDvpColorControl), // 2
+/*1067*/ NUL(NtGdiDvpCreateVideoPort), // 2
+/*1068*/ NUL(NtGdiDvpDestroyVideoPort), // 2
+/*1069*/ NUL(NtGdiDvpFlipVideoPort), // 4
+/*106a*/ NUL(NtGdiDvpGetVideoPortBandwidth), // 2
+/*106b*/ NUL(NtGdiDvpGetVideoPortField), // 2
+/*106c*/ NUL(NtGdiDvpGetVideoPortFlipStatus), // 2
+/*106d*/ NUL(NtGdiDvpGetVideoPortInputFormats), // 2
+/*106e*/ NUL(NtGdiDvpGetVideoPortLine), // 2
+/*106f*/ NUL(NtGdiDvpGetVideoPortOutputFormats), // 2
+/*1070*/ NUL(NtGdiDvpGetVideoPortConnectInfo), // 2
+/*1071*/ NUL(NtGdiDvpGetVideoSignalStatus), // 2
+/*1072*/ NUL(NtGdiDvpUpdateVideoPort), // 4
+/*1073*/ NUL(NtGdiDvpWaitForVideoPortSync), // 2
+/*1074*/ NUL(NtGdiDvpAcquireNotification), // 3
+/*1075*/ NUL(NtGdiDvpReleaseNotification), // 2
+/*1076*/ NUL(NtGdiDxgGenericThunk), // 6
+/*1077*/ NUL(NtGdiDeleteClientObj), // 1
+/*1078*/ NUL(NtGdiDeleteColorSpace), // 1
+/*1079*/ NUL(NtGdiDeleteColorTransform), // 2
+/*107a*/ IMP(NtGdiDeleteObjectApp, 1),
+/*107b*/ NUL(NtGdiDescribePixelFormat), // 4
+/*107c*/ NUL(NtGdiGetPerBandInfo), // 2
+/*107d*/ NUL(NtGdiDoBanding), // 4
+/*107e*/ NUL(NtGdiDoPalette), // 6
+/*107f*/ NUL(NtGdiDrawEscape), // 4
+/*1080*/ NUL(NtGdiEllipse), // 5
+/*1081*/ NUL(NtGdiEnableEudc), // 1
+/*1082*/ NUL(NtGdiEndDoc), // 1
+/*1083*/ NUL(NtGdiEndPage), // 1
+/*1084*/ NUL(NtGdiEndPath), // 1
+/*1085*/ NUL(NtGdiEnumFontChunk), // 5
+/*1086*/ NUL(NtGdiEnumFontClose), // 1
+/*1087*/ NUL(NtGdiEnumFontOpen), // 7
+/*1088*/ NUL(NtGdiEnumObjects), // 4
+/*1089*/ NUL(NtGdiEqualRgn), // 2
+/*108a*/ NUL(NtGdiEudcLoadUnloadLink), // 7
+/*108b*/ NUL(NtGdiExcludeClipRect), // 5
+/*108c*/ NUL(NtGdiExtCreatePen), // 11
+/*108d*/ NUL(NtGdiExtCreateRegion), // 3
+/*108e*/ NUL(NtGdiExtEscape), // 8
+/*108f*/ NUL(NtGdiExtFloodFill), // 5
+/*1090*/ IMP(NtGdiExtGetObjectW, 3),
+/*1091*/ NUL(NtGdiExtSelectClipRgn), // 3
+/*1092*/ NUL(NtGdiExtTextOutW), // 9
+/*1093*/ NUL(NtGdiFillPath), // 1
+/*1094*/ NUL(NtGdiFillRgn), // 3
+/*1095*/ NUL(NtGdiFlattenPath), // 1
+/*1096*/ NUL(NtGdiFlushUserBatch), // 0
+/*1097*/ IMP(NtGdiFlush, 0), // GreFlush
+/*1098*/ NUL(NtGdiForceUFIMapping), // 2
+/*1099*/ NUL(NtGdiFrameRgn), // 5
+/*109a*/ NUL(NtGdiFullscreenControl), // 5
+/*109b*/ NUL(NtGdiGetAndSetDCDword), // 4
+/*109c*/ NUL(NtGdiGetAppClipBox), // 2
+/*109d*/ NUL(NtGdiGetBitmapBits), // 3
+/*109e*/ NUL(NtGdiGetBitmapDimension), // 2
+/*109f*/ NUL(NtGdiGetBoundsRect), // 3
+/*10a0*/ NUL(NtGdiGetCharABCWidthsW), // 6
+/*10a1*/ NUL(NtGdiGetCharacterPlacementW), // 6
+/*10a2*/ NUL(NtGdiGetCharSet), // 1
+/*10a3*/ NUL(NtGdiGetCharWidthW), // 6
+/*10a4*/ NUL(NtGdiGetCharWidthInfo), // 2
+/*10a5*/ NUL(NtGdiGetColorAdjustment), // 2
+/*10a6*/ NUL(NtGdiGetColorSpaceforBitmap), // 1
+/*10a7*/ NUL(NtGdiGetDCDword), // 3
+/*10a8*/ IMP(NtGdiGetDCforBitmap, 1),
+/*10a9*/ IMP(NtGdiGetDCObject, 2),
+/*10aa*/ NUL(NtGdiGetDCPoint), // 3
+/*10ab*/ NUL(NtGdiGetDeviceCaps), // 2
+/*10ac*/ NUL(NtGdiGetDeviceGammaRamp), // 2
+/*10ad*/ NUL(NtGdiGetDeviceCapsAll), // 2
+/*10ae*/ NUL(NtGdiGetDIBitsInternal), // 9
+/*10af*/ NUL(NtGdiGetETM), // 2
+/*10b0*/ NUL(NtGdiGetEudcTimeStampEx), // 3
+/*10b1*/ NUL(NtGdiGetFontData), // 5
+/*10b2*/ IMP(NtGdiGetFontResourceInfoInternalW, 7),
+/*10b3*/ NUL(NtGdiGetGlyphIndicesW), // 5
+/*10b4*/ NUL(NtGdiGetGlyphIndicesWInternal), // 6
+/*10b5*/ NUL(NtGdiGetGlyphOutline), // 8
+/*10b6*/ NUL(NtGdiGetKerningPairs), // 3
+/*10b7*/ NUL(NtGdiGetLinkedUFIs), // 3
+/*10b8*/ NUL(NtGdiGetMiterLimit), // 2
+/*10b9*/ NUL(NtGdiGetMonitorID), // 3
+/*10ba*/ NUL(NtGdiGetNearestColor), // 2
+/*10bb*/ NUL(NtGdiGetNearestPaletteIndex), // 2
+/*10bc*/ NUL(NtGdiGetObjectBitmapHandle), // 2
+/*10bd*/ NUL(NtGdiGetOutlineTextMetricsInternalW), // 4
+/*10be*/ NUL(NtGdiGetPath), // 4
+/*10bf*/ NUL(NtGdiGetPixel), // 3
+/*10c0*/ NUL(NtGdiGetRandomRgn), // 3
+/*10c1*/ NUL(NtGdiGetRasterizerCaps), // 2
+/*10c2*/ NUL(NtGdiGetRealizationInfo), // 3
+/*10c3*/ NUL(NtGdiGetRegionData), // 3
+/*10c4*/ NUL(NtGdiGetRgnBox), // 2
+/*10c5*/ NUL(NtGdiGetServerMetaFileBits), // 7
+/*10c6*/ NUL(NtGdiGetSpoolMessage), // 4
+/*10c7*/ NUL(NtGdiGetStats), // 5
+/*10c8*/ IMP(NtGdiGetStockObject, 1),
+/*10c9*/ NUL(NtGdiGetStringBitmapW), // 5
+/*10ca*/ NUL(NtGdiGetSystemPaletteUse), // 1
+/*10cb*/ NUL(NtGdiGetTextCharsetInfo), // 3
+/*10cc*/ NUL(NtGdiGetTextExtent), // 5
+/*10cd*/ NUL(NtGdiGetTextExtentExW), // 8
+/*10ce*/ NUL(NtGdiGetTextFaceW), // 4
+/*10cf*/ NUL(NtGdiGetTextMetricsW), // 3
+/*10d0*/ NUL(NtGdiGetTransform), // 3
+/*10d1*/ NUL(NtGdiGetUFI), // 6
+/*10d2*/ NUL(NtGdiGetEmbUFI), // 7
+/*10d3*/ NUL(NtGdiGetUFIPathname), // 10
+/*10d4*/ NUL(NtGdiGetEmbedFonts), // 0
+/*10d5*/ NUL(NtGdiChangeGhostFont), // 2
+/*10d6*/ NUL(NtGdiAddEmbFontToDC), // 2
+/*10d7*/ NUL(NtGdiGetFontUnicodeRanges), // 2
+/*10d8*/ NUL(NtGdiGetWidthTable), // 7
+/*10d9*/ NUL(NtGdiGradientFill), // 6
+/*10da*/ NUL(NtGdiHfontCreate), // 5
+/*10db*/ NUL(NtGdiIcmBrushInfo), // 8
+/*10dc*/ IMP(NtGdiInit, 0),
+/*10dd*/ NUL(NtGdiInitSpool), // 0
+/*10de*/ NUL(NtGdiIntersectClipRect), // 5
+/*10df*/ NUL(NtGdiInvertRgn), // 2
+/*10e0*/ NUL(NtGdiLineTo), // 3
+/*10e1*/ NUL(NtGdiMakeFontDir), // 5
+/*10e2*/ NUL(NtGdiMakeInfoDC), // 2
+/*10e3*/ NUL(NtGdiMaskBlt), // 13
+/*10e4*/ NUL(NtGdiModifyWorldTransform), // 3
+/*10e5*/ NUL(NtGdiMonoBitmap), // 1
+/*10e6*/ NUL(NtGdiMoveTo), // 4
+/*10e7*/ NUL(NtGdiOffsetClipRgn), // 3
+/*10e8*/ NUL(NtGdiOffsetRgn), // 3
+/*10e9*/ NUL(NtGdiOpenDCW), // 7
+/*10ea*/ NUL(NtGdiPatBlt), // 6
+/*10eb*/ NUL(NtGdiPolyPatBlt), // 5
+/*10ec*/ NUL(NtGdiPathToRegion), // 1
+/*10ed*/ NUL(NtGdiPlgBlt), // 11
+/*10ee*/ NUL(NtGdiPolyDraw), // 4
+/*10ef*/ NUL(NtGdiPolyPolyDraw), // 5
+/*10f0*/ NUL(NtGdiPolyTextOutW), // 4
+/*10f1*/ NUL(NtGdiPtInRegion), // 3
+/*10f2*/ NUL(NtGdiPtVisible), // 3
+/*10f3*/ NUL(NtGdiQueryFonts), // 3
+/*10f4*/ IMP(NtGdiQueryFontAssocInfo, 1),
+/*10f5*/ NUL(NtGdiRectangle), // 5
+/*10f6*/ NUL(NtGdiRectInRegion), // 2
+/*10f7*/ NUL(NtGdiRectVisible), // 2
+/*10f8*/ NUL(NtGdiRemoveFontResourceW), // 6
+/*10f9*/ NUL(NtGdiRemoveFontMemResourceEx), // 1
+/*10fa*/ NUL(NtGdiResetDC), // 5
+/*10fb*/ NUL(NtGdiResizePalette), // 2
+/*10fc*/ IMP(NtGdiRestoreDC, 2),
+/*10fd*/ NUL(NtGdiRoundRect), // 7
+/*10fe*/ IMP(NtGdiSaveDC, 1),
+/*10ff*/ NUL(NtGdiScaleViewportExtEx), // 6
+/*1100*/ NUL(NtGdiScaleWindowExtEx), // 6
+/*1101*/ IMP(NtGdiSelectBitmap, 2),
+/*1102*/ NUL(NtGdiSelectBrush), // 2
+/*1103*/ NUL(NtGdiSelectClipPath), // 2
+/*1104*/ NUL(NtGdiSelectFont), // 2
+/*1105*/ NUL(NtGdiSelectPen), // 2
+/*1106*/ NUL(NtGdiSetBitmapAttributes), // 2
+/*1107*/ NUL(NtGdiSetBitmapBits), // 3
+/*1108*/ NUL(NtGdiSetBitmapDimension), // 4
+/*1109*/ NUL(NtGdiSetBoundsRect), // 3
+/*110a*/ NUL(NtGdiSetBrushAttributes), // 2
+/*110b*/ NUL(NtGdiSetBrushOrg), // 4
+/*110c*/ NUL(NtGdiSetColorAdjustment), // 2
+/*110d*/ NUL(NtGdiSetColorSpace), // 2
+/*110e*/ NUL(NtGdiSetDeviceGammaRamp), // 2
+/*110f*/ IMP(NtGdiSetDIBitsToDeviceInternal, 16),
+/*1110*/ NUL(NtGdiSetFontEnumeration), // 1
+/*1111*/ NUL(NtGdiSetFontXform), // 3
+/*1112*/ NUL(NtGdiSetIcmMode), // 3
+/*1113*/ NUL(NtGdiSetLinkedUFIs), // 3
+/*1114*/ NUL(NtGdiSetMagicColors), // 3
+/*1115*/ NUL(NtGdiSetMetaRgn), // 1
+/*1116*/ NUL(NtGdiSetMiterLimit), // 3
+/*1117*/ NUL(NtGdiGetDeviceWidth), // 1
+/*1118*/ NUL(NtGdiMirrorWindowOrg), // 1
+/*1119*/ NUL(NtGdiSetLayout), // 3
+/*111a*/ NUL(NtGdiSetPixel), // 4
+/*111b*/ NUL(NtGdiSetPixelFormat), // 2
+/*111c*/ NUL(NtGdiSetRectRgn), // 5
+/*111d*/ NUL(NtGdiSetSystemPaletteUse), // 2
+/*111e*/ NUL(NtGdiSetTextJustification), // 3
+/*111f*/ NUL(NtGdiSetupPublicCFONT), // 3
+/*1120*/ NUL(NtGdiSetVirtualResolution), // 5
+/*1121*/ NUL(NtGdiSetSizeDevice), // 3
+/*1122*/ NUL(NtGdiStartDoc), // 4
+/*1123*/ NUL(NtGdiStartPage), // 1
+/*1124*/ NUL(NtGdiStretchBlt), // 12
+/*1125*/ NUL(NtGdiStretchDIBitsInternal), // 16
+/*1126*/ NUL(NtGdiStrokeAndFillPath), // 1
+/*1127*/ NUL(NtGdiStrokePath), // 1
+/*1128*/ NUL(NtGdiSwapBuffers), // 1
+/*1129*/ NUL(NtGdiTransformPoints), // 5
+/*112a*/ NUL(NtGdiTransparentBlt), // 11
+/*112b*/ NUL(NtGdiUnloadPrinterDriver), // 2
+/*112c*/ NUL(NtGdiUnmapMemFont), // 1
+/*112d*/ NUL(NtGdiUnrealizeObject), // 1
+/*112e*/ NUL(NtGdiUpdateColors), // 1
+/*112f*/ NUL(NtGdiWidenPath), // 1
+/*1130*/ NUL(NtUserActivateKeyboardLayout), // 2
+/*1131*/ NUL(NtUserAlterWindowStyle), // 3
+/*1132*/ NUL(NtUserAssociateInputContext), // 3
+/*1133*/ NUL(NtUserAttachThreadInput), // 3
+/*1134*/ NUL(NtUserBeginPaint), // 2
+/*1135*/ NUL(NtUserBitBltSysBmp), // 8
+/*1136*/ NUL(NtUserBlockInput), // 1
+/*1137*/ NUL(NtUserBuildHimcList), // 4
+/*1138*/ NUL(NtUserBuildHwndList), // 7
+/*1139*/ NUL(NtUserBuildNameList), // 4
+/*113a*/ NUL(NtUserBuildPropList), // 4
+/*113b*/ NUL(NtUserCallHwnd), // 2
+/*113c*/ NUL(NtUserCallHwndLock), // 2
+/*113d*/ NUL(NtUserCallHwndOpt), // 2
+/*113e*/ NUL(NtUserCallHwndParam), // 3
+/*113f*/ NUL(NtUserCallHwndParamLock), // 3
+/*1140*/ NUL(NtUserCallMsgFilter), // 2
+/*1141*/ NUL(NtUserCallNextHookEx), // 4
+/*1142*/ IMP(NtUserCallNoParam, 1),
+/*1143*/ IMP(NtUserCallOneParam, 2),
+/*1144*/ IMP(NtUserCallTwoParam, 3),
+/*1145*/ NUL(NtUserChangeClipboardChain), // 2
+/*1146*/ NUL(NtUserChangeDisplaySettings), // 5
+/*1147*/ NUL(NtUserCheckImeHotKey), // 2
+/*1148*/ NUL(NtUserCheckMenuItem), // 3
+/*1149*/ NUL(NtUserChildWindowFromPointEx), // 4
+/*114a*/ NUL(NtUserClipCursor), // 1
+/*114b*/ NUL(NtUserCloseClipboard), // 0
+/*114c*/ NUL(NtUserCloseDesktop), // 1
+/*114d*/ NUL(NtUserCloseWindowStation), // 1
+/*114e*/ NUL(NtUserConsoleControl), // 3
+/*114f*/ NUL(NtUserConvertMemHandle), // 2
+/*1150*/ NUL(NtUserCopyAcceleratorTable), // 3
+/*1151*/ NUL(NtUserCountClipboardFormats), // 0
+/*1152*/ NUL(NtUserCreateAcceleratorTable), // 2
+/*1153*/ NUL(NtUserCreateCaret), // 4
+/*1154*/ IMP(NtUserCreateDesktop, 5),
+/*1155*/ NUL(NtUserCreateInputContext), // 1
+/*1156*/ NUL(NtUserCreateLocalMemHandle), // 4
+/*1157*/ IMP(NtUserCreateWindowEx, 13),
+/*1158*/ IMP(NtUserCreateWindowStation, 6),
+/*1159*/ NUL(NtUserDdeGetQualityOfService), // 3
+/*115a*/ NUL(NtUserDdeInitialize), // 5
+/*115b*/ NUL(NtUserDdeSetQualityOfService), // 3
+/*115c*/ NUL(NtUserDeferWindowPos), // 8
+/*115d*/ NUL(NtUserDefSetText), // 2
+/*115e*/ NUL(NtUserDeleteMenu), // 3
+/*115f*/ NUL(NtUserDestroyAcceleratorTable), // 1
+/*1160*/ NUL(NtUserDestroyCursor), // 2
+/*1161*/ NUL(NtUserDestroyInputContext), // 1
+/*1162*/ NUL(NtUserDestroyMenu), // 1
+/*1163*/ NUL(NtUserDestroyWindow), // 1
+/*1164*/ NUL(NtUserDisableThreadIme), // 1
+/*1165*/ NUL(NtUserDispatchMessage), // 1
+/*1166*/ NUL(NtUserDragDetect), // 3
+/*1167*/ NUL(NtUserDragObject), // 5
+/*1168*/ NUL(NtUserDrawAnimatedRects), // 4
+/*1169*/ NUL(NtUserDrawCaption), // 4
+/*116a*/ NUL(NtUserDrawCaptionTemp), // 7
+/*116b*/ NUL(NtUserDrawIconEx), // 11
+/*116c*/ NUL(NtUserDrawMenuBarTemp), // 5
+/*116d*/ NUL(NtUserEmptyClipboard), // 0
+/*116e*/ NUL(NtUserEnableMenuItem), // 3
+/*116f*/ NUL(NtUserEnableScrollBar), // 3
+/*1170*/ NUL(NtUserEndDeferWindowPosEx), // 2
+/*1171*/ NUL(NtUserEndMenu), // 0
+/*1172*/ NUL(NtUserEndPaint), // 2
+/*1173*/ NUL(NtUserEnumDisplayDevices), // 4
+/*1174*/ NUL(NtUserEnumDisplayMonitors), // 4
+/*1175*/ NUL(NtUserEnumDisplaySettings), // 4
+/*1176*/ NUL(NtUserEvent), // 1
+/*1177*/ NUL(NtUserExcludeUpdateRgn), // 2
+/*1178*/ NUL(NtUserFillWindow), // 4
+/*1179*/ IMP(NtUserFindExistingCursorIcon, 3),
+/*117a*/ NUL(NtUserFindWindowEx), // 5
+/*117b*/ NUL(NtUserFlashWindowEx), // 1
+/*117c*/ NUL(NtUserGetAltTabInfo), // 6
+/*117d*/ NUL(NtUserGetAncestor), // 2
+/*117e*/ NUL(NtUserGetAppImeLevel), // 1
+/*117f*/ NUL(NtUserGetAsyncKeyState), // 1
+/*1180*/ NUL(NtUserGetAtomName), // 2
+/*1181*/ IMP(NtUserGetCaretBlinkTime, 0),
+/*1182*/ NUL(NtUserGetCaretPos), // 1
+/*1183*/ IMP(NtUserGetClassInfo, 5),
+/*1184*/ NUL(NtUserGetClassName), // 3
+/*1185*/ NUL(NtUserGetClipboardData), // 2
+/*1186*/ NUL(NtUserGetClipboardFormatName), // 3
+/*1187*/ NUL(NtUserGetClipboardOwner), // 0
+/*1188*/ NUL(NtUserGetClipboardSequenceNumber), // 0
+/*1189*/ NUL(NtUserGetClipboardViewer), // 0
+/*118a*/ NUL(NtUserGetClipCursor), // 1
+/*118b*/ NUL(NtUserGetComboBoxInfo), // 2
+/*118c*/ NUL(NtUserGetControlBrush), // 3
+/*118d*/ NUL(NtUserGetControlColor), // 4
+/*118e*/ NUL(NtUserGetCPD), // 3
+/*118f*/ NUL(NtUserGetCursorFrameInfo), // 4
+/*1190*/ NUL(NtUserGetCursorInfo), // 1
+/*1191*/ IMP(NtUserGetDC, 1),
+/*1192*/ NUL(NtUserGetDCEx), // 3
+/*1193*/ NUL(NtUserGetDoubleClickTime), // 0
+/*1194*/ NUL(NtUserGetForegroundWindow), // 0
+/*1195*/ NUL(NtUserGetGuiResources), // 2
+/*1196*/ NUL(NtUserGetGUIThreadInfo), // 2
+/*1197*/ NUL(NtUserGetIconInfo), // 6
+/*1198*/ NUL(NtUserGetIconSize), // 4
+/*1199*/ NUL(NtUserGetImeHotKey), // 4
+/*119a*/ NUL(NtUserGetImeInfoEx), // 2
+/*119b*/ NUL(NtUserGetInternalWindowPos), // 3
+/*119c*/ IMP(NtUserGetKeyboardLayoutList, 2),
+/*119d*/ NUL(NtUserGetKeyboardLayoutName), // 1
+/*119e*/ NUL(NtUserGetKeyboardState), // 1
+/*119f*/ NUL(NtUserGetKeyNameText), // 3
+/*11a0*/ NUL(NtUserGetKeyState), // 1
+/*11a1*/ NUL(NtUserGetListBoxInfo), // 1
+/*11a2*/ NUL(NtUserGetMenuBarInfo), // 4
+/*11a3*/ NUL(NtUserGetMenuIndex), // 2
+/*11a4*/ NUL(NtUserGetMenuItemRect), // 4
+/*11a5*/ IMP(NtUserGetMessage, 4),
+/*11a6*/ NUL(NtUserGetMouseMovePointsEx), // 5
+/*11a7*/ NUL(NtUserGetObjectInformation), // 5
+/*11a8*/ NUL(NtUserGetOpenClipboardWindow), // 0
+/*11a9*/ NUL(NtUserGetPriorityClipboardFormat), // 2
+/*11aa*/ IMP(NtUserGetProcessWindowStation, 0),
+/*11ab*/ NUL(NtUserGetRawInputBuffer), // 3
+/*11ac*/ NUL(NtUserGetRawInputData), // 5
+/*11ad*/ NUL(NtUserGetRawInputDeviceInfo), // 4
+/*11ae*/ NUL(NtUserGetRawInputDeviceList), // 3
+/*11af*/ NUL(NtUserGetRegisteredRawInputDevices), // 3
+/*11b0*/ NUL(NtUserGetScrollBarInfo), // 3
+/*11b1*/ NUL(NtUserGetSystemMenu), // 2
+/*11b2*/ IMP(NtUserGetThreadDesktop, 2),
+/*11b3*/ IMP(NtUserGetThreadState, 1),
+/*11b4*/ NUL(NtUserGetTitleBarInfo), // 2
+/*11b5*/ NUL(NtUserGetUpdateRect), // 3
+/*11b6*/ NUL(NtUserGetUpdateRgn), // 3
+/*11b7*/ NUL(NtUserGetWindowDC), // 1
+/*11b8*/ NUL(NtUserGetWindowPlacement), // 2
+/*11b9*/ NUL(NtUserGetWOWClass), // 2
+/*11ba*/ NUL(NtUserHardErrorControl), // 3
+/*11bb*/ NUL(NtUserHideCaret), // 1
+/*11bc*/ NUL(NtUserHiliteMenuItem), // 4
+/*11bd*/ NUL(NtUserImpersonateDdeClientWindow), // 2
+/*11be*/ IMP(NtUserInitialize, 3),
+/*11bf*/ IMP(NtUserInitializeClientPfnArrays, 4),
+/*11c0*/ NUL(NtUserInitTask), // 12
+/*11c1*/ NUL(NtUserInternalGetWindowText), // 3
+/*11c2*/ NUL(NtUserInvalidateRect), // 3
+/*11c3*/ NUL(NtUserInvalidateRgn), // 3
+/*11c4*/ NUL(NtUserIsClipboardFormatAvailable), // 1
+/*11c5*/ NUL(NtUserKillTimer), // 2
+/*11c6*/ IMP(NtUserLoadKeyboardLayoutEx, 6),
+/*11c7*/ NUL(NtUserLockWindowStation), // 1
+/*11c8*/ NUL(NtUserLockWindowUpdate), // 1
+/*11c9*/ NUL(NtUserLockWorkStation), // 0
+/*11ca*/ NUL(NtUserMapVirtualKeyEx), // 4
+/*11cb*/ NUL(NtUserMenuItemFromPoint), // 4
+/*11cc*/ NUL(NtUserMessageCall), // 7
+/*11cd*/ NUL(NtUserMinMaximize), // 3
+/*11ce*/ NUL(NtUserMNDragLeave), // 0
+/*11cf*/ NUL(NtUserMNDragOver), // 2
+/*11d0*/ NUL(NtUserModifyUserStartupInfoFlags), // 2
+/*11d1*/ NUL(NtUserMoveWindow), // 6
+/*11d2*/ NUL(NtUserNotifyIMEStatus), // 3
+/*11d3*/ IMP(NtUserNotifyProcessCreate, 4),
+/*11d4*/ NUL(NtUserNotifyWinEvent), // 4
+/*11d5*/ NUL(NtUserOpenClipboard), // 2
+/*11d6*/ NUL(NtUserOpenDesktop), // 3
+/*11d7*/ NUL(NtUserOpenInputDesktop), // 3
+/*11d8*/ NUL(NtUserOpenWindowStation), // 2
+/*11d9*/ NUL(NtUserPaintDesktop), // 1
+/*11da*/ NUL(NtUserPeekMessage), // 5
+/*11db*/ NUL(NtUserPostMessage), // 4
+/*11dc*/ NUL(NtUserPostThreadMessage), // 4
+/*11dd*/ NUL(NtUserPrintWindow), // 3
+/*11de*/ IMP(NtUserProcessConnect, 3),
+/*11df*/ NUL(NtUserQueryInformationThread), // 5
+/*11e0*/ NUL(NtUserQueryInputContext), // 2
+/*11e1*/ NUL(NtUserQuerySendMessage), // 1
+/*11e2*/ NUL(NtUserQueryUserCounters), // 5
+/*11e3*/ NUL(NtUserQueryWindow), // 2
+/*11e4*/ NUL(NtUserRealChildWindowFromPoint), // 3
+/*11e5*/ NUL(NtUserRealInternalGetMessage), // 6
+/*11e6*/ NUL(NtUserRealWaitMessageEx), // 2
+/*11e7*/ NUL(NtUserRedrawWindow), // 4
+/*11e8*/ IMP(NtUserRegisterClassExWOW, 6),
+/*11e9*/ NUL(NtUserRegisterUserApiHook), // 2
+/*11ea*/ NUL(NtUserRegisterHotKey), // 4
+/*11eb*/ NUL(NtUserRegisterRawInputDevices), // 3
+/*11ec*/ NUL(NtUserRegisterTasklist), // 1
+/*11ed*/ IMP(NtUserRegisterWindowMessage, 1),
+/*11ee*/ NUL(NtUserRemoveMenu), // 3
+/*11ef*/ NUL(NtUserRemoveProp), // 2
+/*11f0*/ NUL(NtUserResolveDesktop), // 4
+/*11f1*/ NUL(NtUserResolveDesktopForWOW), // 1
+/*11f2*/ NUL(NtUserSBGetParms), // 4
+/*11f3*/ NUL(NtUserScrollDC), // 7
+/*11f4*/ NUL(NtUserScrollWindowEx),
+/*11f5*/ IMP(NtUserSelectPalette, 3),
+/*11f6*/ NUL(NtUserSendInput), // 3
+/*11f7*/ NUL(NtUserSetActiveWindow), // 1
+/*11f8*/ NUL(NtUserSetAppImeLevel), // 2
+/*11f9*/ NUL(NtUserSetCapture), // 1
+/*11fa*/ NUL(NtUserSetClassLong), // 4
+/*11fb*/ NUL(NtUserSetClassWord), // 3
+/*11fc*/ NUL(NtUserSetClipboardData), // 3
+/*11fd*/ NUL(NtUserSetClipboardViewer), // 1
+/*11fe*/ NUL(NtUserSetConsoleReserveKeys), // 2
+/*11ff*/ NUL(NtUserSetCursor), // 1
+/*1200*/ NUL(NtUserSetCursorContents), // 2
+/*1201*/ IMP(NtUserSetCursorIconData, 4),
+/*1202*/ NUL(NtUserSetDbgTag), // 2
+/*1203*/ NUL(NtUserSetFocus), // 1
+/*1204*/ IMP(NtUserSetImeHotKey, 5),
+/*1205*/ NUL(NtUserSetImeInfoEx), // 1
+/*1206*/ NUL(NtUserSetImeOwnerWindow), // 2
+/*1207*/ NUL(NtUserSetInformationProcess), // 4
+/*1208*/ IMP(NtUserSetInformationThread, 4),
+/*1209*/ NUL(NtUserSetInternalWindowPos), // 4
+/*120a*/ NUL(NtUserSetKeyboardState), // 1
+/*120b*/ IMP(NtUserSetLogonNotifyWindow, 1),
+/*120c*/ NUL(NtUserSetMenu), // 3
+/*120d*/ NUL(NtUserSetMenuContextHelpId), // 2
+/*120e*/ NUL(NtUserSetMenuDefaultItem), // 3
+/*120f*/ NUL(NtUserSetMenuFlagRtoL), // 1
+/*1210*/ NUL(NtUserSetObjectInformation), // 4
+/*1211*/ NUL(NtUserSetParent), // 2
+/*1212*/ IMP(NtUserSetProcessWindowStation, 1),
+/*1213*/ NUL(NtUserSetProp), // 3
+/*1214*/ NUL(NtUserSetRipFlags), // 2
+/*1215*/ NUL(NtUserSetScrollInfo), // 4
+/*1216*/ NUL(NtUserSetShellWindowEx), // 2
+/*1217*/ NUL(NtUserSetSysColors), // 4
+/*1218*/ NUL(NtUserSetSystemCursor), // 2
+/*1219*/ NUL(NtUserSetSystemMenu), // 2
+/*121a*/ NUL(NtUserSetSystemTimer), // 4
+/*121b*/ IMP(NtUserSetThreadDesktop, 1),
+/*121c*/ NUL(NtUserSetThreadLayoutHandles), // 2
+/*121d*/ NUL(NtUserSetThreadState), // 2
+/*121e*/ NUL(NtUserSetTimer), // 4
+/*121f*/ NUL(NtUserSetWindowFNID), // 2
+/*1220*/ NUL(NtUserSetWindowLong), // 4
+/*1221*/ NUL(NtUserSetWindowPlacement), // 2
+/*1222*/ NUL(NtUserSetWindowPos), // 7
+/*1223*/ NUL(NtUserSetWindowRgn), // 3
+/*1224*/ NUL(NtUserSetWindowsHookAW), // 3
+/*1225*/ NUL(NtUserSetWindowsHookEx), // 6
+/*1226*/ IMP(NtUserSetWindowStationUser, 4),
+/*1227*/ NUL(NtUserSetWindowWord), // 3
+/*1228*/ NUL(NtUserSetWinEventHook), // 8
+/*1229*/ NUL(NtUserShowCaret), // 1
+/*122a*/ NUL(NtUserShowScrollBar), // 3
+/*122b*/ NUL(NtUserShowWindow), // 2
+/*122c*/ NUL(NtUserShowWindowAsync), // 2
+/*122d*/ NUL(NtUserSoundSentry), // 0
+/*122e*/ NUL(NtUserSwitchDesktop), // 1
+/*122f*/ IMP(NtUserSystemParametersInfo, 4),
+/*1230*/ NUL(NtUserTestForInteractiveUser), // 1
+/*1231*/ NUL(NtUserThunkedMenuInfo), // 2
+/*1232*/ NUL(NtUserThunkedMenuItemInfo), // 6
+/*1233*/ NUL(NtUserToUnicodeEx), // 7
+/*1234*/ NUL(NtUserTrackMouseEvent), // 1
+/*1235*/ NUL(NtUserTrackPopupMenuEx), // 6
+/*1236*/ NUL(NtUserCalcMenuBar), // 5
+/*1237*/ NUL(NtUserPaintMenuBar), // 6
+/*1238*/ NUL(NtUserTranslateAccelerator), // 3
+/*1239*/ NUL(NtUserTranslateMessage), // 2
+/*123a*/ NUL(NtUserUnhookWindowsHookEx), // 1
+/*123b*/ NUL(NtUserUnhookWinEvent), // 1
+/*123c*/ NUL(NtUserUnloadKeyboardLayout), // 1
+/*123d*/ NUL(NtUserUnlockWindowStation), // 1
+/*123e*/ NUL(NtUserUnregisterClass), // 3
+/*123f*/ NUL(NtUserUnregisterUserApiHook), // 0
+/*1240*/ NUL(NtUserUnregisterHotKey), // 2
+/*1241*/ NUL(NtUserUpdateInputContext), // 3
+/*1242*/ NUL(NtUserUpdateInstance), // 3
+/*1243*/ NUL(NtUserUpdateLayeredWindow), // 9
+/*1244*/ NUL(NtUserGetLayeredWindowAttributes), // 4
+/*1245*/ NUL(NtUserSetLayeredWindowAttributes), // 4
+/*1246*/ IMP(NtUserUpdatePerUserSystemParameters, 2),
+/*1247*/ NUL(NtUserUserHandleGrantAccess), // 3
+/*1248*/ NUL(NtUserValidateHandleSecure), // 2
+/*1249*/ NUL(NtUserValidateRect), // 2
+/*124a*/ NUL(NtUserValidateTimerCallback), // 3
+/*124b*/ NUL(NtUserVkKeyScanEx), // 3
+/*124c*/ NUL(NtUserWaitForInputIdle), // 3
+/*124d*/ NUL(NtUserWaitForMsgAndEvent), // 1
+/*124e*/ NUL(NtUserWaitMessage), // 0
+/*124f*/ NUL(NtUserWin32PoolAllocationStats), // 6
+/*1250*/ NUL(NtUserWindowFromPoint), // 2
+/*1251*/ NUL(NtUserYieldTask), // 0
+/*1252*/ NUL(NtUserRemoteConnect), // 3
+/*1253*/ NUL(NtUserRemoteRedrawRectangle), // 4
+/*1254*/ NUL(NtUserRemoteRedrawScreen), // 0
+/*1255*/ NUL(NtUserRemoteStopScreenUpdates), // 0
+/*1256*/ NUL(NtUserCtxDisplayIOCtl), // 3
+/*1257*/ NUL(NtGdiEngAssociateSurface), // 3
+/*1258*/ NUL(NtGdiEngCreateBitmap), // 6
+/*1259*/ NUL(NtGdiEngCreateDeviceSurface), // 4
+/*125a*/ NUL(NtGdiEngCreateDeviceBitmap), // 4
+/*125b*/ NUL(NtGdiEngCreatePalette), // 6
+/*125c*/ NUL(NtGdiEngComputeGlyphSet), // 3
+/*125d*/ NUL(NtGdiEngCopyBits), // 6
+/*125e*/ NUL(NtGdiEngDeletePalette), // 1
+/*125f*/ NUL(NtGdiEngDeleteSurface), // 1
+/*1260*/ NUL(NtGdiEngEraseSurface), // 3
+/*1261*/ NUL(NtGdiEngUnlockSurface), // 1
+/*1262*/ NUL(NtGdiEngLockSurface), // 1
+/*1263*/ NUL(NtGdiEngBitBlt), // 11
+/*1264*/ NUL(NtGdiEngStretchBlt), // 11
+/*1265*/ NUL(NtGdiEngPlgBlt), // 11
+/*1266*/ NUL(NtGdiEngMarkBandingSurface), // 1
+/*1267*/ NUL(NtGdiEngStrokePath), // 8
+/*1268*/ NUL(NtGdiEngFillPath), // 7
+/*1269*/ NUL(NtGdiEngStrokeAndFillPath), // 10
+/*126a*/ NUL(NtGdiEngPaint), // 5
+/*126b*/ NUL(NtGdiEngLineTo), // 9
+/*126c*/ NUL(NtGdiEngAlphaBlend), // 7
+/*126d*/ NUL(NtGdiEngGradientFill), // 10
+/*126e*/ NUL(NtGdiEngTransparentBlt), // 8
+/*126f*/ NUL(NtGdiEngTextOut), // 10
+/*1270*/ NUL(NtGdiEngStretchBltROP), // 13
+/*1271*/ NUL(NtGdiXLATEOBJ_cGetPalette), // 4
+/*1272*/ NUL(NtGdiXLATEOBJ_iXlate), // 2
+/*1273*/ NUL(NtGdiXLATEOBJ_hGetColorTransform), // 1
+/*1274*/ NUL(NtGdiCLIPOBJ_bEnum), // 3
+/*1275*/ NUL(NtGdiCLIPOBJ_cEnumStart), // 5
+/*1276*/ NUL(NtGdiCLIPOBJ_ppoGetPath), // 1
+/*1277*/ NUL(NtGdiEngDeletePath), // 1
+/*1278*/ NUL(NtGdiEngCreateClip), // 0
+/*1279*/ NUL(NtGdiEngDeleteClip), // 1
+/*127a*/ NUL(NtGdiBRUSHOBJ_ulGetBrushColor), // 1
+/*127b*/ NUL(NtGdiBRUSHOBJ_pvAllocRbrush), // 2
+/*127c*/ NUL(NtGdiBRUSHOBJ_pvGetRbrush), // 1
+/*127d*/ NUL(NtGdiBRUSHOBJ_hGetColorTransform), // 1
+/*127e*/ NUL(NtGdiXFORMOBJ_bApplyXform), // 5
+/*127f*/ NUL(NtGdiXFORMOBJ_iGetXform), // 2
+/*1280*/ NUL(NtGdiFONTOBJ_vGetInfo), // 3
+/*1281*/ NUL(NtGdiFONTOBJ_pxoGetXform), // 1
+/*1282*/ NUL(NtGdiFONTOBJ_cGetGlyphs), // 5
+/*1283*/ NUL(NtGdiFONTOBJ_pifi), // 1
+/*1284*/ NUL(NtGdiFONTOBJ_pfdg), // 1
+/*1285*/ NUL(NtGdiFONTOBJ_pQueryGlyphAttrs), // 2
+/*1286*/ NUL(NtGdiFONTOBJ_pvTrueTypeFontFile), // 2
+/*1287*/ NUL(NtGdiFONTOBJ_cGetAllGlyphHandles), // 2
+/*1288*/ NUL(NtGdiSTROBJ_bEnum), // 3
+/*1289*/ NUL(NtGdiSTROBJ_bEnumPositionsOnly), // 3
+/*128a*/ NUL(NtGdiSTROBJ_bGetAdvanceWidths), // 4
+/*128b*/ NUL(NtGdiSTROBJ_vEnumStart), // 1
+/*128c*/ NUL(NtGdiSTROBJ_dwGetCodePage), // 1
+/*128d*/ NUL(NtGdiPATHOBJ_vGetBounds), // 2
+/*128e*/ NUL(NtGdiPATHOBJ_bEnum), // 2
+/*128f*/ NUL(NtGdiPATHOBJ_vEnumStart), // 1
+/*1290*/ NUL(NtGdiPATHOBJ_vEnumStartClipLines), // 4
+/*1291*/ NUL(NtGdiPATHOBJ_bEnumClipLines), // 3
+/*1292*/ NUL(NtGdiGetDhpdev), // 1
+/*1293*/ NUL(NtGdiEngCheckAbort), // 1
+/*1294*/ NUL(NtGdiHT_Get8BPPFormatPalette), // 4
+/*1295*/ NUL(NtGdiHT_Get8BPPMaskPalette), // 6
+/*1296*/ NUL(NtGdiUpdateTransform), // 1
+/*1297*/ NUL(NtGdiSetPUMPDOBJ), // 4
+/*1298*/ NUL(NtGdiBRUSHOBJ_DeleteRbrush), // 2
+/*1299*/ NUL(NtGdiUnmapMemFont), // 1
+/*129a*/ NUL(NtGdiDrawStream), // 3
+};
+
 int option_trace;
 
 ntcalldesc *ntcalls;
-ULONG number_of_ntcalls = sizeof ntcalls/sizeof ntcalls[0];
+ULONG number_of_ntcalls;
+
+ntcalldesc *ntuicalls;
+ULONG number_of_uicalls;
+
+static ULONG uicall_offset = 0x1000;
 
 void init_syscalls(bool xp)
 {
@@ -1386,11 +2061,15 @@ void init_syscalls(bool xp)
 	{
 		number_of_ntcalls = sizeof winxp_calls/sizeof winxp_calls[0];
 		ntcalls = winxp_calls;
+		number_of_uicalls = sizeof winxp_uicalls/sizeof winxp_uicalls[0];
+		ntuicalls = winxp_uicalls;
 	}
 	else
 	{
 		number_of_ntcalls = sizeof win2k_calls/sizeof win2k_calls[0];
 		ntcalls = win2k_calls;
+		number_of_uicalls = sizeof win2k_uicalls/sizeof win2k_uicalls[0];
+		ntuicalls = win2k_uicalls;
 	}
 }
 
@@ -1425,16 +2104,17 @@ NTSTATUS do_nt_syscall(ULONG id, ULONG func, ULONG *uargs, ULONG retaddr)
 	NTSTATUS r = STATUS_INVALID_SYSTEM_SERVICE;
 	ntcalldesc *ntcall = 0;
 	ULONG args[16];
-	int magic = 0x1248;
+	const int magic_val = 0x1248;	// random unlikely value
+	int magic = magic_val;
 	BOOLEAN win32k_func = FALSE;
 
 	/* check the call number is in range */
 	if (func >= 0 && func < number_of_ntcalls)
 		ntcall = &ntcalls[func];
-	else if (func >= 0x1000 && func <= 0x127e)
+	else if (func >= uicall_offset && func <= (uicall_offset + number_of_uicalls))
 	{
 		win32k_func = TRUE;
-		ntcall = &ntgdicalls[func - 0x1000];
+		ntcall = &ntuicalls[func - uicall_offset];
 	}
 	else
 	{
@@ -1503,7 +2183,7 @@ NTSTATUS do_nt_syscall(ULONG id, ULONG func, ULONG *uargs, ULONG retaddr)
 		: "%edi"	// clobber
 	);
 
-	assert( magic == 0x1248 );
+	assert( magic == magic_val );
 
 end:
 	trace_syscall_exit(id, ntcall, r, retaddr);
