@@ -1305,3 +1305,30 @@ NTSTATUS NTAPI NtSetDefaultHardErrorPort(
 
 	return STATUS_SUCCESS;
 }
+
+//syscall NtQueryInformationPort (9a) not implemented
+NTSTATUS NTAPI NtQueryInformationPort(
+	HANDLE PortHandle,
+	PORT_INFORMATION_CLASS InformationClass,
+	PVOID Buffer,
+	ULONG Length,
+	PULONG ReturnLength )
+{
+	port_t *port = 0;
+	NTSTATUS r;
+
+	dprintf("%p\n", PortHandle );
+
+	r = port_from_handle( PortHandle, port );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	switch (InformationClass)
+	{
+	default:
+		return STATUS_INVALID_INFO_CLASS;
+	}
+
+	return STATUS_SUCCESS;
+}
+

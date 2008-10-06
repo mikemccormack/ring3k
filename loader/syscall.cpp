@@ -212,7 +212,7 @@ ntcalldesc win2k_calls[] = {
 	IMP( NtQueryInformationJobObject, 5 ),
 
 	DEC( NtQueryIoCompletion, 5 ),
-	DEC( NtQueryInformationPort, 5 ),
+	IMP( NtQueryInformationPort, 5 ),
 	IMP( NtQueryInformationProcess, 5 ),
 	IMP( NtQueryInformationThread, 5 ),
 
@@ -559,7 +559,7 @@ ntcalldesc winxp_calls[] = {
 	IMP( NtQueryInformationFile, 5 ),
 
 	IMP( NtQueryInformationJobObject, 5 ),
-	DEC( NtQueryInformationPort, 5 ),
+	IMP( NtQueryInformationPort, 5 ),
 	IMP( NtQueryInformationProcess, 5 ),
 	IMP( NtQueryInformationThread, 5 ),
 
