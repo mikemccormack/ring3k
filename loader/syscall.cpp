@@ -559,14 +559,14 @@ ntcalldesc winxp_calls[] = {
 	IMP( NtQueryInformationFile, 5 ),
 
 	IMP( NtQueryInformationJobObject, 5 ),
-	DEC( NtQueryIoCompletion, 5 ),
 	DEC( NtQueryInformationPort, 5 ),
 	IMP( NtQueryInformationProcess, 5 ),
-
 	IMP( NtQueryInformationThread, 5 ),
+
 	IMP( NtQueryInformationToken, 5 ),
 	IMP( NtQueryInstallUILanguage, 1 ),
 	DEC( NtQueryIntervalProfile, 2 ),
+	DEC( NtQueryIoCompletion, 5 ),
 
 	/* 0xa0 */
 	IMP( NtQueryKey, 5 ),
