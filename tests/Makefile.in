@@ -53,9 +53,9 @@ ISO = nttests.iso
 
 .PHONY: all clean
 
-NTWIN32LIB=win2k/libntwin32.a
+NTWIN32LIB=win2k/ntwin32.dll
 
-all: $(SOURCE:.c=.exe) $(ISO)
+all: $(SOURCE:.c=.exe) $(ISO) winxp/ntwin32.dll win2k/ntwin32.dll
 
 DEPFILES = $(SOURCE:%.c=.%.d)
 
@@ -66,13 +66,8 @@ runtests.bat: Makefile
 	for f in $(TESTS:%.c=%.exe); do echo @hostnt.exe $$f >> $@ ; done
 
 # ntwin32.dll differs between windows versions
-#win2k/ntwin32.dll win2k/libntwin32.a: win2k/ntwin32.o
-#	$(CC) -o $@ -shared -nostartfiles -nodefaultlibs -Wl,--out-implib,win2k/libntwin32.a $<
-
-win2k/libntwin32.a: win2k/ntwin32.o
-	$(RM) $@
-	$(AR) rv $@ $<
-	$(RANLIB) $@
+win2k/ntwin32.dll: win2k/ntwin32.o
+	$(CC) -o $@ -shared -nostartfiles -nodefaultlibs $<
 
 win2k/ntwin32.o: win2k/ntwin32.s
 	$(AS) -o $@ $<
@@ -80,8 +75,8 @@ win2k/ntwin32.o: win2k/ntwin32.s
 win2k/ntwin32.s: win2k/ntwin32.in gen_syscalls.pl
 	perl gen_syscalls.pl $< > $@
 
-#winxp/ntwin32.dll winxp/libntwin32.a: winxp/ntwin32.o
-#	$(CC) -o $@ -shared -nostartfiles -nodefaultlibs -Wl,--out-implib,winxp/libntwin32.a $<
+winxp/ntwin32.dll: winxp/ntwin32.o
+	$(CC) -o $@ -shared -nostartfiles -nodefaultlibs $<
 
 winxp/ntwin32.o: winxp/ntwin32.s
 	$(AS) -o $@ $<

@@ -2104,14 +2104,14 @@ NTSTATUS do_nt_syscall(ULONG id, ULONG func, ULONG *uargs, ULONG retaddr)
 	NTSTATUS r = STATUS_INVALID_SYSTEM_SERVICE;
 	ntcalldesc *ntcall = 0;
 	ULONG args[16];
-	const int magic_val = 0x1248;	// random unlikely value
+	const int magic_val = 0xfedc1248;	// random unlikely value
 	int magic = magic_val;
 	BOOLEAN win32k_func = FALSE;
 
 	/* check the call number is in range */
 	if (func >= 0 && func < number_of_ntcalls)
 		ntcall = &ntcalls[func];
-	else if (func >= uicall_offset && func <= (uicall_offset + number_of_uicalls))
+	else if (func >= uicall_offset && func < (uicall_offset + number_of_uicalls))
 	{
 		win32k_func = TRUE;
 		ntcall = &ntuicalls[func - uicall_offset];

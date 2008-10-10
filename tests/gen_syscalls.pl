@@ -20,6 +20,17 @@
 
 my $infile = $ARGV[0];
 open(IN,"<$infile") || die("failed to open $infile\n");
+
+# need an entry point
+print <<EOF
+	.text
+.globl _DllMain
+_DllMain:
+	movl \$1, %eax
+	ret \$12
+EOF
+;
+
 while(<IN>) {
     s/#.*$//;
     next if ( /^$/ );

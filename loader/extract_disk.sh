@@ -167,12 +167,14 @@ then
 	echo "Windows 2000 ISO found"
 	iso="$win2kiso"
 	sys32files="$win2ksys32files"
+	win32dlldir="win2k"
 else
 	if test -f $winxpiso
 	then
 		echo "Windows XP ISO found"
 		iso="$winxpiso"
 		sys32files="$winxpsys32files"
+		win32dlldir="winxp"
 	else
 		echo "Missing a Windows 2000 or XP ISO image to extract files from"
 		exit 1
@@ -247,7 +249,4 @@ cat > "$root/winnt/win.ini" <<EOF
 
 EOF
 
-for testexe in atom event file mutant port reg runnt section seh sema thread token virtual
-do
-	cp ../tests/$testexe.exe $root/tests
-done
+cp "../tests/$win32dlldir/ntwin32.dll" "$root"
