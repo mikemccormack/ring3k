@@ -50,6 +50,8 @@ struct process_t : public sync_object_t {
 
 	win32k_info_t *win32k_info;
 
+	ULONG execute_flags;
+
 public:
 	NTSTATUS create_exe_ppb( RTL_USER_PROCESS_PARAMETERS **pparams, OBJECT_ATTRIBUTES *oa );
 	NTSTATUS create_parameters(

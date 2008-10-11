@@ -630,6 +630,7 @@ NTSTATUS NTAPI NtSetInformationProcess(
 		BOOLEAN foreground;
 		PROCESS_PRIORITY_CLASS priority_class;
 		BOOLEAN enable_alignment_fault_fixup;
+		ULONG execute_flags;
 	} info;
 	ULONG sz = 0;
 
@@ -660,6 +661,9 @@ NTSTATUS NTAPI NtSetInformationProcess(
 		break;
 	case ProcessEnableAlignmentFaultFixup:
 		sz = sizeof info.enable_alignment_fault_fixup;
+		break;
+	case ProcessExecuteFlags:
+		sz = sizeof info.execute_flags;
 		break;
 	default:
 		return STATUS_INVALID_INFO_CLASS;
@@ -719,6 +723,14 @@ NTSTATUS NTAPI NtSetInformationProcess(
 				info.enable_alignment_fault_fixup);
 		break;
 
+	case ProcessExecuteFlags:
+		dprintf("setting to %08lx (%s%s%s)\n", info.execute_flags,
+			(info.execute_flags & MEM_EXECUTE_OPTION_DISABLE) ? "disable " : "",
+			(info.execute_flags & MEM_EXECUTE_OPTION_ENABLE) ? "enable " : "",
+			(info.execute_flags & MEM_EXECUTE_OPTION_PERMANENT) ? "permanent" : "");
+		p->execute_flags = info.execute_flags;
+		break;
+
 	default:
 		dprintf("unimplemented class %d\n", ProcessInformationClass);
 	}
@@ -738,6 +750,7 @@ NTSTATUS NTAPI NtQueryInformationProcess(
 		PROCESS_DEVICEMAP_INFORMATION device_map;
 		PROCESS_SESSION_INFORMATION session;
 		ULONG hard_error_mode;
+		ULONG execute_flags;
 	} info;
 	ULONG len, sz = 0;
 	NTSTATUS r;
@@ -764,9 +777,15 @@ NTSTATUS NTAPI NtQueryInformationProcess(
 		sz = sizeof info.hard_error_mode;
 		break;
 
+	case ProcessExecuteFlags:
+		sz = sizeof info.execute_flags;
+		break;
+
+	case ProcessExceptionPort:
+		return STATUS_INVALID_INFO_CLASS;
+
 	default:
 		dprintf("info class %d\n", ProcessInformationClass);
-	case ProcessExceptionPort:
 		return STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -798,6 +817,10 @@ NTSTATUS NTAPI NtQueryInformationProcess(
 
 	case ProcessDefaultHardErrorMode:
 		info.hard_error_mode = p->hard_error_mode;
+		break;
+
+	case ProcessExecuteFlags:
+		info.execute_flags = p->execute_flags;
 		break;
 
 	default:
