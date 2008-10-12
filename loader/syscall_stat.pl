@@ -2,36 +2,27 @@
 use strict;
 
 sub count_syscalls($) {
-	my $type = shift;
+	my $header = shift;
 	my $functions;
 	my $undeclared;
 	my $declared;
 	my $implemented;
 	my $start;
-	open(FILE,"<syscall.cpp") || die;
+	open(FILE,"<../include/$header.h") || die;
 	while(<FILE>) {
-		if ( /^ntcalldesc $type/ ) {
-			$start = 1;
+		if (/NUL/) {
+			$undeclared++;
 		}
-		
-		if ($start && /^};/) {
-			$start = 0;
+		if (/DEC/) {
+			$declared++;
 		}
-		if ($start) {
-			if (/NUL/) {
-				$undeclared++;
-			}
-			if (/DEC/) {
-				$declared++;
-			}
-			if (/IMP/) {
-				$implemented++;
-			}
+		if (/IMP/) {
+			$implemented++;
 		}
 	}
 	close FILE;
 	$functions = $undeclared + $declared + $implemented;
-	printf ("%s:\n", $type);
+	printf ("%s:\n", $header);
 	printf ("\tundeclared:    %3d (%2.0f%%)\n", $undeclared, 100*$undeclared/$functions);
 	printf ("\tdeclared:      %3d (%2.0f%%)\n", $declared, 100*$declared/$functions);
 	printf ("\timplemented:   %3d (%2.0f%%)\n", $implemented, 100*$implemented/$functions);
@@ -39,5 +30,5 @@ sub count_syscalls($) {
 	printf ("\n");
 }
 
-count_syscalls("ntcalls");
-count_syscalls("ntgdicalls");
+count_syscalls("ntsyscall");
+count_syscalls("uisyscall");
