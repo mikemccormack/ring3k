@@ -355,7 +355,7 @@ BOOLEAN thread_impl_t::software_interrupt( BYTE number )
 	switch (number)
 	{
 	case 0x2b:
-		r = NtSetHighWaitLowThread();
+		r = NtCallbackReturn( (void*) ctx.Ecx, ctx.Edx, ctx.Eax );
 		break;
 
 	case 0x2c:
