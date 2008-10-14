@@ -223,8 +223,17 @@ typedef enum _PROCESSINFOCLASS {
 	ProcessDebugObjectHandle = 30,
 	ProcessDebugFlags = 31,
 	ProcessHandleTracing = 32,
+	ProcessIoPriority = 33,
+	ProcessExecuteFlags = 34,
+	ProcessTlsInformation = 35,
+	ProcessCookie = 36,
+	ProcessImageInformation = 37,
 	MaxProcessInfoClass
 } PROCESSINFOCLASS, PROCESS_INFORMATION_CLASS;
+
+#define MEM_EXECUTE_OPTION_DISABLE   0x01
+#define MEM_EXECUTE_OPTION_ENABLE    0x02
+#define MEM_EXECUTE_OPTION_PERMANENT 0x08
 
 typedef enum _THREADINFOCLASS {
 	ThreadBasicInformation,
