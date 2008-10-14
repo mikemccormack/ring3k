@@ -17,6 +17,10 @@ do
 		tt=1
 		shift
 		;;
+	-t)
+		trace=1
+		shift
+		;;
 	*)
 		t="$1.exe"
 		shift
@@ -48,4 +52,4 @@ fi
 # copy the test into the NT directory
 cp ../tests/$t drive/tests
 ntexepath="\\??\\c:\\tests\\$t"
-exec "$loader" ${tt:+"-s"} ${quiet:+"-q"} "$ntexepath"
+exec "$loader" ${tt:+"-s"} ${quiet:+"-q"} ${trace:+"-t"} "$ntexepath"
