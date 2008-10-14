@@ -1,5 +1,9 @@
 Things to do:
 
+- figure out how to run cmd.exe
+
+- make object store hierachical
+
 - make all waits safe for terminate (and suspend)
   write a test for thread exit issues and fix
 
@@ -29,8 +33,6 @@ Things to do:
 - read/write native registry format
 
 - documentation in textinfo
-
-- make object store hierachical
 
 
 Semi Completed:
