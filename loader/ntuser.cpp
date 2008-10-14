@@ -103,7 +103,11 @@ static ntusershm_tracer ntusershm_trace;
 
 NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSize)
 {
-	USER_PROCESS_CONNECT_INFO info;
+	union {
+		USER_PROCESS_CONNECT_INFO win2k;
+		USER_PROCESS_CONNECT_INFO_XP winxp;
+	} info;
+	const ULONG version = 0x50000;
 	NTSTATUS r;
 
 	process_t *proc = 0;
@@ -112,16 +116,21 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 		return r;
 
 	dprintf("%p %p %lu\n", Process, Buffer, BufferSize);
-
-	if (BufferSize != sizeof info)
+	if (BufferSize != sizeof info.winxp && BufferSize != sizeof info.win2k)
+	{
+		dprintf("buffer size wrong %ld (not WinXP or Win2K?)\n", BufferSize);
 		return STATUS_UNSUCCESSFUL;
+	}
 
-	r = copy_from_user( &info, Buffer, sizeof info );
+	r = copy_from_user( &info, Buffer, BufferSize );
 	if (r != STATUS_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
-	if (info.Version != 0x50000)
+	if (info.winxp.Version != version)
+	{
+		dprintf("version wrong %08lx %08lx\n", info.winxp.Version, version);
 		return STATUS_UNSUCCESSFUL;
+	}
 
 	// map the user shared memory block into the process's memory
 	if (!init_user_shared_memory())
@@ -129,20 +138,20 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 
 	BYTE *p = 0;
 	r = user_shared_section->mapit( proc->vm, p, 0,
-									MEM_COMMIT, PAGE_READONLY );
+					MEM_COMMIT, PAGE_READONLY );
 	if (r != STATUS_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
 	if (0) trace_memory( proc->vm, p, ntusershm_trace );
 
-	info.Ptr[0] = (void*)p;
-	info.Ptr[1] = (void*)0xbee20000;
-	info.Ptr[2] = (void*)0xbee30000;
-	info.Ptr[3] = (void*)0xbee40000;
+	info.win2k.Ptr[0] = (void*)p;
+	info.win2k.Ptr[1] = (void*)0xbee20000;
+	info.win2k.Ptr[2] = (void*)0xbee30000;
+	info.win2k.Ptr[3] = (void*)0xbee40000;
 
 	dprintf("user shared at %p\n", p);
 
-	r = copy_to_user( Buffer, &info, sizeof info );
+	r = copy_to_user( Buffer, &info, BufferSize );
 	if (r != STATUS_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
