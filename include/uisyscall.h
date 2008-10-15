@@ -237,7 +237,9 @@ NUL(NtGdiGetTextFaceW),
 NUL(NtGdiGetTextMetricsW),
 NUL(NtGdiGetTransform),
 NUL(NtGdiGetUFI),
+#ifdef SYSCALL_WINXP
 NUL(NtGdiGetEmbUFI), // 7
+#endif
 NUL(NtGdiGetUFIPathname),
 #ifdef SYSCALL_WINXP
 NUL(NtGdiGetEmbedFonts), // 0
@@ -548,10 +550,8 @@ NUL(NtUserScrollDC),
 NUL(NtUserScrollWindowEx),
 IMP(NtUserSelectPalette, 3),
 NUL(NtUserSendInput),
-#ifdef SYSCALL_WINXP
 NUL(NtUserSendMessageCallback),
 NUL(NtUserSendNotifyMessage),
-#endif
 NUL(NtUserSetActiveWindow),
 NUL(NtUserSetAppImeLevel),
 NUL(NtUserSetCapture),
