@@ -550,8 +550,10 @@ NUL(NtUserScrollDC),
 NUL(NtUserScrollWindowEx),
 IMP(NtUserSelectPalette, 3),
 NUL(NtUserSendInput),
+#ifdef SYSCALL_WIN2K
 NUL(NtUserSendMessageCallback),
 NUL(NtUserSendNotifyMessage),
+#endif
 NUL(NtUserSetActiveWindow),
 NUL(NtUserSetAppImeLevel),
 NUL(NtUserSetCapture),
