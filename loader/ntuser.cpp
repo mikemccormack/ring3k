@@ -636,3 +636,8 @@ BOOLEAN NTAPI NtUserConsoleControl( ULONG Id, PVOID Information, ULONG Length )
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtUserGetObjectInformation( HANDLE Object, ULONG InformationClass, PVOID Buffer, ULONG Length, PULONG ReturnLength)
+{
+	return TRUE;
+}

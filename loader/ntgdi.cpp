@@ -490,3 +490,9 @@ HANDLE NTAPI NtGdiCreateDIBSection(
 {
 	return alloc_gdi_object(FALSE, GDI_OBJECT_BITMAP, 0);
 }
+
+BOOL NTAPI NtGdiSetFontEnumeration(PVOID Unknown)
+{
+	return 0;
+}
+
