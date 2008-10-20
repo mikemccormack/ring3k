@@ -505,3 +505,8 @@ HANDLE NTAPI NtGdiEnumFontOpen(HANDLE hDC,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID)
 {
 	return alloc_gdi_object(FALSE, 0x3f, 0);
 }
+
+BOOLEAN NTAPI NtGdiEnumFontChunk(HANDLE hDC, HANDLE FontEnumeration, PVOID Buffer, PVOID, PVOID)
+{
+	return FALSE;
+}
