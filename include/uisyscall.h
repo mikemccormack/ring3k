@@ -159,7 +159,7 @@ NUL(NtGdiEndPage),
 NUL(NtGdiEndPath),
 NUL(NtGdiEnumFontChunk),
 NUL(NtGdiEnumFontClose),
-NUL(NtGdiEnumFontOpen),
+IMP(NtGdiEnumFontOpen, 7),
 NUL(NtGdiEnumObjects),
 NUL(NtGdiEqualRgn),
 #ifdef SYSCALL_WIN2K
