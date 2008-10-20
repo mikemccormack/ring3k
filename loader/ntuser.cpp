@@ -631,3 +631,8 @@ BOOLEAN NTAPI NtUserNotifyProcessCreate( ULONG NewProcessId, ULONG CreatorId, UL
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtUserConsoleControl( ULONG Id, PVOID Information, ULONG Length )
+{
+	return TRUE;
+}
