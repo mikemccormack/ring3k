@@ -510,3 +510,8 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(HANDLE hDC, HANDLE FontEnumeration, PVOID Buffe
 {
 	return FALSE;
 }
+
+BOOLEAN NTAPI NtGdiEnumFontClose(HANDLE FontEnumeration)
+{
+	return TRUE;
+}
