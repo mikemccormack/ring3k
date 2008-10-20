@@ -496,3 +496,7 @@ BOOL NTAPI NtGdiSetFontEnumeration(PVOID Unknown)
 	return 0;
 }
 
+HANDLE NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID)
+{
+	return alloc_gdi_object(FALSE, GDI_OBJECT_DC, 0);
+}
