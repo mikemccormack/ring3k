@@ -641,3 +641,8 @@ BOOLEAN NTAPI NtUserGetObjectInformation( HANDLE Object, ULONG InformationClass,
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtUserResolveDesktop(HANDLE Process, PVOID, PVOID, PHANDLE Desktop )
+{
+	return TRUE;
+}
