@@ -63,11 +63,11 @@ ULONG get_thread_exit_code( HANDLE thread )
 void copy_ustring_to_block( void* addr, ULONG *ofs, UNICODE_STRING *ustr, LPCWSTR str )
 {
 	UINT len = lstrlenW( str ) * sizeof (WCHAR);
-	memcpy( addr + *ofs, str, len );
+	memcpy( addr + *ofs, str, len + 2 );
 	ustr->Buffer = (void*) *ofs;
 	ustr->Length = len;
 	ustr->MaximumLength = len;
-	*ofs += len;
+	*ofs += (len + 2);
 }
 
 NTSTATUS create_process_parameters( HANDLE process, void *peb, LPCWSTR ImageFile, LPCWSTR DllPath,
