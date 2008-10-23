@@ -27,10 +27,111 @@
 #define GDI_OBJECT_PEN     0x30
 #define GDI_OBJECT_EXTPEN  0x50
 
+#define LF_FACESIZE     32
+#define LF_FULLFACESIZE 64
+
+typedef struct tagLOGFONTW
+{
+    LONG   lfHeight;
+    LONG   lfWidth;
+    LONG   lfEscapement;
+    LONG   lfOrientation;
+    LONG   lfWeight;
+    BYTE   lfItalic;
+    BYTE   lfUnderline;
+    BYTE   lfStrikeOut;
+    BYTE   lfCharSet;
+    BYTE   lfOutPrecision;
+    BYTE   lfClipPrecision;
+    BYTE   lfQuality;
+    BYTE   lfPitchAndFamily;
+    WCHAR  lfFaceName[LF_FACESIZE];
+} LOGFONTW, *PLOGFONTW, *LPLOGFONTW;
+
+typedef struct
+{
+  LOGFONTW elfLogFont;
+  WCHAR      elfFullName[LF_FULLFACESIZE];
+  WCHAR      elfStyle[LF_FACESIZE];
+  WCHAR      elfScript[LF_FACESIZE];
+} ENUMLOGFONTEXW,*LPENUMLOGFONTEXW;
+
+typedef struct
+{
+    LONG      tmHeight;
+    LONG      tmAscent;
+    LONG      tmDescent;
+    LONG      tmInternalLeading;
+    LONG      tmExternalLeading;
+    LONG      tmAveCharWidth;
+    LONG      tmMaxCharWidth;
+    LONG      tmWeight;
+    LONG      tmOverhang;
+    LONG      tmDigitizedAspectX;
+    LONG      tmDigitizedAspectY;
+    WCHAR     tmFirstChar;
+    WCHAR     tmLastChar;
+    WCHAR     tmDefaultChar;
+    WCHAR     tmBreakChar;
+    BYTE      tmItalic;
+    BYTE      tmUnderlined;
+    BYTE      tmStruckOut;
+    BYTE      tmPitchAndFamily;
+    BYTE      tmCharSet;
+    DWORD     ntmFlags;
+    UINT      ntmSizeEM;
+    UINT      ntmCellHeight;
+    UINT      ntmAvgWidth;
+} NEWTEXTMETRICW, *PNEWTEXTMETRICW, *LPNEWTEXTMETRICW;
+
+typedef struct
+{
+  DWORD fsUsb[4];
+  DWORD fsCsb[2];
+} FONTSIGNATURE, *PFONTSIGNATURE, *LPFONTSIGNATURE;
+
+typedef struct
+{
+    NEWTEXTMETRICW	ntmTm;
+    FONTSIGNATURE       ntmFontSig;
+} NEWTEXTMETRICEXW;
+
+#if 0
+#define MM_MAX_AXES_NAMELEN 16
+#define MM_MAX_NUMAXES 16
+
+typedef struct tagAXISINFO
+{
+  LONG axMinValue;
+  LONG axMaxValue;
+  WCHAR axAxisName[MM_MAX_AXES_NAMELEN];
+} AXISINFOW, *PAXISINFOW;
+
+typedef struct tagAXESLIST {
+  DWORD    axlReserved;
+  DWORD    axlNumAxes;
+  AXISINFOW axlAxisInfo[MM_MAX_NUMAXES];
+} AXESLISTW, *PAXESLISTW;
+
+typedef struct tagENUMTEXTMETRIC
+{
+  NEWTEXTMETRICEXW etmNewTextMetricEx;
+  AXESLISTW etmAxesList;
+} ENUMTEXTMETRICW, *PENUMTEXTMETRICW;
+#endif
+
+#define RASTER_FONTTYPE     0x0001
+#define DEVICE_FONTTYPE     0x0002
+#define TRUETYPE_FONTTYPE   0x0004
+
 NTSTATUS NTAPI NtGdiInit(void);
 HANDLE NTAPI NtGdiCreateCompatibleDC(HANDLE);
 BOOLEAN NTAPI NtGdiDeleteObjectApp(HANDLE);
+BOOLEAN NTAPI NtGdiEnumFontChunk(HANDLE,HANDLE,ULONG,PULONG,PVOID);
+BOOLEAN NTAPI NtGdiEnumFontClose(HANDLE);
+HANDLE  NTAPI NtGdiEnumFontOpen(HANDLE,ULONG,ULONG,ULONG,ULONG,ULONG,PULONG);
 HANDLE NTAPI NtGdiGetStockObject(ULONG Index);
+HANDLE  NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID);
 NTSTATUS NTAPI NtGdiQueryFontAssocInfo(HANDLE);
 
 typedef struct USER_SHARED_MEMORY_INFO {
