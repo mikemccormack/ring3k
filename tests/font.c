@@ -71,8 +71,21 @@ typedef struct _font_enum_entry {
 	ULONG offset;
 	ULONG fonttype;
 	ENUMLOGFONTEXW elfew;
+	ULONG pad1[2];
 	NEWTEXTMETRICEXW ntme;
+	ULONG pad2[4];
 } font_enum_entry;
+
+BOOL strequal( PCWSTR left, PCWSTR right )
+{
+	while (*left == *right)
+	{
+		if (!*left)
+			return TRUE;
+		left++, right++;
+	}
+	return FALSE;
+}
 
 void test_font_enum( void )
 {
@@ -104,6 +117,18 @@ void test_font_enum( void )
 
 		/*dprintf("offset %04lx type=%04lx name=%S\n",
 			 ofs, fe->fonttype, fe->elfew.elfFullName);*/
+
+		//ok( fe->size == sizeof *fe, "Size wrong %04lx %04x\n", ofs, sizeof *fe);
+
+		// first font should be system
+		if (ofs == 0)
+		{
+			ok(strequal( L"System", fe->elfew.elfFullName ), "wrong font\n");
+			ok(strequal( L"System", fe->elfew.elfLogFont.lfFaceName ), "wrong font\n");
+			ok(fe->elfew.elfLogFont.lfHeight == 16, "System font height wrong\n");
+			ok(fe->elfew.elfLogFont.lfWidth == 7, "System font width wrong\n");
+			ok(fe->offset == FIELD_OFFSET( font_enum_entry, ntme ), "field offset wrong %04lx %04lx\n", fe->offset,  FIELD_OFFSET( font_enum_entry, ntme ));
+		}
 
 		if (!fe->size)
 			break;
