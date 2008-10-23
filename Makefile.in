@@ -43,5 +43,3 @@ clean:
 distclean: clean
 	rm -rf config.status config.log autom4te.cache
 
-qemu: cdrom
-	qemu -hda ../win2k.img -cdrom $(ISO) -m 64
