@@ -111,11 +111,78 @@ typedef struct {
 	DWORD	biClrImportant;
 } BITMAPINFOHEADER, *PBITMAPINFOHEADER, *LPBITMAPINFOHEADER;
 
-typedef struct tagBITMAPINFO
-{
+typedef struct tagBITMAPINFO {
 	BITMAPINFOHEADER	bmiHeader;
 	RGBQUAD			bmiColors[1];
 } BITMAPINFO, *PBITMAPINFO, *LPBITMAPINFO;
+
+#define LF_FACESIZE     32
+#define LF_FULLFACESIZE 64
+
+typedef struct tagLOGFONTW {
+    LONG   lfHeight;
+    LONG   lfWidth;
+    LONG   lfEscapement;
+    LONG   lfOrientation;
+    LONG   lfWeight;
+    BYTE   lfItalic;
+    BYTE   lfUnderline;
+    BYTE   lfStrikeOut;
+    BYTE   lfCharSet;
+    BYTE   lfOutPrecision;
+    BYTE   lfClipPrecision;
+    BYTE   lfQuality;
+    BYTE   lfPitchAndFamily;
+    WCHAR  lfFaceName[LF_FACESIZE];
+} LOGFONTW, *PLOGFONTW, *LPLOGFONTW;
+
+typedef struct {
+  LOGFONTW elfLogFont;
+  WCHAR      elfFullName[LF_FULLFACESIZE];
+  WCHAR      elfStyle[LF_FACESIZE];
+  WCHAR      elfScript[LF_FACESIZE];
+} ENUMLOGFONTEXW,*LPENUMLOGFONTEXW;
+
+typedef struct {
+    LONG      tmHeight;
+    LONG      tmAscent;
+    LONG      tmDescent;
+    LONG      tmInternalLeading;
+    LONG      tmExternalLeading;
+    LONG      tmAveCharWidth;
+    LONG      tmMaxCharWidth;
+    LONG      tmWeight;
+    LONG      tmOverhang;
+    LONG      tmDigitizedAspectX;
+    LONG      tmDigitizedAspectY;
+    WCHAR     tmFirstChar;
+    WCHAR     tmLastChar;
+    WCHAR     tmDefaultChar;
+    WCHAR     tmBreakChar;
+    BYTE      tmItalic;
+    BYTE      tmUnderlined;
+    BYTE      tmStruckOut;
+    BYTE      tmPitchAndFamily;
+    BYTE      tmCharSet;
+    DWORD     ntmFlags;
+    UINT      ntmSizeEM;
+    UINT      ntmCellHeight;
+    UINT      ntmAvgWidth;
+} NEWTEXTMETRICW, *PNEWTEXTMETRICW, *LPNEWTEXTMETRICW;
+
+typedef struct {
+  DWORD fsUsb[4];
+  DWORD fsCsb[2];
+} FONTSIGNATURE, *PFONTSIGNATURE, *LPFONTSIGNATURE;
+
+typedef struct {
+    NEWTEXTMETRICW	ntmTm;
+    FONTSIGNATURE       ntmFontSig;
+} NEWTEXTMETRICEXW;
+
+#define RASTER_FONTTYPE     0x0001
+#define DEVICE_FONTTYPE     0x0002
+#define TRUETYPE_FONTTYPE   0x0004
 
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);

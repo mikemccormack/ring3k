@@ -501,6 +501,16 @@ HANDLE NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID)
 	return alloc_gdi_object(FALSE, GDI_OBJECT_DC, 0);
 }
 
+typedef struct _font_enum_entry {
+	ULONG size;
+	ULONG offset;
+	ULONG fonttype;
+	ENUMLOGFONTEXW elfew;
+	ULONG pad1[2];
+	NEWTEXTMETRICEXW ntme;
+	ULONG pad2[4];
+} font_enum_entry;
+
 HANDLE NTAPI NtGdiEnumFontOpen(
 	HANDLE DeviceContext,
 	ULONG,
@@ -508,8 +518,13 @@ HANDLE NTAPI NtGdiEnumFontOpen(
 	ULONG,
 	ULONG,
 	ULONG,
-	PULONG Length)
+	PULONG DataLength)
 {
+	ULONG len = sizeof (font_enum_entry);
+	NTSTATUS r = copy_to_user( DataLength, &len, sizeof len );
+	if (r != STATUS_SUCCESS)
+		return 0;
+
 	return alloc_gdi_object(FALSE, 0x3f, 0);
 }
 
@@ -520,7 +535,31 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(
 	PULONG ReturnLength,
 	PVOID Buffer)
 {
-	return FALSE;
+	font_enum_entry fee;
+	ULONG len = sizeof fee;
+	WCHAR sys[] = { 'S','y','s','t','e','m',0 };
+
+	if (BufferLength < len)
+		return FALSE;
+
+	memset( &fee, 0, sizeof fee );
+	fee.size = sizeof fee;
+	fee.fonttype = RASTER_FONTTYPE;
+	fee.offset = FIELD_OFFSET( font_enum_entry, ntme );
+	fee.elfew.elfLogFont.lfHeight = 16;
+	fee.elfew.elfLogFont.lfWidth = 7;
+	memcpy( fee.elfew.elfLogFont.lfFaceName, sys, sizeof sys);
+	memcpy( fee.elfew.elfFullName, sys, sizeof sys);
+
+	NTSTATUS r = copy_to_user( Buffer, &fee, len );
+	if (r != STATUS_SUCCESS)
+		return FALSE;
+
+	r = copy_to_user( ReturnLength, &len, sizeof len );
+	if (r != STATUS_SUCCESS)
+		return FALSE;
+
+	return TRUE;
 }
 
 BOOLEAN NTAPI NtGdiEnumFontClose(HANDLE FontEnumeration)
