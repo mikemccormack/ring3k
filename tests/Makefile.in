@@ -17,6 +17,7 @@ TESTS = \
 	event.c \
 	eventpair.c \
 	file.c \
+	font.c \
 	gdi.c \
 	heap.c \
 	job.c \
@@ -105,6 +106,9 @@ qdf.exe: qdf.o
 gdi.exe: gdi.o log.o $(NTWIN32LIB)
 	$(CC) -o $@ log.o $< -lntdll $(NTWIN32LIB) -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
 
+font.exe: font.o log.o $(NTWIN32LIB)
+	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+
 atom.exe: atom.o log.o $(NTWIN32LIB)
 	$(CC) -o $@ log.o $< -lntdll $(NTWIN32LIB) -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
 
@@ -117,8 +121,9 @@ wine-atom.exe: wine-atom.o log.o $(NTWIN32LIB)
 seh.s: seh.c
 	i586-mingw32msvc-cc $(CFLAGS) -S seh.c
 
-$(ISO): $(SOURCE:.c=.exe)
-	genisoimage -r -J -input-charset utf-8 -o $(ISO) $(SOURCE:.c=.exe)
+$(ISO): $(SOURCE:.c=.exe) $(NTWIN32LIB)
+	cp -f $(NTWIN32LIB) ntwin32.dll
+	genisoimage -r -J -input-charset utf-8 -o $(ISO) $(SOURCE:.c=.exe) ntwin32.dll
 
 clean:
 	$(RM) *.exe *.o *.s *.a *.bat *.dll
