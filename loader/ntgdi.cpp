@@ -511,6 +511,18 @@ typedef struct _font_enum_entry {
 	ULONG pad2[4];
 } font_enum_entry;
 
+void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width )
+{
+	memset( fee, 0, sizeof *fee );
+	fee->size = sizeof *fee;
+	fee->fonttype = RASTER_FONTTYPE;
+	fee->offset = FIELD_OFFSET( font_enum_entry, ntme );
+	fee->elfew.elfLogFont.lfHeight = height;
+	fee->elfew.elfLogFont.lfWidth = width;
+	memcpy( fee->elfew.elfLogFont.lfFaceName, name, strlenW(name)*2 );
+	memcpy( fee->elfew.elfFullName, name, strlenW(name)*2 );
+}
+
 HANDLE NTAPI NtGdiEnumFontOpen(
 	HANDLE DeviceContext,
 	ULONG,
@@ -520,13 +532,14 @@ HANDLE NTAPI NtGdiEnumFontOpen(
 	ULONG,
 	PULONG DataLength)
 {
-	ULONG len = sizeof (font_enum_entry);
+	ULONG len = sizeof (font_enum_entry)*2;
 	NTSTATUS r = copy_to_user( DataLength, &len, sizeof len );
 	if (r != STATUS_SUCCESS)
 		return 0;
 
 	return alloc_gdi_object(FALSE, 0x3f, 0);
 }
+
 
 BOOLEAN NTAPI NtGdiEnumFontChunk(
 	HANDLE DeviceContext,
@@ -535,21 +548,16 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(
 	PULONG ReturnLength,
 	PVOID Buffer)
 {
-	font_enum_entry fee;
+	font_enum_entry fee[2];
 	ULONG len = sizeof fee;
 	WCHAR sys[] = { 'S','y','s','t','e','m',0 };
+	WCHAR trm[] = { 'T','e','r','m','i','n','a','l',0 };
 
 	if (BufferLength < len)
 		return FALSE;
 
-	memset( &fee, 0, sizeof fee );
-	fee.size = sizeof fee;
-	fee.fonttype = RASTER_FONTTYPE;
-	fee.offset = FIELD_OFFSET( font_enum_entry, ntme );
-	fee.elfew.elfLogFont.lfHeight = 16;
-	fee.elfew.elfLogFont.lfWidth = 7;
-	memcpy( fee.elfew.elfLogFont.lfFaceName, sys, sizeof sys);
-	memcpy( fee.elfew.elfFullName, sys, sizeof sys);
+	fill_font( &fee[0], sys, 16, 7 );
+	fill_font( &fee[1], trm, 12, 8 );
 
 	NTSTATUS r = copy_to_user( Buffer, &fee, len );
 	if (r != STATUS_SUCCESS)

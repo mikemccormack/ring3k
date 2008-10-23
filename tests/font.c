@@ -96,6 +96,8 @@ void test_font_enum( void )
 	ULONG size = 0, retlen = 0;
 	PVOID buffer;
 	ULONG ofs;
+	BOOL system_font_exists = FALSE;
+	BOOL terminal_font_exists = FALSE;
 
 	hdc = NtGdiOpenDCW(0,0,0,0,0,0,&buf);
 	ok( hdc != 0, "NtGdiOpenDCW failed\n");
@@ -120,14 +122,26 @@ void test_font_enum( void )
 
 		//ok( fe->size == sizeof *fe, "Size wrong %04lx %04x\n", ofs, sizeof *fe);
 
-		// first font should be system
-		if (ofs == 0)
+		// System font should exist (usually the first font)
+		if (strequal( L"System", fe->elfew.elfFullName ))
 		{
 			ok(strequal( L"System", fe->elfew.elfFullName ), "wrong font\n");
 			ok(strequal( L"System", fe->elfew.elfLogFont.lfFaceName ), "wrong font\n");
 			ok(fe->elfew.elfLogFont.lfHeight == 16, "System font height wrong\n");
 			ok(fe->elfew.elfLogFont.lfWidth == 7, "System font width wrong\n");
 			ok(fe->offset == FIELD_OFFSET( font_enum_entry, ntme ), "field offset wrong %04lx %04lx\n", fe->offset,  FIELD_OFFSET( font_enum_entry, ntme ));
+			system_font_exists = TRUE;
+		}
+
+		// Terminal font should exist (usually the second font)
+		if (strequal( L"Terminal", fe->elfew.elfFullName ))
+		{
+			ok(strequal( L"Terminal", fe->elfew.elfFullName ), "wrong font\n");
+			ok(strequal( L"Terminal", fe->elfew.elfLogFont.lfFaceName ), "wrong font\n");
+			ok(fe->elfew.elfLogFont.lfHeight == 12, "Terminal font height wrong\n");
+			ok(fe->elfew.elfLogFont.lfWidth == 8, "Terminal font width wrong\n");
+			ok(fe->offset == FIELD_OFFSET( font_enum_entry, ntme ), "field offset wrong %04lx %04lx\n", fe->offset,  FIELD_OFFSET( font_enum_entry, ntme ));
+			terminal_font_exists = TRUE;
 		}
 
 		if (!fe->size)
@@ -137,6 +151,9 @@ void test_font_enum( void )
 		ofs += fe->size;
 	}
 	ok( ofs == size, "length mismatch\n");
+
+	ok( system_font_exists, "no system font\n");
+	ok( terminal_font_exists, "no terminal font\n");
 
 	//dump_bin( buffer, retlen );
 
