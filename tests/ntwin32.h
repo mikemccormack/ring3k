@@ -30,6 +30,18 @@
 #define LF_FACESIZE     32
 #define LF_FULLFACESIZE 64
 
+#define DEFAULT_PITCH       0x00
+#define FIXED_PITCH         0x01
+#define VARIABLE_PITCH      0x02
+#define MONO_FONT           0x08
+
+#define FF_DONTCARE         0x00
+#define FF_ROMAN            0x10
+#define FF_SWISS            0x20
+#define FF_MODERN           0x30
+#define FF_SCRIPT           0x40
+#define FF_DECORATIVE       0x50
+
 typedef struct tagLOGFONTW
 {
     LONG   lfHeight;

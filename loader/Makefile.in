@@ -120,6 +120,7 @@ TESTLIST = \
 	completion \
 	event \
 	file \
+	font \
 	gdi \
 	heap \
 	job \

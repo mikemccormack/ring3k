@@ -184,6 +184,18 @@ typedef struct {
 #define DEVICE_FONTTYPE     0x0002
 #define TRUETYPE_FONTTYPE   0x0004
 
+#define DEFAULT_PITCH       0x00
+#define FIXED_PITCH         0x01
+#define VARIABLE_PITCH      0x02
+#define MONO_FONT           0x08
+
+#define FF_DONTCARE         0x00
+#define FF_ROMAN            0x10
+#define FF_SWISS            0x20
+#define FF_MODERN           0x30
+#define FF_SCRIPT           0x40
+#define FF_DECORATIVE       0x50
+
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);
 HGDIOBJ NTAPI NtGdiCreateBitmap(int,int,UINT,UINT,VOID**);

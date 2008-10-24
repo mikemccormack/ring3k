@@ -129,6 +129,7 @@ void test_font_enum( void )
 			ok(strequal( L"System", fe->elfew.elfLogFont.lfFaceName ), "wrong font\n");
 			ok(fe->elfew.elfLogFont.lfHeight == 16, "System font height wrong\n");
 			ok(fe->elfew.elfLogFont.lfWidth == 7, "System font width wrong\n");
+			ok(fe->elfew.elfLogFont.lfPitchAndFamily == (FF_SWISS | VARIABLE_PITCH), "System font pitch wrong\n");
 			ok(fe->offset == FIELD_OFFSET( font_enum_entry, ntme ), "field offset wrong %04lx %04lx\n", fe->offset,  FIELD_OFFSET( font_enum_entry, ntme ));
 			system_font_exists = TRUE;
 		}
@@ -140,6 +141,7 @@ void test_font_enum( void )
 			ok(strequal( L"Terminal", fe->elfew.elfLogFont.lfFaceName ), "wrong font\n");
 			ok(fe->elfew.elfLogFont.lfHeight == 12, "Terminal font height wrong\n");
 			ok(fe->elfew.elfLogFont.lfWidth == 8, "Terminal font width wrong\n");
+			ok(fe->elfew.elfLogFont.lfPitchAndFamily == (FF_MODERN | FIXED_PITCH), "System font pitch wrong\n");
 			ok(fe->offset == FIELD_OFFSET( font_enum_entry, ntme ), "field offset wrong %04lx %04lx\n", fe->offset,  FIELD_OFFSET( font_enum_entry, ntme ));
 			terminal_font_exists = TRUE;
 		}

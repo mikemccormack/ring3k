@@ -511,7 +511,7 @@ typedef struct _font_enum_entry {
 	ULONG pad2[4];
 } font_enum_entry;
 
-void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width )
+void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width, ULONG paf )
 {
 	memset( fee, 0, sizeof *fee );
 	fee->size = sizeof *fee;
@@ -519,6 +519,7 @@ void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width )
 	fee->offset = FIELD_OFFSET( font_enum_entry, ntme );
 	fee->elfew.elfLogFont.lfHeight = height;
 	fee->elfew.elfLogFont.lfWidth = width;
+	fee->elfew.elfLogFont.lfPitchAndFamily = paf;
 	memcpy( fee->elfew.elfLogFont.lfFaceName, name, strlenW(name)*2 );
 	memcpy( fee->elfew.elfFullName, name, strlenW(name)*2 );
 }
@@ -556,8 +557,8 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(
 	if (BufferLength < len)
 		return FALSE;
 
-	fill_font( &fee[0], sys, 16, 7 );
-	fill_font( &fee[1], trm, 12, 8 );
+	fill_font( &fee[0], sys, 16, 7, FF_SWISS | VARIABLE_PITCH );
+	fill_font( &fee[1], trm, 12, 8, FF_MODERN | FIXED_PITCH );
 
 	NTSTATUS r = copy_to_user( Buffer, &fee, len );
 	if (r != STATUS_SUCCESS)
