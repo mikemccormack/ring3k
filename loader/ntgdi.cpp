@@ -507,21 +507,31 @@ typedef struct _font_enum_entry {
 	ULONG fonttype;
 	ENUMLOGFONTEXW elfew;
 	ULONG pad1[2];
+	ULONG pad2;
+	ULONG flags;
 	NEWTEXTMETRICEXW ntme;
-	ULONG pad2[4];
+	ULONG pad3[2];
 } font_enum_entry;
 
-void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width, ULONG paf )
+void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width, ULONG paf, ULONG weight, ULONG flags )
 {
 	memset( fee, 0, sizeof *fee );
 	fee->size = sizeof *fee;
 	fee->fonttype = RASTER_FONTTYPE;
-	fee->offset = FIELD_OFFSET( font_enum_entry, ntme );
+	fee->offset = FIELD_OFFSET( font_enum_entry, pad2 );
 	fee->elfew.elfLogFont.lfHeight = height;
 	fee->elfew.elfLogFont.lfWidth = width;
+	fee->elfew.elfLogFont.lfWeight = weight;
 	fee->elfew.elfLogFont.lfPitchAndFamily = paf;
 	memcpy( fee->elfew.elfLogFont.lfFaceName, name, strlenW(name)*2 );
 	memcpy( fee->elfew.elfFullName, name, strlenW(name)*2 );
+	fee->flags = flags;
+
+	fee->ntme.ntmTm.tmHeight = height;
+	fee->ntme.ntmTm.tmAveCharWidth = width;
+	fee->ntme.ntmTm.tmMaxCharWidth = width;
+	fee->ntme.ntmTm.tmWeight = weight;
+	fee->ntme.ntmTm.tmPitchAndFamily = paf;
 }
 
 HANDLE NTAPI NtGdiEnumFontOpen(
@@ -557,8 +567,8 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(
 	if (BufferLength < len)
 		return FALSE;
 
-	fill_font( &fee[0], sys, 16, 7, FF_SWISS | VARIABLE_PITCH );
-	fill_font( &fee[1], trm, 12, 8, FF_MODERN | FIXED_PITCH );
+	fill_font( &fee[0], sys, 16, 7, FF_SWISS | VARIABLE_PITCH, FW_BOLD, 0x2080ff20 );
+	fill_font( &fee[1], trm, 12, 8, FF_MODERN | FIXED_PITCH, FW_REGULAR, 0x2020fe01 );
 
 	NTSTATUS r = copy_to_user( Buffer, &fee, len );
 	if (r != STATUS_SUCCESS)

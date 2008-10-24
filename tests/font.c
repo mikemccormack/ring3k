@@ -68,12 +68,14 @@ void dump_bin(BYTE *buf, ULONG sz)
 
 typedef struct _font_enum_entry {
 	ULONG size;
-	ULONG offset;
+	ULONG elf_size;
 	ULONG fonttype;
 	ENUMLOGFONTEXW elfew;
 	ULONG pad1[2];
+	ULONG pad2;
+	ULONG flags;
 	NEWTEXTMETRICEXW ntme;
-	ULONG pad2[4];
+	ULONG pad3[2];
 } font_enum_entry;
 
 BOOL strequal( PCWSTR left, PCWSTR right )
@@ -98,6 +100,9 @@ void test_font_enum( void )
 	ULONG ofs;
 	BOOL system_font_exists = FALSE;
 	BOOL terminal_font_exists = FALSE;
+	ULONG oldmode;
+
+	oldmode = NtGdiSetFontEnumeration( 0 );
 
 	hdc = NtGdiOpenDCW(0,0,0,0,0,0,&buf);
 	ok( hdc != 0, "NtGdiOpenDCW failed\n");
@@ -117,8 +122,8 @@ void test_font_enum( void )
 	{
 		font_enum_entry *fe = (font_enum_entry*)(buffer+ofs);
 
-		/*dprintf("offset %04lx type=%04lx name=%S\n",
-			 ofs, fe->fonttype, fe->elfew.elfFullName);*/
+		/*dprintf("offset %04lx type=%04lx flags = %08lx name=%S\n",
+			 ofs, fe->fonttype, fe->flags, fe->elfew.elfFullName);*/
 
 		//ok( fe->size == sizeof *fe, "Size wrong %04lx %04x\n", ofs, sizeof *fe);
 
@@ -129,8 +134,10 @@ void test_font_enum( void )
 			ok(strequal( L"System", fe->elfew.elfLogFont.lfFaceName ), "wrong font\n");
 			ok(fe->elfew.elfLogFont.lfHeight == 16, "System font height wrong\n");
 			ok(fe->elfew.elfLogFont.lfWidth == 7, "System font width wrong\n");
+			ok(fe->elfew.elfLogFont.lfWeight == FW_BOLD, "System font weight wrong %ld\n", fe->elfew.elfLogFont.lfWeight);
 			ok(fe->elfew.elfLogFont.lfPitchAndFamily == (FF_SWISS | VARIABLE_PITCH), "System font pitch wrong\n");
-			ok(fe->offset == FIELD_OFFSET( font_enum_entry, ntme ), "field offset wrong %04lx %04lx\n", fe->offset,  FIELD_OFFSET( font_enum_entry, ntme ));
+			ok(fe->elf_size == FIELD_OFFSET( font_enum_entry, pad2 ), "field offset wrong %04lx %04lx\n", fe->elf_size,  FIELD_OFFSET( font_enum_entry, pad2 ));
+			ok(fe->flags == 0x2080ff20, "flags wrong %08lx\n", fe->flags );
 			system_font_exists = TRUE;
 		}
 
@@ -141,10 +148,14 @@ void test_font_enum( void )
 			ok(strequal( L"Terminal", fe->elfew.elfLogFont.lfFaceName ), "wrong font\n");
 			ok(fe->elfew.elfLogFont.lfHeight == 12, "Terminal font height wrong\n");
 			ok(fe->elfew.elfLogFont.lfWidth == 8, "Terminal font width wrong\n");
+			ok(fe->elfew.elfLogFont.lfWeight == FW_REGULAR, "Terminal font weight wrong %ld\n", fe->elfew.elfLogFont.lfWeight);
 			ok(fe->elfew.elfLogFont.lfPitchAndFamily == (FF_MODERN | FIXED_PITCH), "System font pitch wrong\n");
-			ok(fe->offset == FIELD_OFFSET( font_enum_entry, ntme ), "field offset wrong %04lx %04lx\n", fe->offset,  FIELD_OFFSET( font_enum_entry, ntme ));
+			ok(fe->elf_size == FIELD_OFFSET( font_enum_entry, pad2 ), "field offset wrong %04lx %04lx\n", fe->elf_size,  FIELD_OFFSET( font_enum_entry, pad2 ));
+			ok(fe->flags == 0x2020fe01, "flags wrong %08lx\n", fe->flags );
 			terminal_font_exists = TRUE;
 		}
+
+		ok(fe->ntme.ntmTm.tmHeight == fe->elfew.elfLogFont.lfHeight, "height mismatch\n");
 
 		if (!fe->size)
 			break;
@@ -161,6 +172,8 @@ void test_font_enum( void )
 
 	r = NtGdiEnumFontClose(henum);
 	ok(r, "NtGdiEnumFontClose failed\n");
+
+	NtGdiSetFontEnumeration( oldmode );
 }
 
 // magic numbers for everybody

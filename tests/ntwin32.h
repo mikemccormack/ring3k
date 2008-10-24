@@ -136,6 +136,22 @@ typedef struct tagENUMTEXTMETRIC
 #define DEVICE_FONTTYPE     0x0002
 #define TRUETYPE_FONTTYPE   0x0004
 
+#define FW_DONTCARE	    0
+#define FW_THIN		    100
+#define FW_EXTRALIGHT	    200
+#define FW_ULTRALIGHT	    200
+#define FW_LIGHT	    300
+#define FW_NORMAL	    400
+#define FW_REGULAR	    400
+#define FW_MEDIUM	    500
+#define FW_SEMIBOLD	    600
+#define FW_DEMIBOLD	    600
+#define FW_BOLD		    700
+#define FW_EXTRABOLD	    800
+#define FW_ULTRABOLD	    800
+#define FW_HEAVY	    900
+#define FW_BLACK	    900
+
 NTSTATUS NTAPI NtGdiInit(void);
 HANDLE NTAPI NtGdiCreateCompatibleDC(HANDLE);
 BOOLEAN NTAPI NtGdiDeleteObjectApp(HANDLE);
@@ -145,6 +161,7 @@ HANDLE  NTAPI NtGdiEnumFontOpen(HANDLE,ULONG,ULONG,ULONG,ULONG,ULONG,PULONG);
 HANDLE NTAPI NtGdiGetStockObject(ULONG Index);
 HANDLE  NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID);
 NTSTATUS NTAPI NtGdiQueryFontAssocInfo(HANDLE);
+ULONG NTAPI NtGdiSetFontEnumeration(ULONG);
 
 typedef struct USER_SHARED_MEMORY_INFO {
     ULONG Flags;
