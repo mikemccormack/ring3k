@@ -54,7 +54,7 @@ typedef list_element<process_t> process_element_t;
 
 extern thread_t *current;
 extern process_list_t processes;
-extern ULONG unique_counter;
+ULONG allocate_id();
 extern object_t *ntdll_section;
 
 NTSTATUS copy_oa_from_user( OBJECT_ATTRIBUTES *koa, UNICODE_STRING *kus, const OBJECT_ATTRIBUTES *uoa );
@@ -90,8 +90,13 @@ const char *get_section_symbol( object_t *section, ULONG address );
 
 class win32k_info_t
 {
-	int x;
+public:
+	win32k_info_t() : gdishm_offset(0) {}
+	ULONG gdishm_offset;
 };
+
+#define GDI_SHARED_HANDLE_TABLE_ADDRESS ((BYTE*)0x00370000)
+#define GDI_SHARED_HANDLE_TABLE_SIZE 0x60000
 
 // from ntgdi.cpp
 NTSTATUS win32k_process_init(process_t *p);

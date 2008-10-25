@@ -36,7 +36,7 @@
 
 HGDIOBJ alloc_dc();
 
-// shared across all processes
+// shared across all processes (in a window station)
 static section_t *gdi_ht_section;
 static void *gdi_handle_table = 0;
 
@@ -93,6 +93,7 @@ NTSTATUS win32k_process_init(process_t *process)
 	dprintf("\n");
 
 	win32k_info_t *info = new win32k_info_t;
+	info->gdishm_offset = 0;
 	process->win32k_info = info;
 
 	PPEB ppeb = (PPEB) current->process->peb_section->get_kernel_address();
@@ -104,7 +105,7 @@ NTSTATUS win32k_process_init(process_t *process)
 	if (!gdi_handle_table)
 	{
 		LARGE_INTEGER sz;
-		sz.QuadPart = 0x50000;
+		sz.QuadPart = GDI_SHARED_HANDLE_TABLE_SIZE;
 		r = create_section( &gdi_ht_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
 		if (r != STATUS_SUCCESS)
 			return r;
@@ -113,11 +114,19 @@ NTSTATUS win32k_process_init(process_t *process)
 	}
 
 	// read/write for the kernel and read only for processes
-	BYTE* p = 0;
+	BYTE *p = GDI_SHARED_HANDLE_TABLE_ADDRESS;
+
+	// unreserve memory so mapit doesn't get a conflicting address
+	current->process->vm->free_virtual_memory( p, GDI_SHARED_HANDLE_TABLE_SIZE, MEM_FREE );
+
 	r = gdi_ht_section->mapit( current->process->vm, p, 0,
-							   MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE );
+				   MEM_COMMIT, PAGE_READWRITE );
 	if (r != STATUS_SUCCESS)
+	{
+		dprintf("r = %08lx\n", r);
+		assert(0);
 		return FALSE;
+	}
 
 	ppeb->GdiSharedHandleTable = (void*) p;
 
@@ -184,6 +193,13 @@ int find_free_gdi_handle(void)
 			return i;
 	}
 	return -1;
+}
+
+ULONG alloc_gdi_shared_mem( process_t *p, ULONG size )
+{
+	ULONG r = p->win32k_info->gdishm_offset;
+	p->win32k_info->gdishm_offset += size;
+	return r;
 }
 
 HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type, void *user_info )
@@ -498,7 +514,17 @@ BOOL NTAPI NtGdiSetFontEnumeration(PVOID Unknown)
 
 HANDLE NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID)
 {
-	return alloc_gdi_object(FALSE, GDI_OBJECT_DC, 0);
+	struct dc_user_info {
+		ULONG unk[0x80];
+	} *k_dcu, *u_dcu;
+	ULONG ofs = alloc_gdi_shared_mem( current->process, sizeof *k_dcu );
+	k_dcu = (struct dc_user_info*)((BYTE*) (gdi_ht_section->get_kernel_address()) + ofs);
+	PPEB ppeb = (PPEB) current->process->peb_section->get_kernel_address();
+	u_dcu = (struct dc_user_info*)((BYTE*) (ppeb->GdiSharedHandleTable) + ofs);
+
+	dprintf("user dc info %p\n", u_dcu);
+
+	return alloc_gdi_object(FALSE, GDI_OBJECT_DC, (void*) u_dcu);
 }
 
 typedef struct _font_enum_entry {
@@ -513,7 +539,7 @@ typedef struct _font_enum_entry {
 	ULONG pad3[2];
 } font_enum_entry;
 
-void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width, ULONG paf, ULONG weight, ULONG flags )
+void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width, ULONG paf, ULONG weight, ULONG flags, ULONG charset )
 {
 	memset( fee, 0, sizeof *fee );
 	fee->size = sizeof *fee;
@@ -532,6 +558,7 @@ void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width, UL
 	fee->ntme.ntmTm.tmMaxCharWidth = width;
 	fee->ntme.ntmTm.tmWeight = weight;
 	fee->ntme.ntmTm.tmPitchAndFamily = paf;
+	fee->ntme.ntmTm.tmCharSet = charset;
 }
 
 HANDLE NTAPI NtGdiEnumFontOpen(
@@ -567,8 +594,8 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(
 	if (BufferLength < len)
 		return FALSE;
 
-	fill_font( &fee[0], sys, 16, 7, FF_SWISS | VARIABLE_PITCH, FW_BOLD, 0x2080ff20 );
-	fill_font( &fee[1], trm, 12, 8, FF_MODERN | FIXED_PITCH, FW_REGULAR, 0x2020fe01 );
+	fill_font( &fee[0], sys, 16, 7, FF_SWISS | VARIABLE_PITCH, FW_BOLD, 0x2080ff20, ANSI_CHARSET );
+	fill_font( &fee[1], trm, 12, 8, FF_MODERN | FIXED_PITCH, FW_REGULAR, 0x2020fe01, OEM_CHARSET );
 
 	NTSTATUS r = copy_to_user( Buffer, &fee, len );
 	if (r != STATUS_SUCCESS)

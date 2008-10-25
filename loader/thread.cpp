@@ -826,7 +826,7 @@ thread_t::thread_t(process_t *p) :
 	MessageId(0),
 	port(0)
 {
-	id = unique_counter++;
+	id = allocate_id();
 	addref( process );
 	process->threads.append( this );
 }

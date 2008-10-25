@@ -289,7 +289,13 @@ NTSTATUS process_from_handle( HANDLE handle, process_t **process )
 	return object_from_handle( *process, handle, 0 );
 }
 
-ULONG unique_counter = 1;
+
+ULONG allocate_id()
+{
+	static ULONG unique_counter;
+
+	return (++unique_counter) << 2;
+}
 
 NTSTATUS process_alloc_user_handle(
 	process_t *p,
@@ -356,7 +362,7 @@ process_t::process_t() :
 	win32k_info(0)
 {
 	ExitStatus = STATUS_PENDING;
-	id = unique_counter++;
+	id = allocate_id();
 	memset( &handle_table, 0, sizeof handle_table );
 	processes.append( this );
 }
@@ -440,6 +446,13 @@ NTSTATUS create_process( process_t **pprocess, object_t *section )
 	LARGE_INTEGER sz;
 	sz.QuadPart = PAGE_SIZE;
 	r = create_section( &p->peb_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	/* reserve the GDI shared section */
+	BYTE *gdi_shared = GDI_SHARED_HANDLE_TABLE_ADDRESS;
+	ULONG size = GDI_SHARED_HANDLE_TABLE_SIZE;
+	r = p->vm->allocate_virtual_memory( &gdi_shared, 0, size, MEM_RESERVE, PAGE_NOACCESS );
 	if (r != STATUS_SUCCESS)
 		return r;
 

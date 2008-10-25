@@ -138,6 +138,7 @@ void test_font_enum( void )
 			ok(fe->elfew.elfLogFont.lfPitchAndFamily == (FF_SWISS | VARIABLE_PITCH), "System font pitch wrong\n");
 			ok(fe->elf_size == FIELD_OFFSET( font_enum_entry, pad2 ), "field offset wrong %04lx %04lx\n", fe->elf_size,  FIELD_OFFSET( font_enum_entry, pad2 ));
 			ok(fe->flags == 0x2080ff20, "flags wrong %08lx\n", fe->flags );
+			ok(fe->ntme.ntmTm.tmCharSet == 0, "charset wrong %02x\n", fe->ntme.ntmTm.tmCharSet);
 			system_font_exists = TRUE;
 		}
 
@@ -153,6 +154,7 @@ void test_font_enum( void )
 			ok(fe->elf_size == FIELD_OFFSET( font_enum_entry, pad2 ), "field offset wrong %04lx %04lx\n", fe->elf_size,  FIELD_OFFSET( font_enum_entry, pad2 ));
 			ok(fe->flags == 0x2020fe01, "flags wrong %08lx\n", fe->flags );
 			terminal_font_exists = TRUE;
+			ok(fe->ntme.ntmTm.tmCharSet == OEM_CHARSET, "charset wrong %02x\n", fe->ntme.ntmTm.tmCharSet);
 		}
 
 		ok(fe->ntme.ntmTm.tmHeight == fe->elfew.elfLogFont.lfHeight, "height mismatch\n");
@@ -176,6 +178,78 @@ void test_font_enum( void )
 	NtGdiSetFontEnumeration( oldmode );
 }
 
+const int ofs_shared_handle_table_in_peb = 0x94;
+
+void* get_gdi_shared_handle_table( void )
+{
+	void **p = get_peb();
+	return p[ofs_shared_handle_table_in_peb/sizeof (*p)];
+}
+
+const int ofs_process_id_table_in_peb = 0x20;
+
+ULONG get_process_id( void )
+{
+	ULONG *p = get_teb();
+	return p[ofs_process_id_table_in_peb/sizeof (*p)];
+}
+
+ULONG get_handle_index(HANDLE handle)
+{
+	return (((ULONG)handle)&0x3fff);
+}
+
+ULONG get_handle_upper(HANDLE handle)
+{
+	return (((ULONG)handle)>>16);
+}
+
+typedef struct _gdi_handle_table_entry {
+	void *kernel_info;
+	ULONG ProcessId;
+	USHORT Upper;
+	BYTE Type;
+	BYTE Unknown;
+	void *user_info;
+} gdi_handle_table_entry;
+
+void test_text_metric( void )
+{
+	ULONG buf[8];
+	HANDLE hdc;
+	gdi_handle_table_entry *table;
+	ULONG index;
+	ULONG status;
+	PVOID ptr;
+
+	hdc = NtGdiOpenDCW(0,0,0,0,0,0,&buf);
+	ok( hdc != 0, "NtGdiOpenDCW failed\n");
+
+	status = NtGdiQueryFontAssocInfo( hdc );
+
+	table = get_gdi_shared_handle_table();
+
+	//dprintf("table = %p\n", table);
+	index = get_handle_index( hdc );
+	ok( index < 0x4000, "index too large\n");
+
+	ok( table[index].Type == GDI_OBJECT_DC,
+		"not a device context %02x\n", table[index].Type);
+	ok( table[index].Upper == get_handle_upper( hdc ),
+		"handle mismatch\n");
+	ok( (table[index].ProcessId&~1) == (get_process_id()&~3),
+		"process id mismatch %08lx %08lx\n",
+		table[index].ProcessId, get_process_id());
+
+	ok( sizeof *table == 0x10, "sizeof table wrong\n");
+
+	ptr = table[index].user_info;
+
+	ok( ptr != 0, "user pointer was empty\n");
+
+	// DeleteDC(hdc)
+}
+
 // magic numbers for everybody
 void NTAPI init_callback(void *arg)
 {
@@ -197,13 +271,14 @@ void init_callbacks( void )
 void become_gui_thread( void )
 {
 	init_callbacks();
-	NtUserGetThreadState(0x11);
+	NtGdiInit();
 }
 
 void NtProcessStartup( void )
 {
 	log_init();
 	become_gui_thread();
+	test_text_metric();
 	test_font_enum();
 	log_fini();
 }
