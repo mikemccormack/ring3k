@@ -152,6 +152,10 @@ typedef struct tagENUMTEXTMETRIC
 #define FW_HEAVY	    900
 #define FW_BLACK	    900
 
+#define ANSI_CHARSET	      (BYTE)0
+#define DEFAULT_CHARSET       (BYTE)1
+#define OEM_CHARSET	      (BYTE)255
+
 NTSTATUS NTAPI NtGdiInit(void);
 HANDLE NTAPI NtGdiCreateCompatibleDC(HANDLE);
 BOOLEAN NTAPI NtGdiDeleteObjectApp(HANDLE);
