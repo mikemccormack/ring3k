@@ -132,6 +132,29 @@ typedef struct tagENUMTEXTMETRIC
 } ENUMTEXTMETRICW, *PENUMTEXTMETRICW;
 #endif
 
+typedef struct tagTEXTMETRICW {
+    LONG      tmHeight;
+    LONG      tmAscent;
+    LONG      tmDescent;
+    LONG      tmInternalLeading;
+    LONG      tmExternalLeading;
+    LONG      tmAveCharWidth;
+    LONG      tmMaxCharWidth;
+    LONG      tmWeight;
+    LONG      tmOverhang;
+    LONG      tmDigitizedAspectX;
+    LONG      tmDigitizedAspectY;
+    WCHAR     tmFirstChar;
+    WCHAR     tmLastChar;
+    WCHAR     tmDefaultChar;
+    WCHAR     tmBreakChar;
+    BYTE      tmItalic;
+    BYTE      tmUnderlined;
+    BYTE      tmStruckOut;
+    BYTE      tmPitchAndFamily;
+    BYTE      tmCharSet;
+} TEXTMETRICW, *LPTEXTMETRICW, *PTEXTMETRICW;
+
 #define RASTER_FONTTYPE     0x0001
 #define DEVICE_FONTTYPE     0x0002
 #define TRUETYPE_FONTTYPE   0x0004
@@ -162,6 +185,7 @@ BOOLEAN NTAPI NtGdiDeleteObjectApp(HANDLE);
 BOOLEAN NTAPI NtGdiEnumFontChunk(HANDLE,HANDLE,ULONG,PULONG,PVOID);
 BOOLEAN NTAPI NtGdiEnumFontClose(HANDLE);
 HANDLE  NTAPI NtGdiEnumFontOpen(HANDLE,ULONG,ULONG,ULONG,ULONG,ULONG,PULONG);
+BOOLEAN NTAPI NtGdiGetTextMetricsW(HANDLE,PVOID,ULONG);
 HANDLE NTAPI NtGdiGetStockObject(ULONG Index);
 HANDLE  NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID);
 NTSTATUS NTAPI NtGdiQueryFontAssocInfo(HANDLE);

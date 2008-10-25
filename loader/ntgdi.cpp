@@ -561,6 +561,18 @@ void fill_font( font_enum_entry* fee, LPWSTR name, ULONG height, ULONG width, UL
 	fee->ntme.ntmTm.tmCharSet = charset;
 }
 
+void fill_system( font_enum_entry* fee )
+{
+	WCHAR sys[] = { 'S','y','s','t','e','m',0 };
+	fill_font( fee, sys, 16, 7, FF_SWISS | VARIABLE_PITCH, FW_BOLD, 0x2080ff20, ANSI_CHARSET );
+}
+
+void fill_terminal( font_enum_entry* fee )
+{
+	WCHAR trm[] = { 'T','e','r','m','i','n','a','l',0 };
+	fill_font( fee, trm, 12, 8, FF_MODERN | FIXED_PITCH, FW_REGULAR, 0x2020fe01, OEM_CHARSET );
+}
+
 HANDLE NTAPI NtGdiEnumFontOpen(
 	HANDLE DeviceContext,
 	ULONG,
@@ -578,7 +590,6 @@ HANDLE NTAPI NtGdiEnumFontOpen(
 	return alloc_gdi_object(FALSE, 0x3f, 0);
 }
 
-
 BOOLEAN NTAPI NtGdiEnumFontChunk(
 	HANDLE DeviceContext,
 	HANDLE FontEnumeration,
@@ -588,14 +599,12 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(
 {
 	font_enum_entry fee[2];
 	ULONG len = sizeof fee;
-	WCHAR sys[] = { 'S','y','s','t','e','m',0 };
-	WCHAR trm[] = { 'T','e','r','m','i','n','a','l',0 };
 
 	if (BufferLength < len)
 		return FALSE;
 
-	fill_font( &fee[0], sys, 16, 7, FF_SWISS | VARIABLE_PITCH, FW_BOLD, 0x2080ff20, ANSI_CHARSET );
-	fill_font( &fee[1], trm, 12, 8, FF_MODERN | FIXED_PITCH, FW_REGULAR, 0x2020fe01, OEM_CHARSET );
+	fill_system( &fee[0] );
+	fill_terminal( &fee[1] );
 
 	NTSTATUS r = copy_to_user( Buffer, &fee, len );
 	if (r != STATUS_SUCCESS)
@@ -610,5 +619,22 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(
 
 BOOLEAN NTAPI NtGdiEnumFontClose(HANDLE FontEnumeration)
 {
+	return TRUE;
+}
+
+BOOLEAN NTAPI NtGdiGetTextMetricsW(HANDLE DeviceContext, PVOID Buffer, ULONG Length)
+{
+	font_enum_entry fee;
+	NTSTATUS r;
+
+	fill_system( &fee );
+
+	if (Length < sizeof (TEXTMETRICW))
+		return FALSE;
+
+	r = copy_to_user( Buffer, &fee.ntme, sizeof (TEXTMETRICW) );
+	if (r != STATUS_SUCCESS)
+		return FALSE;
+
 	return TRUE;
 }

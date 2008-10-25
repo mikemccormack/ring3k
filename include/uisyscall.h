@@ -234,7 +234,7 @@ NUL(NtGdiGetTextCharsetInfo),
 NUL(NtGdiGetTextExtent),
 NUL(NtGdiGetTextExtentExW),
 NUL(NtGdiGetTextFaceW),
-NUL(NtGdiGetTextMetricsW),
+IMP(NtGdiGetTextMetricsW, 3),
 NUL(NtGdiGetTransform),
 NUL(NtGdiGetUFI),
 #ifdef SYSCALL_WINXP

@@ -221,6 +221,9 @@ void test_text_metric( void )
 	ULONG index;
 	ULONG status;
 	PVOID ptr;
+	BOOL r;
+	BYTE tmbuf[0x44];
+	TEXTMETRICW *tm;
 
 	hdc = NtGdiOpenDCW(0,0,0,0,0,0,&buf);
 	ok( hdc != 0, "NtGdiOpenDCW failed\n");
@@ -246,6 +249,33 @@ void test_text_metric( void )
 	ptr = table[index].user_info;
 
 	ok( ptr != 0, "user pointer was empty\n");
+
+	r = NtGdiGetTextMetricsW( 0, 0, 0 );
+	ok( r == FALSE, "NtGdiGetTextMetricsW returned %d\n", r);
+
+	r = NtGdiGetTextMetricsW( hdc, 0, 0 );
+	ok( r == FALSE, "NtGdiGetTextMetricsW returned %d\n", r);
+
+	r = NtGdiGetTextMetricsW( hdc, tmbuf, 0 );
+	ok( r == FALSE, "NtGdiGetTextMetricsW returned %d\n", r);
+
+	memset( &tmbuf, 0, sizeof tmbuf );
+	tm = (void*) tmbuf;
+
+	r = NtGdiGetTextMetricsW( hdc, tm, sizeof *tm );
+	ok( r == TRUE, "NtGdiGetTextMetricsW returned %d\n", r);
+
+	r = NtGdiGetTextMetricsW( hdc, tmbuf, sizeof tmbuf );
+	ok( r == TRUE, "NtGdiGetTextMetricsW returned %d\n", r);
+
+/*
+#define d(x) dprintf(#x " = %ld\n", tm->tm##x);
+	d(Height)
+	d(CharSet)
+#undef d
+
+	dump_bin(tmbuf, sizeof tmbuf);
+*/
 
 	// DeleteDC(hdc)
 }

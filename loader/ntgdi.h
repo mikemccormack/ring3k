@@ -215,6 +215,30 @@ typedef struct {
 #define ANSI_CHARSET	      (BYTE)0
 #define OEM_CHARSET	      (BYTE)255
 
+typedef struct tagTEXTMETRICW
+{
+    LONG      tmHeight;
+    LONG      tmAscent;
+    LONG      tmDescent;
+    LONG      tmInternalLeading;
+    LONG      tmExternalLeading;
+    LONG      tmAveCharWidth;
+    LONG      tmMaxCharWidth;
+    LONG      tmWeight;
+    LONG      tmOverhang;
+    LONG      tmDigitizedAspectX;
+    LONG      tmDigitizedAspectY;
+    WCHAR     tmFirstChar;
+    WCHAR     tmLastChar;
+    WCHAR     tmDefaultChar;
+    WCHAR     tmBreakChar;
+    BYTE      tmItalic;
+    BYTE      tmUnderlined;
+    BYTE      tmStruckOut;
+    BYTE      tmPitchAndFamily;
+    BYTE      tmCharSet;
+} TEXTMETRICW, *LPTEXTMETRICW, *PTEXTMETRICW;
+
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);
 HGDIOBJ NTAPI NtGdiCreateBitmap(int,int,UINT,UINT,VOID**);
@@ -232,6 +256,7 @@ HGDIOBJ NTAPI NtGdiGetDCforBitmap(HGDIOBJ);
 HGDIOBJ NTAPI NtGdiGetDCObject(HGDIOBJ,ULONG);
 BOOLEAN NTAPI NtGdiGetFontResourceInfoInternalW(LPWSTR,ULONG,ULONG,UINT,PULONG,PVOID,ULONG);
 HGDIOBJ NTAPI NtGdiGetStockObject(ULONG);
+BOOLEAN NTAPI NtGdiGetTextMetricsW(HANDLE,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiInit(void);
 HANDLE  NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID);
 ULONG   NTAPI NtGdiQueryFontAssocInfo(HANDLE);
