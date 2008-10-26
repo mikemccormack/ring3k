@@ -44,7 +44,7 @@ NUL(NtGdiClearBrushAttributes), // 2
 NUL(NtGdiColorCorrectPalette),
 NUL(NtGdiCombineRgn),
 NUL(NtGdiCombineTransform),
-NUL(NtGdiComputeXformCoefficients),
+IMP(NtGdiComputeXformCoefficients, 1),
 NUL(NtGdiConsoleTextOut),
 NUL(NtGdiConvertMetafileRect),
 IMP(NtGdiCreateBitmap, 5),

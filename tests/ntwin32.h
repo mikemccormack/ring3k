@@ -180,6 +180,7 @@ typedef struct tagTEXTMETRICW {
 #define OEM_CHARSET	      (BYTE)255
 
 NTSTATUS NTAPI NtGdiInit(void);
+BOOLEAN NTAPI NtGdiComputeXformCoefficients(HANDLE);
 HANDLE NTAPI NtGdiCreateCompatibleDC(HANDLE);
 BOOLEAN NTAPI NtGdiDeleteObjectApp(HANDLE);
 BOOLEAN NTAPI NtGdiEnumFontChunk(HANDLE,HANDLE,ULONG,PULONG,PVOID);

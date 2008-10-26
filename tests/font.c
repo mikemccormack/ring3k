@@ -228,6 +228,12 @@ void test_text_metric( void )
 	hdc = NtGdiOpenDCW(0,0,0,0,0,0,&buf);
 	ok( hdc != 0, "NtGdiOpenDCW failed\n");
 
+	r = NtGdiComputeXformCoefficients( 0 );
+	ok( r == FALSE, "NtGdiComputeXformCoefficients returned %d\n", r);
+
+	r = NtGdiComputeXformCoefficients( hdc );
+	ok( r == TRUE, "NtGdiComputeXformCoefficients returned %d\n", r);
+
 	status = NtGdiQueryFontAssocInfo( hdc );
 
 	table = get_gdi_shared_handle_table();

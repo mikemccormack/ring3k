@@ -643,3 +643,10 @@ BOOLEAN NTAPI NtGdiSetIcmMode(HANDLE DeviceContext, ULONG, ULONG)
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtGdiComputeXformCoefficients( HANDLE DeviceContext )
+{
+	if (get_handle_type( DeviceContext ) != GDI_OBJECT_DC)
+		return FALSE;
+	return TRUE;
+}
