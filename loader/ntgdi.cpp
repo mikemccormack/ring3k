@@ -638,3 +638,8 @@ BOOLEAN NTAPI NtGdiGetTextMetricsW(HANDLE DeviceContext, PVOID Buffer, ULONG Len
 
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtGdiSetIcmMode(HANDLE DeviceContext, ULONG, ULONG)
+{
+	return TRUE;
+}
