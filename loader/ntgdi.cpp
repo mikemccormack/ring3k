@@ -93,7 +93,7 @@ NTSTATUS win32k_process_init(process_t *process)
 	dprintf("\n");
 
 	win32k_info_t *info = new win32k_info_t;
-	info->gdishm_offset = GDI_SHARED_HANDLE_TABLE_SIZE;
+	info->gdishm_offset = GDI_SHARED_HANDLE_TABLE_SIZE - 0x1000;
 	process->win32k_info = info;
 
 	PPEB ppeb = (PPEB) current->process->peb_section->get_kernel_address();
