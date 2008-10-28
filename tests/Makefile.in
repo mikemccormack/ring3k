@@ -44,7 +44,6 @@ SOURCE = \
 	hostnt.c \
 	native.c \
 	ps.c \
-	qdf.c \
 	runnt.c
 
 ISO = nttests.iso
@@ -94,14 +93,8 @@ runnt.exe: runnt.o
 hostnt.exe: hostnt.o
 	$(CC) -o $@ $< -lntdll -lkernel32
 
-dumphandles.exe: dumphandles.o $(NTWIN32LIB)
-	$(CC) -o $@ $< $(NTWIN32LIB) -lntdll -lkernel32 -luser32
-
 res.o: res.rc
 	$(WINDRES) -o $@ $<
-
-qdf.exe: qdf.o
-	$(CC) -o $@ $< -luser32 -lkernel32 -lntdll -lgdi32
 
 gdi.exe: gdi.o log.o $(NTWIN32LIB)
 	$(CC) -o $@ log.o $< -lntdll $(NTWIN32LIB) -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup

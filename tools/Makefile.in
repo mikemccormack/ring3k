@@ -1,0 +1,49 @@
+#
+# Makefile for regression tests
+# Copyright 2008 Mike McCormack
+#
+
+CC=@MINGW32CC@
+STRIP=@MINGW32STRIP@
+CFLAGS=-Wall -O2
+AS=@MINGW32AS@
+AR=@MINGW32AR@
+RANLIB=@MINGW32RANLIB@
+WINDRES=@MINGW32WINDRES@
+
+SOURCE = \
+	dumphandles.c \
+	hello.c \
+	qdf.c \
+	winlogon.c
+
+.%.d: %.c
+	$(CC) -MM $< > $@
+
+.PHONY: all clean
+
+NTWIN32LIB=../tests/win2k/ntwin32.dll
+
+all: $(SOURCE:.c=.exe) advapi32.dll
+
+DEPFILES = $(SOURCE:%.c=.%.d)
+
+include $(DEPFILES)
+
+advapi32.dll: advapi32.o
+	$(CC) -o $@ -shared $< -e _DllMain@12 -Wl,--kill-at
+
+dumphandles.exe: dumphandles.o $(NTWIN32LIB)
+	$(CC) -o $@ $< $(NTWIN32LIB) -lntdll -lkernel32 -luser32
+
+hello.exe: hello.o
+	$(CC) -o $@ $< -lntdll -lkernel32 -mconsole
+
+qdf.exe: qdf.o
+	$(CC) -o $@ $< -luser32 -lkernel32 -lntdll -lgdi32
+
+winlogon.exe: winlogon.o
+	$(CC) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--image-base,0x10000000 -Wl,--subsystem=windows
+
+clean:
+	rm -f *.o advapi32.dll dumphandles.exe hello.exe qdf.exe winlogon.exe
