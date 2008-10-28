@@ -21,7 +21,7 @@
 
 ISO = tests/nttests.iso
 
-all: libudis86_dir loader_dir ntext2fs_dir tests_dir
+all: libudis86_dir loader_dir ntext2fs_dir tests_dir tools_dir
 
 test: all
 	cd loader && make test
@@ -32,6 +32,9 @@ loader_dir:
 tests_dir:
 	cd tests && make
 
+tools_dir:
+	cd tools && make
+
 libudis86_dir:
 	cd libudis86 && make
 
@@ -39,6 +42,7 @@ clean:
 	cd libudis86 && make clean
 	cd loader && make clean
 	cd tests && make clean
+	cd tools && make clean
 
 distclean: clean
 	rm -rf config.status config.log autom4te.cache

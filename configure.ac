@@ -65,6 +65,7 @@ AC_CONFIG_FILES(
 	Makefile
 	loader/Makefile
 	tests/Makefile
+	tools/Makefile
 	libudis86/Makefile
 )
 
