@@ -25,6 +25,8 @@
 #include "log.h"
 
 static WCHAR pipename[] = L"\\??\\PIPE\\test";
+static WCHAR pipedev[] = L"\\DosDevices\\pipe\\";
+static WCHAR waitpipe[] = L"test";
 
 void test_create_pipe( void )
 {
@@ -97,12 +99,16 @@ void pipe_client( PVOID param )
 	OBJECT_ATTRIBUTES oa;
 	UNICODE_STRING us;
 	IO_STATUS_BLOCK iosb;
-	HANDLE client = 0;
+	HANDLE client = 0, event = 0, device = 0;
 	NTSTATUS r;
-	//ULONG i;
+	LARGE_INTEGER timeout;
+	ULONG i;
+	BYTE buf[0x100];
+	PFILE_PIPE_WAIT_FOR_BUFFER pwfb;
+	ULONG len;
 
-	us.Buffer = pipename;
-	us.Length = sizeof pipename - 2;
+	us.Buffer = pipedev;
+	us.Length = sizeof pipedev - 2;
 	us.MaximumLength = us.Length;
 
 	oa.Length = sizeof oa;
@@ -112,22 +118,63 @@ void pipe_client( PVOID param )
 	oa.SecurityDescriptor = 0;
 	oa.SecurityQualityOfService = 0;
 
-	r = NtOpenFile( &client, GENERIC_WRITE, &oa, &iosb, FILE_SHARE_READ|FILE_SHARE_WRITE, 0 );
-	ok(r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+	r = NtCreateEvent( &event, EVENT_ALL_ACCESS, NULL, NotificationEvent, 0 );
+	ok(r == STATUS_SUCCESS, "return wrong (%08lx)\n", r);
 
 	// wait named pipe here
+	timeout.QuadPart = -10000LL;
+	r = NtOpenFile( &device, SYNCHRONIZE | FILE_READ_ATTRIBUTES, &oa, &iosb, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_DEVICE_IS_MOUNTED );
+	ok(r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
-#if 0
+	pwfb = (void*) buf;
+	pwfb->Timeout.QuadPart = -10000LL;
+	pwfb->NameLength = sizeof waitpipe - 2;
+	pwfb->TimeoutSpecified = FALSE;
+	memcpy( pwfb->Name, waitpipe, pwfb->NameLength );
+
+	len = FIELD_OFFSET( FILE_PIPE_WAIT_FOR_BUFFER, Name );
+	len += pwfb->NameLength;
+
+	r = NtFsControlFile( device, 0, 0, 0, &iosb, FSCTL_PIPE_WAIT, 0, 0, 0, 0 );
+	ok( r == STATUS_INVALID_PARAMETER, "failed to wait %08lx\n", r );
+
+	r = NtFsControlFile( device, 0, 0, 0, &iosb, FSCTL_PIPE_WAIT, pwfb, len, 0, 0 );
+	ok( r == STATUS_SUCCESS, "failed to wait %08lx\n", r );
+
+	r = NtClose( device );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	us.Buffer = pipename;
+	us.Length = sizeof pipename - 2;
+	us.MaximumLength = us.Length;
+
+	r = NtOpenFile( &client, GENERIC_READ | GENERIC_WRITE, &oa, &iosb, FILE_SHARE_READ|FILE_SHARE_WRITE, 0 );
+	ok(r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
 	for (i=0; i<10; i++)
 	{
-		r = NtWriteFile( client, 0, 0, 0, &iosb, &i, sizeof i, 0, 0 );
-		if (r != STATUS_SUCCESS)
-			break;
+		ULONG val = 0;
+
+		// write a number
+		r = NtWriteFile( client, event, 0, 0, &iosb, &i, sizeof i, 0, 0 );
+		if (r == STATUS_PENDING)
+			r = NtWaitForSingleObject( event, TRUE, 0 );
+		ok (r == STATUS_SUCCESS, "write %ld returned %08lx\n", i, r);
+
+		// read a reply
+		r = NtReadFile( client, event, 0, 0, &iosb, &val, sizeof val, 0, 0 );
+		if (r == STATUS_PENDING)
+			r = NtWaitForSingleObject( event, TRUE, 0 );
+		ok (r == STATUS_SUCCESS, "read %ld returned %08lx\n", i, r);
+
+		ok( val == (i|0x100), "value wrong\n");
 	}
 
 	r = NtClose( client );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
-#endif
+
+	r = NtClose( event );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
 	NtTerminateThread( NtCurrentThread(), 0 );
 }
@@ -137,12 +184,11 @@ void test_pipe_server( void )
 	OBJECT_ATTRIBUTES oa;
 	UNICODE_STRING us;
 	IO_STATUS_BLOCK iosb;
-	HANDLE pipe = 0, thread = 0;
+	HANDLE pipe = 0, thread = 0, event = 0;
 	NTSTATUS r;
 	CLIENT_ID id;
 	LARGE_INTEGER timeout;
-	//ULONG i;
-	//BYTE buf[0x10];
+	ULONG i;
 
 	us.Buffer = pipename;
 	us.Length = sizeof pipename - 2;
@@ -161,26 +207,45 @@ void test_pipe_server( void )
 				TRUE, FALSE, -1, 0, 0, &timeout );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
+	r = NtCreateEvent( &event, EVENT_ALL_ACCESS, NULL, NotificationEvent, 0 );
+	ok(r == STATUS_SUCCESS, "return wrong (%08lx)\n", r);
+
 	r = RtlCreateUserThread( NtCurrentProcess(), NULL, FALSE,
 							 NULL, 0, 0, &pipe_client, NULL, &thread, &id );
 	ok( r == STATUS_SUCCESS, "failed to create thread\n" );
 
 	// connect named pipe here
+	r = NtFsControlFile( pipe, event, 0, 0, &iosb, FSCTL_PIPE_LISTEN, 0, 0, 0, 0 );
+	if (r == STATUS_PENDING)
+		r = NtWaitForSingleObject( event, TRUE, 0 );
+	ok( r == STATUS_SUCCESS, "failed to listen %08lx\n", r );
 
-#if 0
 	for (i=0; i<10; i++)
 	{
-		r = NtReadFile( pipe, 0, 0, 0, &iosb, buf, sizeof buf, 0, 0 );
-		if (r != STATUS_SUCCESS)
-		{
-			dprintf("read returned %08lx\n", r);
-			break;
-		}
+		ULONG val = 0;
+
+		r = NtReadFile( pipe, event, 0, 0, &iosb, &val, sizeof val, 0, 0 );
+		if (r == STATUS_PENDING)
+			r = NtWaitForSingleObject( event, TRUE, 0 );
+		ok (r == STATUS_SUCCESS, "read %ld returned %08lx\n", i, r);
+
+		ok( val == i, "sequence wrong\n");
+
+		val |= 0x100;
+
+		r = NtWriteFile( pipe, event, 0, 0, &iosb, &val, sizeof val, 0, 0 );
+		if (r == STATUS_PENDING)
+			r = NtWaitForSingleObject( event, TRUE, 0 );
+		ok (r == STATUS_SUCCESS, "write %ld returned %08lx\n", i, r);
 	}
 	ok (i == 10, "wrong number of reads %ld\n", i);
-#endif
 
-	r = NtWaitForSingleObject( thread, 0, 0 );
+	r = NtFsControlFile( pipe, event, 0, 0, &iosb, FSCTL_PIPE_DISCONNECT, 0, 0, 0, 0 );
+	if (r == STATUS_PENDING)
+		r = NtWaitForSingleObject( event, TRUE, 0 );
+	ok( r == STATUS_SUCCESS, "failed to listen %08lx\n", r );
+
+	r = NtWaitForSingleObject( thread, TRUE, 0 );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
 	r = NtClose( pipe );
