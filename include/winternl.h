@@ -474,6 +474,11 @@ typedef enum _FILE_INFORMATION_CLASS {
     FileMaximumInformation
 } FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
 
+typedef struct _FILE_PIPE_INFORMATION {
+	ULONG ReadModeMessage;
+	ULONG WaitModeBlocking;
+} FILE_PIPE_INFORMATION, *PFILE_PIPE_INFORMATION;
+
 typedef struct _FILE_DIRECTORY_INFORMATION {
     ULONG               NextEntryOffset;
     ULONG               FileIndex;
