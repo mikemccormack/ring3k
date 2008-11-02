@@ -786,7 +786,10 @@ NTSTATUS port_t::reply_wait_receive( message_t *reply, message_t *& received )
 		current->wait();
 		received = queue->messages.head();
 	}
-	assert( received );
+	if (!received)
+		return STATUS_THREAD_IS_TERMINATING;
+	if (current->is_terminated())
+		return STATUS_THREAD_IS_TERMINATING;
 	queue->messages.unlink(received);
 	assert( !received->is_linked() );
 

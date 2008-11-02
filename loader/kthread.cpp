@@ -103,7 +103,6 @@ NTSTATUS kernel_thread_t::terminate( NTSTATUS Status )
 
 bool kernel_thread_t::is_terminated()
 {
-	assert(0);
 	return 0;
 }
 

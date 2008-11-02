@@ -736,6 +736,9 @@ NTSTATUS thread_impl_t::terminate( NTSTATUS status )
 	if (ThreadState == StateTerminated)
 		return STATUS_INVALID_PARAMETER;
 
+	if (!option_quiet)
+		fprintf(stderr, "%04lx: terminated\n", trace_id());
+
 	ExitStatus = status;
 	set_state( StateTerminated );
 
