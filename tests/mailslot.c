@@ -231,6 +231,6 @@ void NtProcessStartup( void )
 	log_init();
 	create_mailslot_link();
 	test_mailslot();
-	test_mailslot_server();
+	//test_mailslot_server();
 	log_fini();
 }
