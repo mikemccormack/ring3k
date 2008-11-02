@@ -116,7 +116,7 @@ object_t *find_object( UNICODE_STRING& name, bool case_insensitive )
 	return 0;
 }
 
-NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
+NTSTATUS validate_path( const OBJECT_ATTRIBUTES *oa )
 {
 	// no name
 	if (!oa || !oa->ObjectName || !oa->ObjectName->Buffer)
@@ -138,7 +138,6 @@ NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
 	bool case_insensitive = oa->Attributes & OBJ_CASE_INSENSITIVE;
 	UNICODE_STRING& name = *oa->ObjectName;
 	ULONG n = 1;
-	object_t *obj = 0;
 
 	while (n < name.Length/2)
 	{
@@ -163,7 +162,20 @@ NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
 		n++;
 	}
 
-	obj = find_object(name, case_insensitive);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
+{
+	NTSTATUS r;
+
+	r = validate_path( oa );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	object_t *obj = 0;
+	bool case_insensitive = oa->Attributes & OBJ_CASE_INSENSITIVE;
+	obj = find_object( *oa->ObjectName, case_insensitive);
 	if (!obj)
 		return STATUS_OBJECT_NAME_NOT_FOUND;
 

@@ -178,6 +178,17 @@ NTSTATUS object_factory::create(
 			return r;
 
 		dprintf("name = %pus\n", oa.ObjectName);
+
+		// only validate absolute pathes for the moment
+		if (oa.ObjectName && !oa.RootDirectory)
+		{
+			r = validate_path( &oa );
+			if (r != STATUS_SUCCESS)
+			{
+				dprintf("validate path failed name = %pus\n", oa.ObjectName);
+				return r;
+			}
+		}
 	}
 
 	r = alloc_object( &obj );

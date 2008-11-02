@@ -305,6 +305,7 @@ int main(int argc, char **argv)
 	fiber_t::fibers_init();
 	create_directory_object( (PWSTR) L"\\" );
 	create_directory_object( (PWSTR) L"\\??" );
+	create_directory_object( (PWSTR) L"\\Device" );
 	create_directory_object( (PWSTR) L"\\Global" );
 	create_directory_object( (PWSTR) L"\\Security" );
 	create_sync_event( (PWSTR) L"\\Security\\LSA_AUTHENTICATION_INITIALIZED" );

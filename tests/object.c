@@ -224,7 +224,7 @@ void test_query_object_security(void)
 void test_named_directory( void )
 {
 	NTSTATUS r;
-	HANDLE handle = 0, handle2 = 0;
+	HANDLE handle = 0, handle2 = 0, handle3 = 0;
 	OBJECT_ATTRIBUTES oa;
 	UNICODE_STRING us, us2;
 	WCHAR testdir[] = L"\\testdir";
@@ -249,8 +249,8 @@ void test_named_directory( void )
 	ok( r == STATUS_OBJECT_PATH_NOT_FOUND, "return wrong %08lx\n", r);
 
 	// try again with a sub path that doesn't exist name
-	//r = NtCreateDirectoryObject( &handle, 0, &oa );
-	//ok( r == STATUS_OBJECT_PATH_NOT_FOUND, "return wrong %08lx\n", r);
+	r = NtCreateDirectoryObject( &handle, 0, &oa );
+	ok( r == STATUS_OBJECT_PATH_NOT_FOUND, "return wrong %08lx\n", r);
 
 	// try again with a valid name
 	oa.ObjectName = &us;
@@ -259,6 +259,12 @@ void test_named_directory( void )
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
 	r = NtOpenDirectoryObject( &handle2, GENERIC_READ, &oa );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = NtOpenDirectoryObject( &handle3, GENERIC_READ, &oa );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = NtClose( handle3 );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
 	r = NtClose( handle2 );

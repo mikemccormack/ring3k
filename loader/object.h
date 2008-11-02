@@ -124,5 +124,6 @@ NTSTATUS get_named_object( object_t **out, const OBJECT_ATTRIBUTES *oa );
 NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa );
 
 template<typename T> NTSTATUS object_from_handle(T*& out, HANDLE handle, ACCESS_MASK access);
+NTSTATUS validate_path( const OBJECT_ATTRIBUTES *oa );
 
 #endif //__OBJECT_H__
