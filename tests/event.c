@@ -134,7 +134,7 @@ void test_named_event( void )
 	oa.SecurityQualityOfService = 0;
 
 	r = NtOpenEvent( &openned, EVENT_ALL_ACCESS, &oa );
-	ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "failed to create event\n");
+	ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
 
 	r = NtCreateEvent( &original, EVENT_ALL_ACCESS, &oa, NotificationEvent, 0 );
 	ok( r == STATUS_SUCCESS, "failed to create event\n");

@@ -103,24 +103,73 @@ object_t *create_directory_object( PCWSTR name )
 	return obj;
 }
 
-NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
+object_t *find_object( UNICODE_STRING& name, bool case_insensitive )
 {
-	if (!oa || !oa->ObjectName || !oa->ObjectName->Buffer || !oa->ObjectName->Buffer[0])
-		return STATUS_OBJECT_PATH_SYNTAX_BAD;
-
 	for( object_iter_t i(object_list); i; i.next() )
 	{
 		object_t *obj = i;
 
-		if (!obj->name.compare( oa->ObjectName, oa->Attributes & OBJ_CASE_INSENSITIVE ))
+		if (!obj->name.compare( &name, case_insensitive ))
 			continue;
+		return obj;
+	}
+	return 0;
+}
 
-		addref( obj );
-		*out = obj;
-		return STATUS_SUCCESS;
+NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
+{
+	// no name
+	if (!oa || !oa->ObjectName || !oa->ObjectName->Buffer)
+		return STATUS_OBJECT_PATH_SYNTAX_BAD;
+
+	// too short
+	if (oa->ObjectName->Length < 2)
+		return STATUS_OBJECT_PATH_SYNTAX_BAD;
+
+	// odd length
+	if (oa->ObjectName->Length & 1)
+		return STATUS_OBJECT_PATH_SYNTAX_BAD;
+
+	// relative path
+	if (oa->RootDirectory == 0 && oa->ObjectName->Buffer[0] != '\\')
+		return STATUS_OBJECT_PATH_SYNTAX_BAD;
+
+	// look each directory in the path and make sure it exists
+	bool case_insensitive = oa->Attributes & OBJ_CASE_INSENSITIVE;
+	UNICODE_STRING& name = *oa->ObjectName;
+	ULONG n = 1;
+	object_t *obj = 0;
+
+	while (n < name.Length/2)
+	{
+		while (n < name.Length/2 && name.Buffer[n] != '\\')
+			n++;
+
+		if (n == name.Length/2)
+			break;
+
+		UNICODE_STRING dir;
+
+		dir.Buffer = name.Buffer;
+		dir.Length = n * 2;
+		dir.MaximumLength = 0;
+
+		if (!find_object(dir, case_insensitive))
+		{
+			dprintf("path %pus not found\n", &dir);
+			return STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
+		n++;
 	}
 
-	return STATUS_OBJECT_NAME_NOT_FOUND;
+	obj = find_object(name, case_insensitive);
+	if (!obj)
+		return STATUS_OBJECT_NAME_NOT_FOUND;
+
+	addref( obj );
+	*out = obj;
+	return STATUS_SUCCESS;
 }
 
 NTSTATUS name_object( object_t *obj, const OBJECT_ATTRIBUTES *oa )
@@ -180,7 +229,13 @@ NTSTATUS NTAPI NtCreateDirectoryObject(
 	dprintf("%p %08lx %p\n", DirectoryHandle, DesiredAccess, ObjectAttributes );
 
 	object_dir_factory factory;
-	return factory.create( DirectoryHandle, DesiredAccess, ObjectAttributes );
+	NTSTATUS r;
+	r = factory.create( DirectoryHandle, DesiredAccess, ObjectAttributes );
+	if (r != STATUS_SUCCESS)
+	{
+		r = NtOpenDirectoryObject( DirectoryHandle, DesiredAccess, ObjectAttributes );
+	}
+	return r;
 }
 
 NTSTATUS NTAPI NtOpenDirectoryObject(

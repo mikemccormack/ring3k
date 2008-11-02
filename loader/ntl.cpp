@@ -299,6 +299,7 @@ int main(int argc, char **argv)
 	init_registry();
 	init_ntdll();
 	fiber_t::fibers_init();
+	create_directory_object( (PWSTR) L"\\" );
 	create_directory_object( (PWSTR) L"\\??" );
 	create_directory_object( (PWSTR) L"\\Global" );
 	create_directory_object( (PWSTR) L"\\Security" );

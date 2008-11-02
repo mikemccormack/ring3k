@@ -186,7 +186,10 @@ NTSTATUS object_factory::create(
 		r = name_object( obj, &oa );
 		if (r == STATUS_SUCCESS)
 			r = alloc_user_handle( obj, AccessMask, Handle );
-		release( obj );
+		if (oa.Attributes & OBJ_PERMANENT )
+			dprintf("permanent object\n");
+		else
+			release( obj );
 	}
 
 	return r;

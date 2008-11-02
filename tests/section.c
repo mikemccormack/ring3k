@@ -262,9 +262,32 @@ void test_nls_section( void )
 	//ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 }
 
+// create the NLS directory, as it may not exist
+void create_nls_dir( void )
+{
+	HANDLE root = 0;
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us;
+	WCHAR nlsdir[] = L"\\NLS";
+
+	us.Length = sizeof nlsdir - 2;
+	us.Buffer = nlsdir;
+	us.MaximumLength = 0;
+
+	oa.Length = sizeof oa;
+	oa.RootDirectory = 0;
+	oa.ObjectName = &us;
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	NtCreateDirectoryObject( &root, GENERIC_READ, &oa );
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
+	create_nls_dir();
 	test_createsection_invalid();
 	test_createsection();
 	test_createsection_commit();

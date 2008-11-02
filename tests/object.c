@@ -245,6 +245,9 @@ void test_named_directory( void )
 	oa.SecurityDescriptor = 0;
 	oa.SecurityQualityOfService = 0;
 
+	r = NtOpenDirectoryObject( &handle, 0, &oa );
+	ok( r == STATUS_OBJECT_PATH_NOT_FOUND, "return wrong %08lx\n", r);
+
 	// try again with a sub path that doesn't exist name
 	//r = NtCreateDirectoryObject( &handle, 0, &oa );
 	//ok( r == STATUS_OBJECT_PATH_NOT_FOUND, "return wrong %08lx\n", r);
@@ -385,6 +388,67 @@ void test_symbolic_link( void )
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 }
 
+HANDLE get_root( void )
+{
+	NTSTATUS r;
+	HANDLE root = 0;
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us;
+	WCHAR rootdir[] = L"\\";
+
+	us.Length = sizeof rootdir - 2;
+	us.Buffer = rootdir;
+	us.MaximumLength = 0;
+
+	oa.Length = sizeof oa;
+	oa.RootDirectory = 0;
+	oa.ObjectName = &us;
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	//r = NtOpenDirectoryObject( &root, 0, &oa );
+	//ok( r == STATUS_ACCESS_DENIED, "return wrong %08lx\n", r);
+
+	r = NtOpenDirectoryObject( &root, GENERIC_READ, &oa );
+	ok( r == 0, "return wrong %08lx\n", r);
+
+	return root;
+}
+
+void test_symbolic_open_link( void )
+{
+	WCHAR testlink[] = L"testsymlink2";
+	UNICODE_STRING us, target;
+	OBJECT_ATTRIBUTES oa;
+	WCHAR targetname[] = L"\\foo\\bar\\2";
+	NTSTATUS r;
+	HANDLE link = 0;
+
+	us.Length = sizeof testlink - 2;
+	us.Buffer = testlink;
+	us.MaximumLength = 0;
+
+	oa.Length = sizeof oa;
+	oa.RootDirectory = 0;
+	oa.ObjectName = &us;
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	target.Length = sizeof targetname - 2;
+	target.Buffer = targetname;
+	target.MaximumLength = 0;
+
+	r = NtOpenSymbolicLinkObject( &link, GENERIC_READ, &oa );
+	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "return wrong %08lx\n", r);
+
+	oa.RootDirectory = get_root();
+
+	r = NtOpenSymbolicLinkObject( &link, GENERIC_READ, &oa );
+	ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -393,5 +457,6 @@ void NtProcessStartup( void )
 	test_query_object_security();
 	test_named_directory();
 	test_symbolic_link();
+	test_symbolic_open_link();
 	log_fini();
 }
