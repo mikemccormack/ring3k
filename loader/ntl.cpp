@@ -235,11 +235,15 @@ static void segv_handler(int)
 	void *bt[max_frames];
 	char **names;
 	int n=0, size;
+	ULONG id = 0;
+
+	if (current)
+		id = current->trace_id();
 
 	size = backtrace(bt, max_frames);
 	names = backtrace_symbols(bt, size);
 
-	fprintf(stderr, "SEGV: %d frames\n", size);
+	fprintf(stderr, "%04lx: caught kernel SEGV (%d frames):\n", id, size);
 	for (n=0; n<size; n++)
 	{
 		fprintf(stderr, "%d: %s\n", n, names[n]);
