@@ -140,7 +140,7 @@ void test_named_event( void )
 	ok( r == STATUS_SUCCESS, "failed to create event\n");
 
 	r = NtOpenEvent( &openned, EVENT_ALL_ACCESS, &oa );
-	ok( r == STATUS_SUCCESS, "failed to create event\n");
+	ok( r == STATUS_SUCCESS, "failed to open event\n");
 
 	r = NtClose( openned );
 	ok(r == STATUS_SUCCESS, "return wrong\n");
@@ -156,7 +156,7 @@ void test_named_event( void )
 	oa.SecurityQualityOfService = 0;
 
 	r = NtOpenEvent( &original, EVENT_ALL_ACCESS, &oa );
-	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "failed to create event (%08lx)\n", r);
+	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "return wrong %08lx\n", r);
 
 	us.Buffer = NULL;
 	us.Length = 0;
@@ -170,7 +170,7 @@ void test_named_event( void )
 	oa.SecurityQualityOfService = 0;
 
 	r = NtOpenEvent( &original, EVENT_ALL_ACCESS, &oa );
-	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "failed to create event (%08lx)\n", r);
+	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "failed to open event (%08lx)\n", r);
 
 	us.Buffer = L"";
 	us.Length = 2;
@@ -184,7 +184,7 @@ void test_named_event( void )
 	oa.SecurityQualityOfService = 0;
 
 	r = NtOpenEvent( &original, EVENT_ALL_ACCESS, &oa );
-	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "failed to create event (%08lx)\n", r);
+	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "failed to open event (%08lx)\n", r);
 
 	us.Buffer = L"\\";
 	us.Length = 4;
@@ -198,7 +198,7 @@ void test_named_event( void )
 	oa.SecurityQualityOfService = 0;
 
 	r = NtOpenEvent( &original, EVENT_ALL_ACCESS, &oa );
-	ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "failed to create event (%08lx)\n", r);
+	ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong (%08lx)\n", r);
 }
 
 void test_access_event( void )
