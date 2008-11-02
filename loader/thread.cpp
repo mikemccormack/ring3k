@@ -284,13 +284,12 @@ NTSTATUS thread_impl_t::kernel_debugger_output_string( struct kernel_debug_strin
 	r = copy_from_user( string, hdr+1, header.length );
 	if (r == STATUS_SUCCESS)
 	{
-		if (header.address == 0 && header.unknown1 == 0 && header.unknown2 == 0)
-			fprintf(stderr, "%04lx (debug) : %s\n", trace_id(), string);
-		else
-			fprintf(stderr, "%04lx (debug %lx,%lx,%lx) : %s\n", trace_id(), header.address, header.unknown1, header.unknown2, string);
+		if (string[header.length - 1] == '\n')
+			string[header.length - 1] = 0;
+		fprintf(stderr, "%04lx: debug: %s\n", trace_id(), string);
 	}
 	else
-		fprintf(stderr, "%04lx (debug %lx,%lx,%lx) <invalid>\n", trace_id(), header.address, header.unknown1, header.unknown2);
+		fprintf(stderr, "%04lx: debug - bad address\n", trace_id());
 
 	delete string;
 	return r;
