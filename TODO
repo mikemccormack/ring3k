@@ -8,17 +8,10 @@ Things to do:
   write a test for thread exit issues and fix
 
 - implement named pipes
-  test program for named pipes
 
 - implement mailslots
-  test program for mailslots
-
-- figure out how ConnectNamePipe, WaitNamedPipe, CallNamedPipe work
 
 - implement NtQueryInformationToken 0x20 11 (nil) 0 0x6f5fc
-
-- separate registry binary and hex values so
-  hex can be written <x n="foo">1</x>
 
 - document registry format
 
@@ -45,4 +38,9 @@ Semi Completed:
 - object symbolic links
 - figure out what SeRmCommandPort is -> SeRm = Security Reference Monitor
   Implement a port server in kernel
+- figure out how ConnectNamePipe, WaitNamedPipe, CallNamedPipe work
+- separate registry binary and hex values so
+  hex can be written <n n="foo">1</n>
+- test program for named pipes
+- test program for mailslots
 

@@ -1069,6 +1069,46 @@ ULONG hex_to_binary( xmlChar *str, ULONG len, BYTE *buf )
 	return n;
 }
 
+void number_to_binary( xmlChar *str, ULONG len, BYTE *buf )
+{
+	char *valstr = (char*) str;
+	ULONG base = 0;
+	ULONG val = 0;
+	ULONG i;
+	BYTE ch;
+
+	if (str[0] == '0' && str[1] == 'x' || str[1] == 'X')
+	{
+		// hex
+		base = 0x10;
+		i = 2;
+	}
+	else if (str[0] == '0')
+	{
+		// octal
+		base = 8;
+		i = 1;
+	}
+	else
+	{
+		// decimal
+		base = 10;
+		i = 0;
+	}
+
+	while (str[i])
+	{
+		ch = hexchar(str[i]);
+		if (ch >= base)
+			die("invalid registry value %s\n", valstr);
+		val *= base;
+		val += ch;
+		i++;
+	}
+
+	*((ULONG*) buf) = val;
+}
+
 void dump_val( regval_t *val )
 {
 	ULONG i;
@@ -1136,6 +1176,17 @@ void load_reg_key( regkey_t *parent, xmlNode *node )
 		size = hex_to_binary( contents, 0, NULL );
 		val = new regval_t( &name, atoi(type), size );
 		hex_to_binary( contents, size, val->data );
+		parent->values.append( val );
+		break;
+
+	case 'n': // number
+		// default type is REG_DWORD
+		if (type == NULL)
+			type = "4";
+		contents = xmlNodeGetContent( node );
+		size = sizeof (ULONG);
+		val = new regval_t( &name, atoi(type), size );
+		number_to_binary( contents, size, val->data );
 		parent->values.append( val );
 		break;
 

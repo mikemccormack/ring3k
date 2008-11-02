@@ -55,7 +55,7 @@
       <s n="ProgramFilesDir">C:\Program Files</s>
       <k n="policies">
        <k n="system">
-        <x t="4" n="VerboseStatus">01000000</x>
+        <n n="VerboseStatus">1</n>
        </k>
       </k>
       <k n="Explorer">
@@ -73,8 +73,8 @@
       <k n="IniFileMapping">
       </k>
       <k n="Diagnostics">
-       <x t="4" n="AppMgmtDebugLevel">4b000000</x>
-       <x t="4" n="AppMgmtDebugBreak">00000000</x>
+       <n n="AppMgmtDebugLevel">0x4b</n>
+       <n n="AppMgmtDebugBreak">0</n>
       </k>
       <k n="Winlogon">
        <k n="Notify">
@@ -92,13 +92,13 @@
     <k n="System">
      <k n="CentralProcessor">
       <k n="0">
-       <x t="4" n="~MHz">bf010000</x>
+       <n n="~MHz">0x000001bf</n>
        <x t="7" n="ComponentInformation">00000000000000000000000001000000</x>
        <x t="9" n="ConfigurationData">ffffffffffffffff0000000000000000</x>
-       <x t="4" n="FeatureSet">ff2f0000</x>
+       <n n="FeatureSet">0x00002fff</n>
        <s n="Identifier">x86 Family 6 Model 8 Stepping 1</s>
        <x t="7" n="UpdateSignature">000000000e000000</x>
-       <x t="4" n="Update Status">06000000</x>
+       <n n="Update Status">6</n>
        <s n="VendorIdentifier">GenuineIntel</s>
       </k>
      </k>
@@ -107,10 +107,10 @@
   </k>
   <k n="System">
    <k n="Select">
-    <x t="4" n="Current">01000000</x>
-    <x t="4" n="Default">01000000</x>
-    <x t="4" n="Failed">00000000</x>
-    <x t="4" n="LastKnownGood">02000000</x>
+    <n n="Current">1</n>
+    <n n="Default">1</n>
+    <n n="Failed">0</n>
+    <n n="LastKnownGood">2</n>
    </k>
    <k n="CurrentControl001">
    </k>
@@ -128,7 +128,7 @@
      <k n="EventLog">
       <k n="Application">
        <k n="Error Instrument">
-        <x t="4" n="TypesSupported">07000000</x>
+        <n n="TypesSupported">7</n>
         <s n="EventMessageFile">%SystemRoot%\System32\User32.dll</s>
        </k>
       </k>
@@ -138,8 +138,8 @@
      <k n="Tcpip">
       <k n="Parameters">
        <s n="NV Hostname">mike-up94heby9k</s>
-       <x t="4" n="AllowUnqualifiedQuery">00000000</x>
-       <x t="4" n="PrioritizeRecordData">10000000</x>
+       <n n="AllowUnqualifiedQuery">0</n>
+       <n n="PrioritizeRecordData">0x10</n>
       </k>
      </k>
     </k>
@@ -173,7 +173,7 @@
       </k>
      </k>
      <k n="Lsa">
-      <x t="4" n="SecureBoot">01000000</x>
+      <n n="SecureBoot">1</n>
       <x t="7" n="Authentication Packages">6d007300760031005f00300000000000</x>
       <x t="7" n="Security Packages">6b00650072006200650072006f00730000006d007300760031005f003000000073006300680061006e006e0065006c00000000</x>
       <k n="JD" c="cf845301">
@@ -195,12 +195,12 @@
       </k>
      </k>
      <k n="Error Message Instrument">
-      <x t="4" n="EnableLogging">01000000</x>
-      <x t="4" n="LogSeverity">00000000</x>
-      <x t="4" n="EnableDefaultReply">01000000</x>
+      <n n="EnableLogging">1</n>
+      <n n="LogSeverity">0</n>
+      <n n="EnableDefaultReply">1</n>
      </k>
      <k n="PriorityControl">
-      <x t="4" n="Win32PrioritySeparation">02000000</x>
+      <n n="Win32PrioritySeparation">2</n>
      </k>
      <k n="WOW">
       <s n="DefaultSeparateVDM">no</s>
@@ -210,11 +210,11 @@
       <s n="xProductType">ServerNT</s>
      </k>
      <k n="Session Manager">
-      <x t="4" n="AllowProtectedRenames">01000000</x>
+      <n n="AllowProtectedRenames">1</n>
       <x t="7" n="BootExecute">6e006100740069007600650000000000</x>
       <x t="7" n="ExcludeFromKnownDlls">0000</x>
       <x t="7" n="ObjectDirectories">5c00570069006e0064006f007700730000005c0052007000630043006f006e00740072006f006c0000000000</x>
-      <x t="4" n="ProtectionMode">9dffffff</x>
+      <n n="ProtectionMode">0xffffff9d</n>
       <k n="Environment">
        <s t="2" n="ComSpec">%SystemRoot%\system32\cmd.exe</s>
        <s n="NUMBER_OF_PROCESSORS">1</s>
@@ -264,9 +264,9 @@
       </k>
      </k>
      <k n="Windows">
-      <x t="4" n="CSDVersion">00000100</x>
-      <x t="4" n="ErrorMode">00000000</x>
-      <x t="4" n="NoInteractiveServices">00000000</x>
+      <n n="CSDVersion">0x00000100</n>
+      <n n="ErrorMode">0</n>
+      <n n="NoInteractiveServices">0</n>
       <s t="2" n="SystemDirectory">%SystemRoot%\system32</s>
      </k>
     </k>
