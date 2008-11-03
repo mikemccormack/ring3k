@@ -25,6 +25,7 @@
 #include "unicode.h"
 
 class object_t;
+class object_dir_t;
 
 typedef list_anchor<object_t, 0> object_list_t;
 typedef list_element<object_t> object_entry_t;
@@ -38,7 +39,11 @@ class object_t {
 	ULONG refcount;
 public:
 	ULONG attr;
+	object_dir_t *parent;
 	unicode_string_t name;
+	friend class object_dir_t;
+	void set_parent( object_dir_t *dir );
+	unicode_string_t& get_name() { return name; }
 public:
 	object_t();
 	virtual bool access_allowed( ACCESS_MASK required, ACCESS_MASK handle );
@@ -118,7 +123,9 @@ static inline void release( object_t *obj )
 	object_t::release( obj );
 }
 
-object_t *create_directory_object( PCWSTR name );
+void init_root();
+void free_root();
+
 NTSTATUS name_object( object_t *obj, const OBJECT_ATTRIBUTES *oa );
 NTSTATUS get_named_object( object_t **out, const OBJECT_ATTRIBUTES *oa );
 NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa );

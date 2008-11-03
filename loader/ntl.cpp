@@ -39,6 +39,7 @@
 #include "debug.h"
 #include "mem.h"
 #include "object.h"
+#include "objdir.h"
 #include "ntcall.h"
 #include "section.h"
 #include "timer.h"
@@ -303,12 +304,14 @@ int main(int argc, char **argv)
 	init_registry();
 	init_ntdll();
 	fiber_t::fibers_init();
+	init_root();
 	create_directory_object( (PWSTR) L"\\" );
 	create_directory_object( (PWSTR) L"\\??" );
 	create_directory_object( (PWSTR) L"\\Device" );
 	create_directory_object( (PWSTR) L"\\Device\\MailSlot" );
-	create_directory_object( (PWSTR) L"\\Global" );
 	create_directory_object( (PWSTR) L"\\Security" );
+	create_directory_object( (PWSTR) L"\\DosDevices" );
+	create_directory_object( (PWSTR) L"\\BaseNamedObjects" );
 	create_sync_event( (PWSTR) L"\\Security\\LSA_AUTHENTICATION_INITIALIZED" );
 	create_sync_event( (PWSTR) L"\\SeLsaInitEvent" );
 	// XP
@@ -337,6 +340,7 @@ int main(int argc, char **argv)
 
 	do_cleanup();
 
+	free_root();
 	fiber_t::fibers_finish();
 	delete us.Buffer;
 	free_registry();

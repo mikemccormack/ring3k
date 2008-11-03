@@ -39,8 +39,6 @@
 #include "mem.h"
 #include "ntcall.h"
 
-extern object_list_t object_list;
-
 void object_t::addref( object_t *obj )
 {
 	obj->refcount ++;
@@ -53,9 +51,6 @@ void object_t::release( object_t *obj )
 	if (!--obj->refcount)
 	{
 		//dprintf("destroying %p\n", obj);
-		if (obj->entry[0].is_linked())
-			object_list.unlink( obj );
-
 		delete obj;
 	}
 }
@@ -212,12 +207,15 @@ object_factory::~object_factory()
 
 object_t::object_t() :
 	refcount( 1 ),
-	attr( 0 )
+	attr( 0 ),
+	parent( 0 )
 {
 }
 
 object_t::~object_t()
 {
+	if (parent)
+		parent->unlink( this );
 }
 
 bool object_t::check_access( ACCESS_MASK required, ACCESS_MASK handle, ACCESS_MASK read, ACCESS_MASK write, ACCESS_MASK all )

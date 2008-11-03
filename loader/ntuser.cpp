@@ -30,6 +30,7 @@
 
 #include "ntcall.h"
 #include "section.h"
+#include "objdir.h"
 #include "ntuser.h"
 #include "ntgdi.h"
 #include "mem.h"

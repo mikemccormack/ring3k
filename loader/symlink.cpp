@@ -69,7 +69,7 @@ NTSTATUS NTAPI NtCreateSymbolicLinkObject(
 	if (r != STATUS_SUCCESS)
 		return r;
 
-	dprintf("%pus -> %pus\n", oa.ObjectName, &target);
+	dprintf("root %p %pus -> %pus\n", oa.RootDirectory, oa.ObjectName, &target);
 
 	link = new symlink_t( target );
 	if (!link)
@@ -79,7 +79,9 @@ NTSTATUS NTAPI NtCreateSymbolicLinkObject(
 	if (r == STATUS_SUCCESS)
 	{
 		r = alloc_user_handle( link, DesiredAccess, SymbolicLinkHandle );
-		release( link );
+
+		// Symbolic links are permanent...
+		//release( link );
 	}
 
 	return r;

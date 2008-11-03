@@ -26,10 +26,17 @@
 class object_dir_t : public object_t {
 protected:
 	friend class object_t;
+	static void set_obj_parent( object_t *child, object_dir_t *dir );
+	virtual void unlink( object_t *child ) = 0;
 public:
 	object_dir_t();
 	virtual ~object_dir_t();
 	virtual bool access_allowed( ACCESS_MASK access, ACCESS_MASK handle_access ) = 0;
+	virtual object_t *lookup( UNICODE_STRING& name, bool ignore_case ) = 0;
+	virtual void append( object_t *child ) = 0;
 };
+
+object_t *create_directory_object( PCWSTR name );
+NTSTATUS parse_path( const OBJECT_ATTRIBUTES& oa, object_dir_t*& dir, UNICODE_STRING& file );
 
 #endif // __NTNATIVE_OBJDIR_H__
