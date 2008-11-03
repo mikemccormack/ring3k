@@ -32,6 +32,7 @@
 #include "objdir.h"
 #include "object.inl"
 #include "ntcall.h"
+#include "symlink.h"
 
 object_list_t object_list;
 
@@ -147,16 +148,37 @@ NTSTATUS validate_path( const OBJECT_ATTRIBUTES *oa )
 		if (n == name.Length/2)
 			break;
 
-		UNICODE_STRING dir;
+		UNICODE_STRING segment;
 
-		dir.Buffer = name.Buffer;
-		dir.Length = n * 2;
-		dir.MaximumLength = 0;
+		segment.Buffer = name.Buffer;
+		segment.Length = n * 2;
+		segment.MaximumLength = 0;
 
-		if (!find_object(dir, case_insensitive))
+		object_t *obj = find_object( segment, case_insensitive );
+		if (!obj)
 		{
-			dprintf("path %pus not found\n", &dir);
+			dprintf("path %pus not found\n", &segment);
 			return STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
+		// check symlinks
+		symlink_t *link = dynamic_cast<symlink_t*>( obj );
+		if (link)
+		{
+			unicode_string_t& target = link->get_target();
+			obj = find_object( target, case_insensitive );
+			if (!obj)
+			{
+				dprintf("target %pus not found\n", &target);
+				return STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+		}
+
+		object_dir_t *dir = dynamic_cast<object_dir_t*>( obj );
+		if (!dir)
+		{
+			dprintf("path %pus invalid\n", &segment);
+			return STATUS_OBJECT_PATH_SYNTAX_BAD;
 		}
 
 		n++;

@@ -32,14 +32,7 @@
 #include "object.h"
 #include "object.inl"
 #include "ntcall.h"
-
-class symlink_t : public object_t {
-	unicode_string_t target;
-public:
-	symlink_t( unicode_string_t& us );
-	~symlink_t();
-	unicode_string_t& get_target() {return target;}
-};
+#include "symlink.h"
 
 symlink_t::symlink_t( unicode_string_t& us )
 {
