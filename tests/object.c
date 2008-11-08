@@ -470,15 +470,18 @@ void test_symbolic_open_link( void )
 void test_symbolic_open_target( void )
 {
 	WCHAR testlink[] = L"\\testsymlink3";
+	WCHAR testdir[] = L"\\testdir3";
+	WCHAR testpath[] = L"\\testsymlink3\\testdir3";
 	UNICODE_STRING us, target;
 	OBJECT_ATTRIBUTES oa;
 	WCHAR targetname[] = L"\\";
 	NTSTATUS r;
 	HANDLE link = 0, dir = 0;
+	HANDLE dir2 = 0;
 
 	us.Length = sizeof testlink - 2;
 	us.Buffer = testlink;
-	us.MaximumLength = 0;
+	us.MaximumLength = us.Length;
 
 	oa.Length = sizeof oa;
 	oa.RootDirectory = 0;
@@ -494,15 +497,35 @@ void test_symbolic_open_target( void )
 	r = NtCreateSymbolicLinkObject( &link, GENERIC_READ, &oa, &target );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
-	oa.ObjectName = &target;
+	//r = NtOpenDirectoryObject( &dir, GENERIC_READ, &oa );
+	//ok( r == STATUS_OBJECT_NAME_INVALID, "return wrong %08lx\n", r);
 
-	r = NtOpenDirectoryObject( &dir, GENERIC_READ, &oa );
+	r = NtClose( link );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
-	r = NtClose( dir );
+	// link to self?
+	r = NtCreateSymbolicLinkObject( &link, GENERIC_READ, &oa, &us );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
 	r = NtClose( link );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	// create testdir3
+	us.Buffer = testdir;
+	us.Length = sizeof testdir - 2;
+	us.MaximumLength = us.Length;
+
+	r = NtCreateDirectoryObject( &dir, GENERIC_READ, &oa );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	us.Buffer = testpath;
+	us.Length = sizeof testpath - 2;
+	us.MaximumLength = us.Length;
+
+	r = NtOpenDirectoryObject( &dir2, GENERIC_READ, &oa );
+	ok( r == STATUS_OBJECT_PATH_NOT_FOUND, "return wrong %08lx\n", r);
+
+	r = NtClose( dir );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 }
 
@@ -515,6 +538,6 @@ void NtProcessStartup( void )
 	test_named_directory();
 	test_symbolic_link();
 	test_symbolic_open_link();
-	//test_symbolic_open_target();
+	test_symbolic_open_target();
 	log_fini();
 }
