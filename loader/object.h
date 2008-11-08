@@ -31,6 +31,16 @@ typedef list_anchor<object_t, 0> object_list_t;
 typedef list_element<object_t> object_entry_t;
 typedef list_iter<object_t, 0> object_iter_t;
 
+class object_factory;
+
+class open_info_t {
+public:
+	ULONG Attributes;
+	object_factory *factory;
+	object_dir_t *dir;
+	UNICODE_STRING path;
+};
+
 class object_t {
 	friend class list_anchor<object_t, 0>;
 	friend class list_element<object_t>;
@@ -51,6 +61,7 @@ public:
 	static bool check_access( ACCESS_MASK required, ACCESS_MASK handle, ACCESS_MASK read, ACCESS_MASK write, ACCESS_MASK all );
 	static void addref( object_t *obj );
 	static void release( object_t *obj );
+	virtual NTSTATUS open( object_t *&out, open_info_t& info );
 };
 
 class object_factory

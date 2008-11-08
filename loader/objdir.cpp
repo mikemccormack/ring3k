@@ -282,9 +282,17 @@ NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
 	if (!obj)
 		return STATUS_OBJECT_NAME_NOT_FOUND;
 
-	addref( obj );
-	*out = obj;
-	return STATUS_SUCCESS;
+	// need to pass extra info to open - length of path parsed
+
+	open_info_t oi;
+	oi.Attributes = oa->Attributes;
+	oi.factory = 0;
+	oi.dir = dir;
+	oi.path.Length = 0;
+	oi.path.MaximumLength = 0;
+	oi.path.Buffer = 0;
+
+	return obj->open( *out, oi );
 }
 
 NTSTATUS name_object( object_t *obj, const OBJECT_ATTRIBUTES *oa )

@@ -289,7 +289,7 @@ BOOLEAN unicode_string_equal( PUNICODE_STRING a, PUNICODE_STRING b )
 void test_symbolic_link( void )
 {
 	NTSTATUS r;
-	HANDLE handle = 0;
+	HANDLE handle = 0, handle2 = 0;
 	OBJECT_ATTRIBUTES oa;
 	ULONG len = 0;
 	UNICODE_STRING us, target, out;
@@ -390,8 +390,25 @@ void test_symbolic_link( void )
 
 	ok( len == out.Length, "length wrong\n");
 
+	// open a second handle
+	oa.Attributes |= OBJ_OPENIF;
+	r = NtOpenSymbolicLinkObject( &handle2, GENERIC_READ, &oa );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = NtClose( handle2 );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	oa.Attributes |= OBJ_OPENLINK;
+	r = NtOpenSymbolicLinkObject( &handle2, GENERIC_READ, &oa );
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
 	r = NtClose( handle );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	// reopen the object... it does not persist
+	handle = 0;
+	r = NtOpenSymbolicLinkObject( &handle, GENERIC_READ, &oa );
+	ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
 }
 
 HANDLE get_root( void )
@@ -425,9 +442,8 @@ HANDLE get_root( void )
 void test_symbolic_open_link( void )
 {
 	WCHAR testlink[] = L"testsymlink2";
-	UNICODE_STRING us, target;
+	UNICODE_STRING us;
 	OBJECT_ATTRIBUTES oa;
-	WCHAR targetname[] = L"\\foo\\bar\\2";
 	NTSTATUS r;
 	HANDLE link = 0;
 
@@ -442,10 +458,6 @@ void test_symbolic_open_link( void )
 	oa.SecurityDescriptor = 0;
 	oa.SecurityQualityOfService = 0;
 
-	target.Length = sizeof targetname - 2;
-	target.Buffer = targetname;
-	target.MaximumLength = 0;
-
 	r = NtOpenSymbolicLinkObject( &link, GENERIC_READ, &oa );
 	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "return wrong %08lx\n", r);
 
@@ -453,6 +465,45 @@ void test_symbolic_open_link( void )
 
 	r = NtOpenSymbolicLinkObject( &link, GENERIC_READ, &oa );
 	ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
+}
+
+void test_symbolic_open_target( void )
+{
+	WCHAR testlink[] = L"\\testsymlink3";
+	UNICODE_STRING us, target;
+	OBJECT_ATTRIBUTES oa;
+	WCHAR targetname[] = L"\\";
+	NTSTATUS r;
+	HANDLE link = 0, dir = 0;
+
+	us.Length = sizeof testlink - 2;
+	us.Buffer = testlink;
+	us.MaximumLength = 0;
+
+	oa.Length = sizeof oa;
+	oa.RootDirectory = 0;
+	oa.ObjectName = &us;
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	target.Length = sizeof targetname - 2;
+	target.Buffer = targetname;
+	target.MaximumLength = target.Length;
+
+	r = NtCreateSymbolicLinkObject( &link, GENERIC_READ, &oa, &target );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	oa.ObjectName = &target;
+
+	r = NtOpenDirectoryObject( &dir, GENERIC_READ, &oa );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = NtClose( dir );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = NtClose( link );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 }
 
 void NtProcessStartup( void )
@@ -464,5 +515,6 @@ void NtProcessStartup( void )
 	test_named_directory();
 	test_symbolic_link();
 	test_symbolic_open_link();
+	//test_symbolic_open_target();
 	log_fini();
 }

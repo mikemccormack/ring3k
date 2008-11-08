@@ -29,6 +29,7 @@ public:
 	symlink_t( unicode_string_t& us );
 	~symlink_t();
 	unicode_string_t& get_target() {return target;}
+	virtual NTSTATUS open( object_t *&out, open_info_t& info );
 };
 
 #endif // __NTNATIVE_SYMLINK__

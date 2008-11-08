@@ -55,6 +55,18 @@ void object_t::release( object_t *obj )
 	}
 }
 
+NTSTATUS object_t::open( object_t *&out, open_info_t& info )
+{
+	if (info.path.Length != 0)
+	{
+		dprintf("length not zero\n");
+		return STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+	addref( this );
+	out = this;
+	return STATUS_SUCCESS;
+}
+
 HANDLE handle_table_t::index_to_handle( ULONG index )
 {
 	return (HANDLE)((index+1)*4);

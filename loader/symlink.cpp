@@ -43,6 +43,18 @@ symlink_t::~symlink_t()
 {
 }
 
+NTSTATUS symlink_t::open( object_t *&out, open_info_t& info )
+{
+	dprintf("opening symlinks oa.Attributes = %08lx\n", info.Attributes);
+	if (info.Attributes & OBJ_OPENLINK)
+	{
+		dprintf("OBJ_OPENLINK specified\n");
+		return STATUS_INVALID_PARAMETER;
+	}
+
+	return object_t::open( out, info );
+}
+
 NTSTATUS NTAPI NtCreateSymbolicLinkObject(
 	PHANDLE SymbolicLinkHandle,
 	ACCESS_MASK DesiredAccess,
@@ -69,7 +81,8 @@ NTSTATUS NTAPI NtCreateSymbolicLinkObject(
 	if (r != STATUS_SUCCESS)
 		return r;
 
-	dprintf("root %p %pus -> %pus\n", oa.RootDirectory, oa.ObjectName, &target);
+	dprintf("root %p attr %08lx %pus -> %pus\n",
+		oa.RootDirectory, oa.Attributes, oa.ObjectName, &target);
 
 	link = new symlink_t( target );
 	if (!link)
@@ -79,9 +92,7 @@ NTSTATUS NTAPI NtCreateSymbolicLinkObject(
 	if (r == STATUS_SUCCESS)
 	{
 		r = alloc_user_handle( link, DesiredAccess, SymbolicLinkHandle );
-
-		// Symbolic links are permanent...
-		//release( link );
+		release( link );
 	}
 
 	return r;
