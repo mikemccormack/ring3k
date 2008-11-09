@@ -80,9 +80,12 @@ NTSTATUS NTAPI NtCreateSymbolicLinkObject(
 	if (target.Length > target.MaximumLength)
 		return STATUS_INVALID_PARAMETER;
 
-	r = oa.copy_from_user( ObjectAttributes );
-	if (r != STATUS_SUCCESS)
-		return r;
+	if (ObjectAttributes)
+	{
+		r = oa.copy_from_user( ObjectAttributes );
+		if (r != STATUS_SUCCESS)
+			return r;
+	}
 
 	dprintf("root %p attr %08lx %pus -> %pus\n",
 		oa.RootDirectory, oa.Attributes, oa.ObjectName, &target);

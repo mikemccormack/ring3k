@@ -409,6 +409,12 @@ void test_symbolic_link( void )
 	handle = 0;
 	r = NtOpenSymbolicLinkObject( &handle, GENERIC_READ, &oa );
 	ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
+
+	r = NtCreateSymbolicLinkObject( &handle, 0, 0, &target );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = NtClose( handle );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 }
 
 HANDLE get_root( void )
@@ -472,6 +478,7 @@ void test_symbolic_open_target( void )
 	WCHAR testlink[] = L"\\testsymlink3";
 	WCHAR testdir[] = L"\\testdir3";
 	WCHAR testpath[] = L"\\testsymlink3\\testdir3";
+	WCHAR relpath[] = L"xyz";
 	UNICODE_STRING us, target;
 	OBJECT_ATTRIBUTES oa;
 	WCHAR targetname[] = L"\\";
@@ -516,6 +523,16 @@ void test_symbolic_open_target( void )
 	target.Buffer = 0;
 	r = NtCreateSymbolicLinkObject( &link, GENERIC_READ, &oa, &target );
 	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	// relative path
+	target.Length = sizeof relpath - 2;
+	target.MaximumLength = target.Length;
+	target.Buffer = relpath;
+	r = NtCreateSymbolicLinkObject( &link, GENERIC_READ, &oa, &target );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = NtClose( link );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
 	// create testdir3
 	us.Buffer = testdir;
