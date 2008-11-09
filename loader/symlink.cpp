@@ -55,53 +55,49 @@ NTSTATUS symlink_t::open( object_t *&out, open_info_t& info )
 	return object_t::open( out, info );
 }
 
-NTSTATUS NTAPI NtCreateSymbolicLinkObject(
-	PHANDLE SymbolicLinkHandle,
-	ACCESS_MASK DesiredAccess,
-	POBJECT_ATTRIBUTES ObjectAttributes,
-	PUNICODE_STRING TargetName )
+class symlink_factory_t : public object_factory
 {
-	object_attributes_t oa;
-	unicode_string_t target;
-	NTSTATUS r;
-	object_t *link;
+private:
+	unicode_string_t& target;
+public:
+	symlink_factory_t(unicode_string_t& _target);
+	virtual NTSTATUS alloc_object(object_t** obj);
+};
 
-	r = verify_for_write( SymbolicLinkHandle, sizeof *SymbolicLinkHandle );
-	if (r != STATUS_SUCCESS)
-		return r;
+symlink_factory_t::symlink_factory_t(unicode_string_t& _target) :
+	target( _target )
+{
+}
 
-	r = target.copy_from_user( TargetName );
-	if (r != STATUS_SUCCESS)
-		return r;
-
+NTSTATUS symlink_factory_t::alloc_object(object_t** obj)
+{
 	if (target.Length == 0)
 		return STATUS_INVALID_PARAMETER;
 
 	if (target.Length > target.MaximumLength)
 		return STATUS_INVALID_PARAMETER;
 
-	if (ObjectAttributes)
-	{
-		r = oa.copy_from_user( ObjectAttributes );
-		if (r != STATUS_SUCCESS)
-			return r;
-	}
-
-	dprintf("root %p attr %08lx %pus -> %pus\n",
-		oa.RootDirectory, oa.Attributes, oa.ObjectName, &target);
-
-	link = new symlink_t( target );
-	if (!link)
+	*obj = new symlink_t( target );
+	if (!*obj)
 		return STATUS_NO_MEMORY;
+	return STATUS_SUCCESS;
+}
 
-	r = name_object( link, &oa );
-	if (r == STATUS_SUCCESS)
-	{
-		r = alloc_user_handle( link, DesiredAccess, SymbolicLinkHandle );
-		release( link );
-	}
+NTSTATUS NTAPI NtCreateSymbolicLinkObject(
+	PHANDLE SymbolicLinkHandle,
+	ACCESS_MASK DesiredAccess,
+	POBJECT_ATTRIBUTES ObjectAttributes,
+	PUNICODE_STRING TargetName )
+{
+	unicode_string_t target;
+	NTSTATUS r;
 
-	return r;
+	r = target.copy_from_user( TargetName );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	symlink_factory_t factory( target );
+	return factory.create( SymbolicLinkHandle, DesiredAccess, ObjectAttributes );
 }
 
 NTSTATUS NTAPI NtOpenSymbolicLinkObject(

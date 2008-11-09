@@ -178,6 +178,10 @@ NTSTATUS object_factory::create(
 	object_t *obj = 0;
 	NTSTATUS r;
 
+	r = verify_for_write( Handle, sizeof *Handle );
+	if (r != STATUS_SUCCESS)
+		return r;
+
 	if (ObjectAttributes)
 	{
 		r = oa.copy_from_user( ObjectAttributes );
