@@ -74,6 +74,9 @@ NTSTATUS NTAPI NtCreateSymbolicLinkObject(
 	if (r != STATUS_SUCCESS)
 		return r;
 
+	if (target.Length == 0)
+		return STATUS_INVALID_PARAMETER;
+
 	if (target.Length > target.MaximumLength)
 		return STATUS_INVALID_PARAMETER;
 

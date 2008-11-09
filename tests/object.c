@@ -510,6 +510,13 @@ void test_symbolic_open_target( void )
 	r = NtClose( link );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 
+	// empty link?
+	target.Length = 0;
+	target.MaximumLength = 0;
+	target.Buffer = 0;
+	r = NtCreateSymbolicLinkObject( &link, GENERIC_READ, &oa, &target );
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
 	// create testdir3
 	us.Buffer = testdir;
 	us.Length = sizeof testdir - 2;
