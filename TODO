@@ -1,5 +1,9 @@
 Things to do:
 
+- catch exceptions thrown by new
+
+- fix cases where non-zero status can be success
+
 - figure out how to run cmd.exe
 
 - make object store hierachical
