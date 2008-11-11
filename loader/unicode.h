@@ -31,6 +31,7 @@ protected:
 	ULONG utf8_to_wchar( const unsigned char *str, ULONG len, WCHAR *buf );
 public:
 	explicit unicode_string_t();
+	void set( UNICODE_STRING& us );
 	NTSTATUS copy_from_user(PUNICODE_STRING ptr);
 	NTSTATUS copy( PUNICODE_STRING ptr );
 	NTSTATUS copy( const char *ptr );

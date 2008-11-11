@@ -43,8 +43,37 @@ symlink_t::~symlink_t()
 {
 }
 
+class symlink_opener : public open_info_t
+{
+public:
+	NTSTATUS on_open( object_dir_t* dir, object_t*& obj, open_info_t& info );
+};
+
+NTSTATUS symlink_opener::on_open( object_dir_t* dir, object_t*& obj, open_info_t& info )
+{
+	return obj ? STATUS_SUCCESS : STATUS_OBJECT_PATH_NOT_FOUND;
+}
+
 NTSTATUS symlink_t::open( object_t *&out, open_info_t& info )
 {
+	if (info.path.Length != 0)
+	{
+		// follow the link
+		dprintf("following %pus\n", &target );
+		symlink_opener target_info;
+		target_info.Attributes = info.Attributes;
+		target_info.path.set( target );
+		//target_info.root = parent;
+
+		object_t *target_object;
+		NTSTATUS r;
+		r = open_root( target_object, target_info );
+		if (r != STATUS_SUCCESS)
+			return r;
+
+		return target_object->open( out, info );
+	}
+
 	dprintf("opening symlinks oa.Attributes = %08lx\n", info.Attributes);
 	if (info.Attributes & OBJ_OPENLINK)
 	{
@@ -52,7 +81,8 @@ NTSTATUS symlink_t::open( object_t *&out, open_info_t& info )
 		return STATUS_INVALID_PARAMETER;
 	}
 
-	return object_t::open( out, info );
+	info.path.set( target );
+	return open_root( out, info );
 }
 
 class symlink_factory_t : public object_factory

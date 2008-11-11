@@ -58,6 +58,14 @@ unicode_string_t::unicode_string_t() :
 	MaximumLength = 0;
 }
 
+void unicode_string_t::set( UNICODE_STRING& us )
+{
+	clear();
+	Buffer = us.Buffer;
+	Length = us.Length;
+	MaximumLength = us.MaximumLength;
+}
+
 NTSTATUS unicode_string_t::copy_from_user(PUNICODE_STRING ptr)
 {
 	NTSTATUS r = ::copy_from_user( static_cast<UNICODE_STRING*>(this), ptr, sizeof (UNICODE_STRING) );
@@ -167,6 +175,7 @@ void unicode_string_t::clear()
 	buf = 0;
 	Length = 0;
 	MaximumLength = 0;
+	Buffer = 0;
 }
 
 NTSTATUS unicode_string_t::copy( const unsigned char *ustr )

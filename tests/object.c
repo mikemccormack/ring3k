@@ -481,7 +481,7 @@ void test_symbolic_open_target( void )
 	WCHAR relpath[] = L"xyz";
 	UNICODE_STRING us, target;
 	OBJECT_ATTRIBUTES oa;
-	WCHAR targetname[] = L"\\";
+	WCHAR rootdir[] = L"\\";
 	NTSTATUS r;
 	HANDLE link = 0, dir = 0;
 	HANDLE dir2 = 0;
@@ -497,9 +497,16 @@ void test_symbolic_open_target( void )
 	oa.SecurityDescriptor = 0;
 	oa.SecurityQualityOfService = 0;
 
-	target.Length = sizeof targetname - 2;
-	target.Buffer = targetname;
+	target.Length = sizeof rootdir - 2;
+	target.Buffer = rootdir;
 	target.MaximumLength = target.Length;
+
+	oa.ObjectName = &target;
+
+	r = NtCreateSymbolicLinkObject( &link, GENERIC_READ, &oa, &target );
+	//ok( r == STATUS_OBJECT_TYPE_MISMATCH, "return wrong %08lx\n", r);
+
+	oa.ObjectName = &us;
 
 	r = NtCreateSymbolicLinkObject( &link, GENERIC_READ, &oa, &target );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);

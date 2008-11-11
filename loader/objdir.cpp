@@ -46,6 +46,7 @@ public:
 public:
 	object_t *lookup( UNICODE_STRING& name, bool ignore_case );
 	NTSTATUS add( object_t *obj, UNICODE_STRING& name, bool ignore_case );
+	virtual NTSTATUS open( object_t*& obj, open_info_t& info );
 };
 
 static object_dir_impl_t *root = 0;
@@ -120,6 +121,7 @@ class object_dir_factory : public object_factory
 public:
 	object_dir_factory() {}
 	virtual NTSTATUS alloc_object(object_t** obj);
+	virtual NTSTATUS on_open( object_dir_t *dir, object_t*& obj, open_info_t& info );
 };
 
 NTSTATUS object_dir_factory::alloc_object(object_t** obj)
@@ -130,9 +132,39 @@ NTSTATUS object_dir_factory::alloc_object(object_t** obj)
 	return STATUS_SUCCESS;
 }
 
+NTSTATUS object_dir_factory::on_open( object_dir_t *dir, object_t*& obj, open_info_t& info )
+{
+	dprintf("object_dir_factory %pus\n", &info.path);
+
+	if (obj)
+		return STATUS_SUCCESS;
+
+	NTSTATUS r;
+	r = alloc_object( &obj );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	r = obj->name.copy( &info.path );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	dir->append( obj );
+
+	return STATUS_SUCCESS;
+}
+
 object_t *create_directory_object( PCWSTR name )
 {
 	object_dir_impl_t *obj = new object_dir_impl_t;
+
+	if (name && name[0] == '\\' && name[1] == 0)
+	{
+		if (!root)
+			root = obj;
+		else
+			delete obj;
+		return root;
+	}
 
 	unicode_string_t us;
 	us.copy(name);
@@ -150,7 +182,99 @@ object_t *create_directory_object( PCWSTR name )
 	return obj;
 }
 
-NTSTATUS parse_path( const OBJECT_ATTRIBUTES* oa, object_dir_t*& dir, ULONG& ofs )
+NTSTATUS open_root( object_t*& obj, open_info_t& info )
+{
+	// look each directory in the path and make sure it exists
+	object_dir_t *dir = 0;
+
+	NTSTATUS r;
+
+	// parse the root directory
+	if (info.root)
+	{
+		// relative path
+		if (info.path.Buffer[0] == '\\')
+			return STATUS_OBJECT_PATH_SYNTAX_BAD;
+
+		r = object_from_handle( dir, info.root, DIRECTORY_QUERY );
+		if (r != STATUS_SUCCESS)
+			return r;
+	}
+	else
+	{
+		// absolute path
+		if (info.path.Buffer[0] != '\\')
+			return STATUS_OBJECT_PATH_SYNTAX_BAD;
+		dir = root;
+		info.path.Buffer++;
+		info.path.Length -= 2;
+	}
+
+	if (info.path.Length == 0)
+	{
+		obj = dir;
+		return info.on_open( 0, obj, info );
+	}
+
+	return dir->open( obj, info );
+}
+
+NTSTATUS object_dir_impl_t::open( object_t*& obj, open_info_t& info )
+{
+	ULONG n = 0;
+	UNICODE_STRING& path = info.path;
+
+	dprintf("path = %pus\n", &path );
+
+	while (n < path.Length/2 && path.Buffer[n] != '\\')
+		n++;
+
+	UNICODE_STRING segment;
+	segment.Buffer = path.Buffer;
+	segment.Length = n * 2;
+	segment.MaximumLength = 0;
+
+	obj = lookup( segment, info.case_insensitive() );
+
+	if (n == path.Length/2)
+		return info.on_open( this, obj, info );
+
+	if (!obj)
+		return STATUS_OBJECT_PATH_NOT_FOUND;
+
+	path.Buffer += (n + 1);
+	path.Length -= (n + 1) * 2;
+	path.MaximumLength -= (n + 1) * 2;
+
+	return obj->open( obj, info );
+}
+
+class find_object_t : public open_info_t
+{
+public:
+	virtual NTSTATUS on_open( object_dir_t *dir, object_t*& obj, open_info_t& info );
+};
+
+NTSTATUS find_object_t::on_open( object_dir_t *dir, object_t*& obj, open_info_t& info )
+{
+	dprintf("find_object_t::on_open %pus %s\n", &info.path,
+		 obj ? "exists" : "doesn't exist");
+	if (!obj)
+		return STATUS_OBJECT_NAME_NOT_FOUND;
+
+	// hack until NtOpenSymbolicLinkObject is fixed
+	if (dynamic_cast<symlink_t*>( obj ) != NULL &&
+		 (info.Attributes & OBJ_OPENLINK))
+	{
+		return STATUS_INVALID_PARAMETER;
+	}
+
+	addref( obj );
+
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
 {
 	// no name
 	if (!oa || !oa->ObjectName || !oa->ObjectName->Buffer)
@@ -164,135 +288,47 @@ NTSTATUS parse_path( const OBJECT_ATTRIBUTES* oa, object_dir_t*& dir, ULONG& ofs
 	if (oa->ObjectName->Length & 1)
 		return STATUS_OBJECT_PATH_SYNTAX_BAD;
 
-	// look each directory in the path and make sure it exists
-	bool case_insensitive = oa->Attributes & OBJ_CASE_INSENSITIVE;
-	UNICODE_STRING& name = *oa->ObjectName;
+	find_object_t oi;
+	oi.Attributes = oa->Attributes;
+	oi.root = oa->RootDirectory;
+	oi.path.set( *oa->ObjectName );
 
-	NTSTATUS r;
-	ofs = 0;
-
-	// parse the root directory
-	if (oa->RootDirectory)
-	{
-		// relative path
-		if (oa->ObjectName->Buffer[0] == '\\')
-			return STATUS_OBJECT_PATH_SYNTAX_BAD;
-
-		r = object_from_handle( dir, oa->RootDirectory, DIRECTORY_QUERY );
-		if (r != STATUS_SUCCESS)
-			return r;
-	}
-	else
-	{
-		// absolute path
-		if (oa->ObjectName->Buffer[0] != '\\')
-			return STATUS_OBJECT_PATH_SYNTAX_BAD;
-		dir = root;
-		ofs++;
-	}
-
-	while (ofs < name.Length/2)
-	{
-		ULONG n = ofs;
-
-		while (n < name.Length/2 && name.Buffer[n] != '\\')
-			n++;
-
-		// don't check the last part of the path
-		if (n == name.Length/2)
-			break;
-
-		UNICODE_STRING segment;
-		segment.Buffer = &name.Buffer[ofs];
-		segment.Length = (n - ofs) * 2;
-		segment.MaximumLength = 0;
-
-		object_t *obj = dir->lookup( segment, case_insensitive );
-		if (!obj)
-		{
-			dprintf("path %pus not found\n", &segment);
-			return STATUS_OBJECT_PATH_NOT_FOUND;
-		}
-
-		// check symlinks
-		symlink_t *link = dynamic_cast<symlink_t*>( obj );
-		if (link)
-		{
-			unicode_string_t& target = link->get_target();
-
-			// resolve the link
-			OBJECT_ATTRIBUTES target_oa;
-			memset( &target_oa, 0, sizeof target_oa );
-			target_oa.Length = sizeof target_oa;
-			target_oa.Attributes = OBJ_CASE_INSENSITIVE;
-			target_oa.ObjectName = &target;
-
-			obj = NULL;
-			r = find_object_by_name( &obj, &target_oa );
-			if (r != STATUS_SUCCESS)
-			{
-				dprintf("target %pus not found\n", &target);
-				return STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-		}
-
-		dir = dynamic_cast<object_dir_t*>( obj );
-		if (!dir)
-		{
-			dprintf("path %pus invalid\n", &segment);
-			return STATUS_OBJECT_PATH_SYNTAX_BAD;
-		}
-
-		ofs = n + 1;
-	}
-
-	return STATUS_SUCCESS;
+	return open_root( *out, oi );
 }
 
-NTSTATUS validate_path( const OBJECT_ATTRIBUTES *oa )
+class name_object_t : public open_info_t
 {
-	object_dir_t* dir = 0;
-	ULONG ofs = 0;
+	object_t *obj_to_name;
+public:
+	name_object_t( object_t *in );
+	virtual NTSTATUS on_open( object_dir_t *dir, object_t*& obj, open_info_t& info );
+};
 
-	return parse_path( oa, dir, ofs );
+name_object_t::name_object_t( object_t *in ) :
+	obj_to_name( in )
+{
 }
 
-NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa )
+NTSTATUS name_object_t::on_open( object_dir_t *dir, object_t*& obj, open_info_t& info )
 {
-	NTSTATUS r;
+	dprintf("name_object_t::on_open %pus\n", &info.path);
 
-	object_dir_t* dir = 0;
-	ULONG ofs = 0;
-	r = parse_path( oa, dir, ofs );
+	if (obj)
+	{
+		dprintf("object already exists\n");
+		return STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	obj = obj_to_name;
+
+	NTSTATUS r;
+	r = obj->name.copy( &info.path );
 	if (r != STATUS_SUCCESS)
 		return r;
 
-	UNICODE_STRING us;
-	us.Buffer = oa->ObjectName->Buffer;
-	us.Length = oa->ObjectName->Length;
-	us.MaximumLength = oa->ObjectName->MaximumLength;
+	dir->append( obj );
 
-	us.Buffer += ofs;
-	us.Length -= ofs*2;
-	us.MaximumLength -= ofs*2;
-
-	object_t *obj = 0;
-	bool case_insensitive = oa->Attributes & OBJ_CASE_INSENSITIVE;
-	obj = dir->lookup( us, case_insensitive );
-	if (!obj)
-		return STATUS_OBJECT_NAME_NOT_FOUND;
-
-	// need to pass extra info to open - length of path parsed
-
-	open_info_t oi;
-	oi.Attributes = oa->Attributes;
-	oi.factory = 0;
-	oi.dir = dir;
-	oi.path.Length = 0;
-	oi.path.MaximumLength = 0;
-	oi.path.Buffer = 0;
-
-	return obj->open( *out, oi );
+	return STATUS_SUCCESS;
 }
 
 NTSTATUS name_object( object_t *obj, const OBJECT_ATTRIBUTES *oa )
@@ -305,43 +341,17 @@ NTSTATUS name_object( object_t *obj, const OBJECT_ATTRIBUTES *oa )
 		return STATUS_SUCCESS;
 	if (!oa->ObjectName->Buffer)
 		return STATUS_SUCCESS;
+	if (!oa->ObjectName->Length)
+		return STATUS_SUCCESS;
 
-	NTSTATUS r;
+	dprintf("name_object_t %pus\n", oa->ObjectName);
 
-	object_dir_t* dir = 0;
-	ULONG ofs = 0;
-	r = parse_path( oa, dir, ofs );
-	if (r != STATUS_SUCCESS)
-		return r;
+	name_object_t oi( obj );
+	oi.Attributes = oa->Attributes;
+	oi.root = oa->RootDirectory;
+	oi.path.set( *oa->ObjectName );
 
-	assert( dir != NULL );
-	assert( ofs < oa->ObjectName->Length );
-
-	UNICODE_STRING us;
-	us.Buffer = oa->ObjectName->Buffer;
-	us.Length = oa->ObjectName->Length;
-	us.MaximumLength = oa->ObjectName->MaximumLength;
-
-	us.Buffer += ofs;
-	us.Length -= ofs*2;
-	us.MaximumLength -= ofs*2;
-
-	object_t *existing = 0;
-	bool case_insensitive = oa->Attributes & OBJ_CASE_INSENSITIVE;
-	existing = dir->lookup( us, case_insensitive );
-	if (existing)
-		return STATUS_OBJECT_NAME_COLLISION;
-
-	r = obj->name.copy( &us );
-	if (r != STATUS_SUCCESS)
-		return r;
-
-	if (0)
-		dprintf("name is -> %pus", &obj->name );
-
-	dir->append( obj );
-
-	return STATUS_SUCCESS;
+	return open_root( obj, oi );
 }
 
 NTSTATUS get_named_object( object_t **out, const OBJECT_ATTRIBUTES *oa )
@@ -379,13 +389,7 @@ NTSTATUS NTAPI NtCreateDirectoryObject(
 	dprintf("%p %08lx %p\n", DirectoryHandle, DesiredAccess, ObjectAttributes );
 
 	object_dir_factory factory;
-	NTSTATUS r;
-	r = factory.create( DirectoryHandle, DesiredAccess, ObjectAttributes );
-	if (r != STATUS_SUCCESS)
-	{
-		r = NtOpenDirectoryObject( DirectoryHandle, DesiredAccess, ObjectAttributes );
-	}
-	return r;
+	return factory.create( DirectoryHandle, DesiredAccess, ObjectAttributes );
 }
 
 NTSTATUS NTAPI NtOpenDirectoryObject(

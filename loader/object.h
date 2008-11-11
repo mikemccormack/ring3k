@@ -32,13 +32,18 @@ typedef list_element<object_t> object_entry_t;
 typedef list_iter<object_t, 0> object_iter_t;
 
 class object_factory;
+class open_info_t;
 
 class open_info_t {
 public:
 	ULONG Attributes;
-	object_factory *factory;
-	object_dir_t *dir;
-	UNICODE_STRING path;
+	HANDLE root;
+	unicode_string_t path;
+public:
+	open_info_t();
+	bool case_insensitive() { return Attributes & OBJ_CASE_INSENSITIVE; }
+	virtual NTSTATUS on_open( object_dir_t* dir, object_t*& obj, open_info_t& info ) = 0;
+	virtual ~open_info_t();
 };
 
 class object_t {
@@ -64,10 +69,11 @@ public:
 	virtual NTSTATUS open( object_t *&out, open_info_t& info );
 };
 
-class object_factory
+class object_factory : public open_info_t
 {
 protected:
 	virtual NTSTATUS alloc_object(object_t** obj) = 0;
+	virtual NTSTATUS on_open( object_dir_t* dir, object_t*& obj, open_info_t& info );
 public:
 	NTSTATUS create(
 		PHANDLE Handle,
@@ -141,7 +147,8 @@ NTSTATUS name_object( object_t *obj, const OBJECT_ATTRIBUTES *oa );
 NTSTATUS get_named_object( object_t **out, const OBJECT_ATTRIBUTES *oa );
 NTSTATUS find_object_by_name( object_t **out, const OBJECT_ATTRIBUTES *oa );
 
+NTSTATUS open_root( object_t*& obj, open_info_t& info );
+
 template<typename T> NTSTATUS object_from_handle(T*& out, HANDLE handle, ACCESS_MASK access);
-NTSTATUS validate_path( const OBJECT_ATTRIBUTES *oa );
 
 #endif //__OBJECT_H__

@@ -39,6 +39,16 @@
 #include "mem.h"
 #include "ntcall.h"
 
+open_info_t::open_info_t() :
+	Attributes( 0 ),
+	root( 0 )
+{
+}
+
+open_info_t::~open_info_t()
+{
+}
+
 void object_t::addref( object_t *obj )
 {
 	obj->refcount ++;
@@ -169,6 +179,26 @@ void handle_table_t::free_all_handles()
 	}
 }
 
+NTSTATUS object_factory::on_open( object_dir_t* dir, object_t*& obj, open_info_t& info )
+{
+	// object already exists?
+	if (obj)
+		return STATUS_OBJECT_NAME_COLLISION;
+
+	NTSTATUS r;
+	r = alloc_object( &obj );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	r = obj->name.copy( &info.path );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	dir->append( obj );
+
+	return STATUS_SUCCESS;
+}
+
 NTSTATUS object_factory::create(
 		PHANDLE Handle,
 		ACCESS_MASK AccessMask,
@@ -189,30 +219,28 @@ NTSTATUS object_factory::create(
 			return r;
 
 		dprintf("name = %pus\n", oa.ObjectName);
-
-		// only validate absolute pathes for the moment
-		if (oa.ObjectName && !oa.RootDirectory)
-		{
-			r = validate_path( &oa );
-			if (r != STATUS_SUCCESS)
-			{
-				dprintf("validate path failed name = %pus\n", oa.ObjectName);
-				return r;
-			}
-		}
 	}
 
-	r = alloc_object( &obj );
-	if (r == STATUS_SUCCESS)
+	if (oa.ObjectName || oa.RootDirectory)
 	{
-		r = name_object( obj, &oa );
-		if (r == STATUS_SUCCESS)
-			r = alloc_user_handle( obj, AccessMask, Handle );
-		if (oa.Attributes & OBJ_PERMANENT )
-			dprintf("permanent object\n");
-		else
-			release( obj );
+		path.set( *oa.ObjectName );
+		root = oa.RootDirectory;
+		Attributes = oa.Attributes;
+		r = open_root( obj, *this );
 	}
+	else
+	{
+		r = alloc_object( &obj );
+	}
+
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	r = alloc_user_handle( obj, AccessMask, Handle );
+	if (oa.Attributes & OBJ_PERMANENT )
+		dprintf("permanent object\n");
+	else
+		release( obj );
 
 	return r;
 }
