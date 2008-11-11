@@ -147,3 +147,12 @@ void *memset( void *ptr, int val, size_t len )
 	return ptr;
 }
 
+void init_us( PUNICODE_STRING us, WCHAR *string )
+{
+	int i = 0;
+	while (string[i])
+		i++;
+	us->Length = i*2;
+	us->MaximumLength = 0;
+	us->Buffer = string;
+}

@@ -137,7 +137,12 @@ NTSTATUS object_dir_factory::on_open( object_dir_t *dir, object_t*& obj, open_in
 	dprintf("object_dir_factory %pus\n", &info.path);
 
 	if (obj)
-		return STATUS_SUCCESS;
+	{
+		if (!(info.Attributes & OBJ_OPENIF))
+			return STATUS_OBJECT_NAME_COLLISION;
+		addref( obj );
+		return STATUS_OBJECT_NAME_EXISTS;
+	}
 
 	NTSTATUS r;
 	r = alloc_object( &obj );
@@ -228,6 +233,9 @@ NTSTATUS object_dir_impl_t::open( object_t*& obj, open_info_t& info )
 
 	while (n < path.Length/2 && path.Buffer[n] != '\\')
 		n++;
+
+	if (n == 0)
+		return STATUS_OBJECT_NAME_INVALID;
 
 	UNICODE_STRING segment;
 	segment.Buffer = path.Buffer;

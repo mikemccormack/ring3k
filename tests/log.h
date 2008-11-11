@@ -24,6 +24,8 @@
 NTSTATUS log_init( void );
 NTSTATUS log_fini(void);
 
+void init_us( PUNICODE_STRING us, WCHAR *string );
+
 extern ULONG pass_count, fail_count;
 
 void dprintf(char *string, ...) __attribute__((format (printf,1,2)));

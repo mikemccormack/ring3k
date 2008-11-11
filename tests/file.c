@@ -22,16 +22,6 @@
 #include "rtlapi.h"
 #include "log.h"
 
-void init_us( PUNICODE_STRING us, WCHAR *string )
-{
-	int i = 0;
-	while (string[i])
-		i++;
-	us->Length = i*2;
-	us->MaximumLength = 0;
-	us->Buffer = string;
-}
-
 void test_rtl_path( void )
 {
 	BOOLEAN r;

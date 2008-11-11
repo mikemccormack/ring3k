@@ -183,7 +183,12 @@ NTSTATUS object_factory::on_open( object_dir_t* dir, object_t*& obj, open_info_t
 {
 	// object already exists?
 	if (obj)
-		return STATUS_OBJECT_NAME_COLLISION;
+	{
+		if (!(info.Attributes & OBJ_OPENIF))
+			return STATUS_OBJECT_NAME_COLLISION;
+		addref( obj );
+		return STATUS_OBJECT_NAME_EXISTS;
+	}
 
 	NTSTATUS r;
 	r = alloc_object( &obj );
@@ -221,7 +226,7 @@ NTSTATUS object_factory::create(
 		dprintf("name = %pus\n", oa.ObjectName);
 	}
 
-	if (oa.ObjectName || oa.RootDirectory)
+	if (oa.ObjectName && oa.ObjectName->Length)
 	{
 		path.set( *oa.ObjectName );
 		root = oa.RootDirectory;
@@ -233,11 +238,12 @@ NTSTATUS object_factory::create(
 		r = alloc_object( &obj );
 	}
 
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
-	r = alloc_user_handle( obj, AccessMask, Handle );
-	if (oa.Attributes & OBJ_PERMANENT )
+	// maybe this should be done in alloc_object ?
+	NTSTATUS r2 = alloc_user_handle( obj, AccessMask, Handle );
+	if (r2 == STATUS_SUCCESS && (oa.Attributes & OBJ_PERMANENT ))
 		dprintf("permanent object\n");
 	else
 		release( obj );

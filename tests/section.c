@@ -22,16 +22,6 @@
 #include "ntapi.h"
 #include "log.h"
 
-void init_us( PUNICODE_STRING us, WCHAR *string )
-{
-	int i = 0;
-	while (string[i])
-		i++;
-	us->Length = i*2;
-	us->MaximumLength = 0;
-	us->Buffer = string;
-}
-
 // test various combinations of invalid parameters to NtCreateSection
 void test_createsection_invalid( void )
 {

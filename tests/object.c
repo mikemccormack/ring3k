@@ -23,6 +23,31 @@
 #include "ntapi.h"
 #include "log.h"
 
+HANDLE get_root( void )
+{
+	NTSTATUS r;
+	HANDLE root = 0;
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us;
+	WCHAR rootdir[] = L"\\";
+
+	us.Length = sizeof rootdir - 2;
+	us.Buffer = rootdir;
+	us.MaximumLength = 0;
+
+	oa.Length = sizeof oa;
+	oa.RootDirectory = 0;
+	oa.ObjectName = &us;
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	r = NtOpenDirectoryObject( &root, GENERIC_READ, &oa );
+	ok( r == 0, "return wrong %08lx\n", r);
+
+	return root;
+}
+
 void test_create_directory_object(void)
 {
 	NTSTATUS r;
@@ -272,7 +297,88 @@ void test_named_directory( void )
 
 	r = NtClose( handle );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+}
 
+NTSTATUS open_object_dir( BOOL create, BOOL open_existing, HANDLE root, PWSTR path )
+{
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us;
+	HANDLE handle = 0;
+	NTSTATUS r;
+
+	init_us( &us, path );
+
+	oa.Length = sizeof oa;
+	oa.RootDirectory = 0;
+	oa.ObjectName = &us;
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+	if (open_existing)
+		oa.Attributes |= OBJ_OPENIF;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	if (create)
+		r = NtCreateDirectoryObject( &handle, GENERIC_READ, &oa );
+	else
+		r = NtOpenDirectoryObject( &handle, GENERIC_READ, &oa );
+
+	if (r >= STATUS_SUCCESS)
+	{
+		ok( STATUS_SUCCESS == NtClose( handle ), "failed to close handle\n");
+	}
+
+	return r;
+}
+
+void test_open_object_dir( void )
+{
+	NTSTATUS r;
+	HANDLE root = get_root();
+
+	r = open_object_dir( FALSE, FALSE, 0, L"" );
+	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "return wrong %08lx\n", r);
+
+	r = open_object_dir( FALSE, FALSE, 0, L"\\" );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = open_object_dir( FALSE, FALSE, 0, L"\\\\" );
+	ok( r == STATUS_OBJECT_NAME_INVALID, "return wrong %08lx\n", r);
+
+	r = open_object_dir( FALSE, FALSE, root, L"\\" );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = open_object_dir( FALSE, FALSE, root, L"" );
+	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "return wrong %08lx\n", r);
+
+	r = open_object_dir( FALSE, FALSE, root, L"\\\\" );
+	ok( r == STATUS_OBJECT_NAME_INVALID, "return wrong %08lx\n", r);
+
+	r = open_object_dir( TRUE, FALSE, 0, L"" );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = open_object_dir( TRUE, FALSE, (HANDLE)0xfeedface, L"" );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = open_object_dir( TRUE, FALSE, 0, L"\\" );
+	ok( r == STATUS_OBJECT_NAME_COLLISION, "return wrong %08lx\n", r);
+
+	r = open_object_dir( TRUE, TRUE, 0, L"\\" );
+	ok( r == STATUS_OBJECT_NAME_EXISTS, "return wrong %08lx\n", r);
+
+	r = open_object_dir( TRUE, FALSE, 0, L"\\\\" );
+	ok( r == STATUS_OBJECT_NAME_INVALID, "return wrong %08lx\n", r);
+
+	r = open_object_dir( TRUE, FALSE, root, L"\\" );
+	ok( r == STATUS_OBJECT_NAME_COLLISION, "return wrong %08lx\n", r);
+
+	r = open_object_dir( TRUE, TRUE, root, L"\\" );
+	ok( r == STATUS_OBJECT_NAME_EXISTS, "return wrong %08lx\n", r);
+
+	r = open_object_dir( TRUE, FALSE, root, L"" );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = open_object_dir( TRUE, FALSE, root, L"\\\\" );
+	ok( r == STATUS_OBJECT_NAME_INVALID, "return wrong %08lx\n", r);
 }
 
 BOOLEAN unicode_string_equal( PUNICODE_STRING a, PUNICODE_STRING b )
@@ -417,34 +523,6 @@ void test_symbolic_link( void )
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 }
 
-HANDLE get_root( void )
-{
-	NTSTATUS r;
-	HANDLE root = 0;
-	OBJECT_ATTRIBUTES oa;
-	UNICODE_STRING us;
-	WCHAR rootdir[] = L"\\";
-
-	us.Length = sizeof rootdir - 2;
-	us.Buffer = rootdir;
-	us.MaximumLength = 0;
-
-	oa.Length = sizeof oa;
-	oa.RootDirectory = 0;
-	oa.ObjectName = &us;
-	oa.Attributes = OBJ_CASE_INSENSITIVE;
-	oa.SecurityDescriptor = 0;
-	oa.SecurityQualityOfService = 0;
-
-	//r = NtOpenDirectoryObject( &root, 0, &oa );
-	//ok( r == STATUS_ACCESS_DENIED, "return wrong %08lx\n", r);
-
-	r = NtOpenDirectoryObject( &root, GENERIC_READ, &oa );
-	ok( r == 0, "return wrong %08lx\n", r);
-
-	return root;
-}
-
 void test_symbolic_open_link( void )
 {
 	WCHAR testlink[] = L"testsymlink2";
@@ -567,6 +645,7 @@ void NtProcessStartup( void )
 	test_query_directory_object();
 	test_query_object_security();
 	test_named_directory();
+	test_open_object_dir();
 	test_symbolic_link();
 	test_symbolic_open_link();
 	test_symbolic_open_target();

@@ -51,7 +51,10 @@ public:
 
 NTSTATUS symlink_opener::on_open( object_dir_t* dir, object_t*& obj, open_info_t& info )
 {
-	return obj ? STATUS_SUCCESS : STATUS_OBJECT_PATH_NOT_FOUND;
+	if (!obj)
+		return STATUS_OBJECT_PATH_NOT_FOUND;
+	addref( obj );
+	return STATUS_SUCCESS;
 }
 
 NTSTATUS symlink_t::open( object_t *&out, open_info_t& info )
