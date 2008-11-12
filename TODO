@@ -4,6 +4,8 @@ Things to do:
 
 - fix cases where non-zero status can be success
 
+- integrate NtCreateFile with the object management code
+
 - figure out how to run cmd.exe
 
 - make object store hierachical
