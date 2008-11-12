@@ -119,9 +119,7 @@ object_t *object_dir_impl_t::lookup( UNICODE_STRING& name, bool ignore_case )
 class object_dir_factory : public object_factory
 {
 public:
-	object_dir_factory() {}
 	virtual NTSTATUS alloc_object(object_t** obj);
-	virtual NTSTATUS on_open( object_dir_t *dir, object_t*& obj, open_info_t& info );
 };
 
 NTSTATUS object_dir_factory::alloc_object(object_t** obj)
@@ -129,32 +127,6 @@ NTSTATUS object_dir_factory::alloc_object(object_t** obj)
 	*obj = new object_dir_impl_t;
 	if (!*obj)
 		return STATUS_NO_MEMORY;
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS object_dir_factory::on_open( object_dir_t *dir, object_t*& obj, open_info_t& info )
-{
-	dprintf("object_dir_factory %pus\n", &info.path);
-
-	if (obj)
-	{
-		if (!(info.Attributes & OBJ_OPENIF))
-			return STATUS_OBJECT_NAME_COLLISION;
-		addref( obj );
-		return STATUS_OBJECT_NAME_EXISTS;
-	}
-
-	NTSTATUS r;
-	r = alloc_object( &obj );
-	if (r != STATUS_SUCCESS)
-		return r;
-
-	r = obj->name.copy( &info.path );
-	if (r != STATUS_SUCCESS)
-		return r;
-
-	dir->append( obj );
-
 	return STATUS_SUCCESS;
 }
 
