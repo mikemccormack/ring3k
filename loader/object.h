@@ -79,6 +79,7 @@ public:
 		PHANDLE Handle,
 		ACCESS_MASK AccessMask,
 		POBJECT_ATTRIBUTES ObjectAttributes);
+	NTSTATUS create_kernel( object_t*& obj, UNICODE_STRING& us );
 	virtual ~object_factory();
 };
 

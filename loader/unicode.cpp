@@ -66,6 +66,14 @@ void unicode_string_t::set( UNICODE_STRING& us )
 	MaximumLength = us.MaximumLength;
 }
 
+void unicode_string_t::set( PCWSTR str )
+{
+	clear();
+	Buffer = const_cast<PWSTR>( str );
+	Length = strlenW( str ) * 2;
+	MaximumLength = 0;
+}
+
 NTSTATUS unicode_string_t::copy_from_user(PUNICODE_STRING ptr)
 {
 	NTSTATUS r = ::copy_from_user( static_cast<UNICODE_STRING*>(this), ptr, sizeof (UNICODE_STRING) );
@@ -97,7 +105,7 @@ NTSTATUS unicode_string_t::copy_wstr_from_user()
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS unicode_string_t::copy( PUNICODE_STRING ptr )
+NTSTATUS unicode_string_t::copy( const UNICODE_STRING* ptr )
 {
 	clear();
 	Length = ptr->Length;
@@ -204,6 +212,7 @@ NTSTATUS unicode_string_t::copy( PCWSTR str )
 	if (!buf)
 		return STATUS_NO_MEMORY;
 	Length = n*2;
+	MaximumLength = Length;
 	Buffer = buf;
 	memcpy( Buffer, str, Length );
 	return STATUS_SUCCESS;

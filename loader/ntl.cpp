@@ -91,7 +91,7 @@ int schedule(void)
 	return 0;
 }
 
-NTSTATUS create_initial_process( thread_t **t, OBJECT_ATTRIBUTES *oa )
+NTSTATUS create_initial_process( thread_t **t, UNICODE_STRING& us )
 {
 	BYTE *pstack;
 	const unsigned int stack_size = 0x100 * PAGE_SIZE;
@@ -103,7 +103,7 @@ NTSTATUS create_initial_process( thread_t **t, OBJECT_ATTRIBUTES *oa )
 	file_t *file = 0;
 	int r;
 
-	r = open_file( file, oa );
+	r = open_file( file, us );
 	if (r != STATUS_SUCCESS)
 		return r;
 
@@ -122,7 +122,7 @@ NTSTATUS create_initial_process( thread_t **t, OBJECT_ATTRIBUTES *oa )
 		return r;
 
 	PPEB ppeb = (PPEB) p->peb_section->get_kernel_address();
-	p->create_exe_ppb( &ppeb->ProcessParameters, oa );
+	p->create_exe_ppb( &ppeb->ProcessParameters, us );
 
 	/* map the stack */
 	pstack = NULL;
@@ -159,21 +159,13 @@ NTSTATUS init_ntdll( void )
 	WCHAR ntdll[] = {
 		'\\','?','?','\\','c',':','\\','w','i','n','n','t','\\',
 		's','y','s','t','e','m','3','2','\\','n','t','d','l','l','.','d','l','l',0 };
-	OBJECT_ATTRIBUTES oa;
-	UNICODE_STRING us;
+	unicode_string_t us;
 	file_t *file = 0;
 	NTSTATUS r;
 
-	us.Buffer = ntdll;
-	us.Length = sizeof ntdll - 2;
-	us.MaximumLength = 0;
+	us.set( ntdll );
 
-	memset( &oa, 0, sizeof oa );
-	oa.Length = sizeof oa;
-	oa.Attributes = OBJ_CASE_INSENSITIVE;
-	oa.ObjectName = &us;
-
-	r = open_file( file, &oa );
+	r = open_file( file, us );
 	if (r != STATUS_SUCCESS)
 		die("failed to open ntdll\n");
 
@@ -259,7 +251,6 @@ bool option_skas = 1;
 
 int main(int argc, char **argv)
 {
-	OBJECT_ATTRIBUTES oa;
 	unicode_string_t us;
 	thread_t *initial_thread = NULL;
 	int r, n;
@@ -302,7 +293,6 @@ int main(int argc, char **argv)
 	get_system_time_of_day( dummy );
 
 	init_registry();
-	init_ntdll();
 	fiber_t::fibers_init();
 	init_root();
 	create_directory_object( (PWSTR) L"\\" );
@@ -317,16 +307,13 @@ int main(int argc, char **argv)
 	// XP
 	create_directory_object( (PWSTR) L"\\KernelObjects" );
 	create_sync_event( (PWSTR) L"\\KernelObjects\\CritSecOutOfMemoryEvent" );
+	init_drives();
+	init_ntdll();
 	create_kthread();
 
 	us.copy( argv[n] );
 
-	memset( &oa, 0, sizeof oa );
-	oa.Length = sizeof oa;
-	oa.Attributes = OBJ_CASE_INSENSITIVE;
-	oa.ObjectName = &us;
-
-	r = create_initial_process( &initial_thread, &oa );
+	r = create_initial_process( &initial_thread, us );
 	if (r != STATUS_SUCCESS)
 		die("create_initial_process() failed (%08x)\n", r);
 

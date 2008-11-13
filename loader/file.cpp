@@ -46,6 +46,7 @@
 #include "mem.h"
 #include "ntcall.h"
 #include "file.h"
+#include "symlink.h"
 
 // FIXME: use unicode tables
 WCHAR lowercase(const WCHAR ch)
@@ -85,6 +86,34 @@ file_t::~file_t()
 file_t::file_t( int f ) :
 	fd( f )
 {
+}
+
+class file_create_info_t : public open_info_t
+{
+public:
+	ULONG FileAttributes;
+	ULONG CreateOptions;
+	ULONG CreateDisposition;
+	bool created;
+public:
+	file_create_info_t( ULONG _Attributes, ULONG _CreateOptions, ULONG _CreateDisposition );
+	virtual NTSTATUS on_open( object_dir_t* dir, object_t*& obj, open_info_t& info );
+};
+
+file_create_info_t::file_create_info_t( ULONG _Attributes, ULONG _CreateOptions, ULONG _CreateDisposition ) :
+	FileAttributes( _Attributes ),
+	CreateOptions( _CreateOptions ),
+	CreateDisposition( _CreateDisposition ),
+	created( false )
+{
+}
+
+NTSTATUS file_create_info_t::on_open( object_dir_t* dir, object_t*& obj, open_info_t& info )
+{
+	dprintf("file_create_info_t::on_open()\n");
+	if (!obj)
+		return STATUS_OBJECT_NAME_NOT_FOUND;
+	return STATUS_OBJECT_TYPE_MISMATCH;
 }
 
 NTSTATUS file_t::read( PVOID Buffer, ULONG Length, ULONG *bytes_read )
@@ -178,6 +207,8 @@ class directory_t : public file_t
 protected:
 	void reset();
 	void add_entry(const char *name);
+	int open_unicode_file( const char *unix_path, int flags, bool& created );
+	int open_unicode_dir( const char *unix_path, int flags, bool& created );
 public:
 	directory_t( int fd );
 	~directory_t();
@@ -191,7 +222,32 @@ public:
 	bool is_firstscan() const;
 	NTSTATUS set_mask(unicode_string_t *mask);
 	int get_num_entries() const;
+	virtual NTSTATUS open( object_t *&out, open_info_t& info );
+	NTSTATUS open_file( file_t *&file, UNICODE_STRING& path, ULONG Attributes,
+		ULONG Options, ULONG CreateDisposition, bool &created, bool case_insensitive );
 };
+
+class directory_factory : public object_factory
+{
+	int fd;
+public:
+	directory_factory( int _fd );
+	NTSTATUS alloc_object(object_t** obj);
+};
+
+directory_factory::directory_factory( int _fd ) :
+	fd( _fd )
+{
+}
+
+NTSTATUS directory_factory::alloc_object(object_t** obj)
+{
+	*obj = new directory_t( fd );
+	if (!*obj)
+		return STATUS_NO_MEMORY;
+	return STATUS_SUCCESS;
+}
+
 
 directory_t::directory_t( int fd ) :
 	file_t(fd),
@@ -436,39 +492,38 @@ NTSTATUS file_t::query_information( FILE_ATTRIBUTE_TAG_INFORMATION& info )
 	return STATUS_SUCCESS;
 }
 
-char *unicode_string_to_utf8( UNICODE_STRING *us )
+char *build_path( int fd, const UNICODE_STRING *us )
 {
-	char *str;
+	char *str, *p;
 	int i;
+	int len = us->Length/2 + 1;
+	const char fd_prefix[] = "/proc/self/fd/%d/";
 
-	str = new char[ us->Length/2 + 1 ];
-	if (str)
-	{
-		for (i=0; i<us->Length/2; i++)
-			str[i] = us->Buffer[i];
-		str[i] = 0;
-	}
+	if (fd >= 0)
+		len += sizeof fd_prefix + 10;
+
+	str = new char[ len ];
+	if (!str)
+		return str;
+
+	str[0] = 0;
+	if (fd >= 0)
+		sprintf( str, fd_prefix, fd );
+
+	p = &str[strlen( str )];
+	for (i=0; i<us->Length/2; i++)
+		*p++ = us->Buffer[i];
+	*p = 0;
+
 	return str;
 }
 
-char *get_unix_name( POBJECT_ATTRIBUTES oa )
+char *get_unix_path( int fd, UNICODE_STRING& str, bool case_insensitive )
 {
-	const WCHAR prefix[] = { '\\','?','?','\\' };
-	UNICODE_STRING str, *us;
 	char *file;
 	int i;
 
-	us = oa->ObjectName;
-	if (!us)
-		return NULL;
-	if (us->Length < sizeof prefix)
-		return NULL;
-	if (memcmp(us->Buffer, prefix, sizeof prefix))
-		return NULL;
-
-	str.Length = us->Length - sizeof prefix;
-	str.Buffer = &us->Buffer[ sizeof prefix/2 ];
-	file = unicode_string_to_utf8( &str );
+	file = build_path( fd, &str );
 	if (!file)
 		return NULL;
 
@@ -481,12 +536,31 @@ char *get_unix_name( POBJECT_ATTRIBUTES oa )
 		}
 
 		// make filename lower case if necessary
-		if (!(oa->Attributes & OBJ_CASE_INSENSITIVE))
+		if (!case_insensitive)
 			continue;
 		file[i] = lowercase(file[i]);
 	}
 
 	return file;
+}
+
+char *get_unix_name( POBJECT_ATTRIBUTES oa )
+{
+	const WCHAR prefix[] = { '\\','?','?','\\' };
+	UNICODE_STRING str, *us;
+
+	us = oa->ObjectName;
+	if (!us)
+		return NULL;
+	if (us->Length < sizeof prefix)
+		return NULL;
+	if (memcmp(us->Buffer, prefix, sizeof prefix))
+		return NULL;
+
+	str.Length = us->Length - sizeof prefix;
+	str.Buffer = &us->Buffer[ sizeof prefix/2 ];
+
+	return get_unix_path( -1, str, oa->Attributes & OBJ_CASE_INSENSITIVE );
 }
 
 int stat_unicode( POBJECT_ATTRIBUTES oa, struct stat *st )
@@ -497,7 +571,7 @@ int stat_unicode( POBJECT_ATTRIBUTES oa, struct stat *st )
 	file = get_unix_name( oa );
 	if (file)
 	{
-		r = stat( file, st );
+		r = ::stat( file, st );
 		dprintf("%s -> %d\n", file, r);
 		delete file;
 	}
@@ -506,65 +580,51 @@ int stat_unicode( POBJECT_ATTRIBUTES oa, struct stat *st )
 	return r;
 }
 
-int open_unicode_file( POBJECT_ATTRIBUTES oa, int flags, bool &created )
+int directory_t::open_unicode_file( const char *unix_path, int flags, bool &created )
 {
-	char *name;
 	int r = -1;
 
-	name = get_unix_name( oa );
-	if (name)
+	dprintf("open file : %s\n", unix_path);
+	r = ::open( unix_path, flags&~O_CREAT );
+	if (r < 0 && (flags & O_CREAT))
 	{
-		dprintf("open file : %s\n", name);
-		r = open( name, flags&~O_CREAT );
-		if (r < 0 && (flags & O_CREAT))
-		{
-			dprintf("create file : %s\n", name);
-			r = open( name, flags, 0666 );
-			if (r >= 0)
-				created = true;
-		}
-		delete name;
+		dprintf("create file : %s\n", unix_path);
+		r = ::open( unix_path, flags, 0666 );
+		if (r >= 0)
+			created = true;
 	}
 	return r;
 }
 
-int open_unicode_dir( POBJECT_ATTRIBUTES oa, int flags, bool &created )
+int directory_t::open_unicode_dir( const char *unix_path, int flags, bool &created )
 {
-	char *name;
 	int r = -1;
 
-	name = get_unix_name( oa );
-	if (name)
+	if (flags & O_CREAT)
 	{
-		if (flags & O_CREAT)
-		{
-			dprintf("create dir : %s\n", name);
-			r = mkdir( name, 0777 );
-			if (r == 0)
-				created = true;
-		}
-		dprintf("open name : %s\n", name);
-		r = open( name, flags & ~O_CREAT );
-		dprintf("r = %d\n", r);
-		delete name;
+		dprintf("create dir : %s\n", unix_path);
+		r = ::mkdir( unix_path, 0777 );
+		if (r == 0)
+			created = true;
 	}
+	dprintf("open name : %s\n", unix_path);
+	r = ::open( unix_path, flags & ~O_CREAT );
+	dprintf("r = %d\n", r);
 	return r;
 }
 
-NTSTATUS open_file(
+NTSTATUS directory_t::open_file(
 	file_t *&file,
-	OBJECT_ATTRIBUTES *oa,
+	UNICODE_STRING& path,
 	ULONG Attributes,
 	ULONG Options,
 	ULONG CreateDisposition,
-	bool &created )
+	bool &created,
+	bool case_insensitive )
 {
-	int fd;
+	int file_fd;
 
-	if (!oa->ObjectName)
-		return STATUS_OBJECT_PATH_NOT_FOUND;
-
-	dprintf("root = %p name = %pus\n", oa->RootDirectory, oa->ObjectName );
+	dprintf("name = %pus\n", &path );
 
 	int mode = O_RDONLY;
 	switch (CreateDisposition)
@@ -583,30 +643,36 @@ NTSTATUS open_file(
 		return STATUS_NOT_IMPLEMENTED;
 	}
 
+	char *unix_path = get_unix_path( get_fd(), path, case_insensitive );
+	if (!unix_path)
+		return STATUS_OBJECT_PATH_NOT_FOUND;
+
 	if (Options & FILE_DIRECTORY_FILE)
 	{
-		fd = open_unicode_dir( oa, mode, created );
-		if (fd == -1)
+		file_fd = open_unicode_dir( unix_path, mode, created );
+		delete unix_path;
+		if (file_fd == -1)
 			return STATUS_OBJECT_PATH_NOT_FOUND;
 
-		dprintf("fd = %d\n", fd );
-		file = new directory_t( fd );
+		dprintf("file_fd = %d\n", file_fd );
+		file = new directory_t( file_fd );
 		if (!file)
 		{
-			close( fd );
+			::close( file_fd );
 			return STATUS_NO_MEMORY;
 		}
 	}
 	else
 	{
-		fd = open_unicode_file( oa, mode, created );
-		if (fd == -1)
+		file_fd = open_unicode_file( unix_path, mode, created );
+		delete unix_path;
+		if (file_fd == -1)
 			return STATUS_OBJECT_PATH_NOT_FOUND;
 
-		file = new file_t( fd );
+		file = new file_t( file_fd );
 		if (!file)
 		{
-			close( fd );
+			::close( file_fd );
 			return STATUS_NO_MEMORY;
 		}
 	}
@@ -614,10 +680,61 @@ NTSTATUS open_file(
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS open_file( file_t *&file, OBJECT_ATTRIBUTES *oa )
+NTSTATUS directory_t::open( object_t *&out, open_info_t& info )
 {
-	bool created;
-	return open_file( file, oa, 0, 0, FILE_OPEN, created );
+	file_t *file = 0;
+
+	dprintf("directory_t::open %pus\n", &info.path );
+
+	file_create_info_t *file_info = dynamic_cast<file_create_info_t*>( &info );
+	if (!file_info)
+		return STATUS_OBJECT_TYPE_MISMATCH;
+
+	NTSTATUS r = open_file( file, info.path, file_info->Attributes, file_info->CreateOptions,
+		file_info->CreateDisposition, file_info->created, info.case_insensitive() );
+	if (r < STATUS_SUCCESS)
+		return r;
+	out = file;
+	return r;
+}
+
+NTSTATUS open_file( file_t *&file, UNICODE_STRING& name )
+{
+	file_create_info_t info( 0, 0, FILE_OPEN );
+	info.path.set( name );
+	object_t *obj = 0;
+	NTSTATUS r = open_root( obj, info );
+	if (r < STATUS_SUCCESS)
+		return r;
+	file = static_cast<file_t*>( obj );
+	return STATUS_SUCCESS;
+}
+
+void init_drives()
+{
+	int fd = open( "drive", O_RDONLY );
+	if (fd < 0)
+		die("drive does not exist");
+	directory_factory factory( fd );
+	unicode_string_t dirname;
+	dirname.copy( L"\\Device\\HarddiskVolume1" );
+	object_t *obj = 0;
+	NTSTATUS r;
+	r = factory.create_kernel( obj, dirname );
+	if (r != STATUS_SUCCESS)
+	{
+		dprintf( "failed to create %pus\n", &dirname);
+		die("fatal\n");
+	}
+
+	unicode_string_t c_link;
+	c_link.set( L"\\??\\c:" );
+	r = create_symlink( c_link, dirname );
+	if (r != STATUS_SUCCESS)
+	{
+		dprintf( "failed to create symlink %pus (%08lx)\n", &c_link, r);
+		die("fatal\n");
+	}
 }
 
 NTSTATUS NTAPI NtCreateFile(
@@ -655,20 +772,24 @@ NTSTATUS NTAPI NtCreateFile(
 	if (!(CreateOptions & FILE_DIRECTORY_FILE))
 		Attributes &= ~FILE_ATTRIBUTE_DIRECTORY;
 
-	file_t *file = 0;
-	bool created = false;
-	r = open_file( file, &oa, Attributes, CreateOptions, CreateDisposition, created );
-	if (r != STATUS_SUCCESS)
-		return r;
+	if (!oa.ObjectName)
+		return STATUS_OBJECT_PATH_NOT_FOUND;
 
-	if (r == STATUS_SUCCESS)
+	file_create_info_t info( Attributes, CreateOptions, CreateDisposition );
+
+	info.path.set( *oa.ObjectName );
+	info.Attributes = oa.Attributes;
+
+	object_t *obj = 0;
+	r = open_root( obj, info );
+	if (r >= STATUS_SUCCESS)
 	{
-		r = alloc_user_handle( file, DesiredAccess, FileHandle );
-		release( file );
+		r = alloc_user_handle( obj, DesiredAccess, FileHandle );
+		release( obj );
 	}
 
 	iosb.Status = r;
-	iosb.Information = created ? FILE_CREATED : FILE_OPENED;
+	iosb.Information = info.created ? FILE_CREATED : FILE_OPENED;
 
 	copy_to_user( IoStatusBlock, &iosb, sizeof iosb );
 

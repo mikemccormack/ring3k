@@ -31,12 +31,15 @@ protected:
 	ULONG utf8_to_wchar( const unsigned char *str, ULONG len, WCHAR *buf );
 public:
 	explicit unicode_string_t();
+	void set( PCWSTR str );
+	void set( const wchar_t* str ) { set( (PCWSTR) str ); }
 	void set( UNICODE_STRING& us );
 	NTSTATUS copy_from_user(PUNICODE_STRING ptr);
-	NTSTATUS copy( PUNICODE_STRING ptr );
+	NTSTATUS copy( const UNICODE_STRING* ptr );
 	NTSTATUS copy( const char *ptr );
 	NTSTATUS copy( const unsigned char *ptr );
 	NTSTATUS copy( PCWSTR str );
+	NTSTATUS copy( const wchar_t* str ) {return copy( (PCWSTR) str );}
 	bool is_equal( PUNICODE_STRING ptr );
 	bool compare( PUNICODE_STRING b, BOOLEAN case_insensitive );
 	~unicode_string_t();

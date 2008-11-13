@@ -330,17 +330,17 @@ NTSTATUS process_alloc_user_handle(
 	return r;
 }
 
-NTSTATUS process_t::create_exe_ppb( RTL_USER_PROCESS_PARAMETERS **pparams, OBJECT_ATTRIBUTES *oa )
+NTSTATUS process_t::create_exe_ppb( RTL_USER_PROCESS_PARAMETERS **pparams, UNICODE_STRING& name )
 {
 	WCHAR image[MAX_PATH], cmd[MAX_PATH];
 	NTSTATUS r;
 	ULONG len;
 
-	len = oa->ObjectName->Length/2;
-	if (len>4 && !memcmp( (WCHAR*) L"\\??\\", oa->ObjectName->Buffer, 8))
+	len = name.Length/2;
+	if (len>4 && !memcmp( (WCHAR*) L"\\??\\", name.Buffer, 8))
 	{
 		len -= 4;
-		memcpy( image, oa->ObjectName->Buffer+4, len*2 );
+		memcpy( image, name.Buffer+4, len*2 );
 	}
 	else
 		len = 0;

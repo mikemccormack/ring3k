@@ -34,7 +34,7 @@
 #include "ntcall.h"
 #include "symlink.h"
 
-symlink_t::symlink_t( unicode_string_t& us )
+symlink_t::symlink_t( const UNICODE_STRING& us )
 {
 	target.copy( &us );
 }
@@ -91,19 +91,20 @@ NTSTATUS symlink_t::open( object_t *&out, open_info_t& info )
 class symlink_factory_t : public object_factory
 {
 private:
-	unicode_string_t& target;
+	const UNICODE_STRING& target;
 public:
-	symlink_factory_t(unicode_string_t& _target);
+	symlink_factory_t(const UNICODE_STRING& _target);
 	virtual NTSTATUS alloc_object(object_t** obj);
 };
 
-symlink_factory_t::symlink_factory_t(unicode_string_t& _target) :
+symlink_factory_t::symlink_factory_t(const UNICODE_STRING& _target) :
 	target( _target )
 {
 }
 
 NTSTATUS symlink_factory_t::alloc_object(object_t** obj)
 {
+	dprintf("allocating object\n");
 	if (target.Length == 0)
 		return STATUS_INVALID_PARAMETER;
 
@@ -131,6 +132,13 @@ NTSTATUS NTAPI NtCreateSymbolicLinkObject(
 
 	symlink_factory_t factory( target );
 	return factory.create( SymbolicLinkHandle, DesiredAccess, ObjectAttributes );
+}
+
+NTSTATUS create_symlink( UNICODE_STRING& name, UNICODE_STRING& target )
+{
+	object_t *obj = 0;
+	symlink_factory_t factory( target );
+	return factory.create_kernel( obj, name );
 }
 
 NTSTATUS NTAPI NtOpenSymbolicLinkObject(

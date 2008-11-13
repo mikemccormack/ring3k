@@ -204,6 +204,12 @@ NTSTATUS object_factory::on_open( object_dir_t* dir, object_t*& obj, open_info_t
 	return STATUS_SUCCESS;
 }
 
+NTSTATUS object_factory::create_kernel( object_t*& obj, UNICODE_STRING& us )
+{
+	path.set( us );
+	return open_root( obj, *this );
+}
+
 NTSTATUS object_factory::create(
 		PHANDLE Handle,
 		ACCESS_MASK AccessMask,

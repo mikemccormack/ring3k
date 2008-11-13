@@ -63,7 +63,8 @@ public:
 	int get_fd();
 };
 
-NTSTATUS open_file( file_t *&file, OBJECT_ATTRIBUTES *oa );
+NTSTATUS open_file( file_t *&file, UNICODE_STRING& us );
 void check_completions( void );
+void init_drives();
 
 #endif // __NTNATIVE_FILE_H__

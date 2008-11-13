@@ -53,7 +53,7 @@ struct process_t : public sync_object_t {
 	ULONG execute_flags;
 
 public:
-	NTSTATUS create_exe_ppb( RTL_USER_PROCESS_PARAMETERS **pparams, OBJECT_ATTRIBUTES *oa );
+	NTSTATUS create_exe_ppb( RTL_USER_PROCESS_PARAMETERS **pparams, UNICODE_STRING& name );
 	NTSTATUS create_parameters(
 		RTL_USER_PROCESS_PARAMETERS **pparams, LPCWSTR ImageFile, LPCWSTR DllPath,
 		LPCWSTR CurrentDirectory, LPCWSTR CommandLine, LPCWSTR WindowTitle, LPCWSTR Desktop);
