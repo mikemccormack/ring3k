@@ -321,7 +321,7 @@ int main(int argc, char **argv)
 	schedule();
 
 	r = initial_thread->process->ExitStatus;
-	//fprintf(stderr, "process exitted (%08x)\n", r);
+	//fprintf(stderr, "process exited (%08x)\n", r);
 	release( initial_thread );
 
 	shutdown_kthread();

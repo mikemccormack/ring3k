@@ -754,7 +754,7 @@ NTSTATUS thread_impl_t::terminate( NTSTATUS status )
 	// if we just killed the last thread in the process, kill the process too
 	if (process->is_signalled())
 	{
-		dprintf("last thread in process exitted %08lx\n", status);
+		dprintf("last thread in process exited %08lx\n", status);
 		process->terminate( status );
 	}
 
