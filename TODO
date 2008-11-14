@@ -1,36 +1,20 @@
 Things to do:
 
+- figure out ntsvcs (http://www.hsc.fr/ressources/articles/win_net_srv/msrpc_pnp.html)
 - catch exceptions thrown by new
-
 - fix cases where non-zero status can be success
-
-- integrate NtCreateFile with the object management code
-
 - figure out how to run cmd.exe
-
-- make object store hierachical
-
 - make all waits safe for terminate (and suspend)
   write a test for thread exit issues and fix
-
 - implement named pipes
-
 - implement mailslots
-
 - implement NtQueryInformationToken 0x20 11 (nil) 0 0x6f5fc
-
 - document registry format
-
 - use file_t* instead of fds in blocks and sections
-
 - check memory leaks
-
 - create a context_t to manage registers
-
 - default registry values
-
 - read/write native registry format
-
 - documentation in textinfo
 
 
@@ -49,4 +33,7 @@ Semi Completed:
   hex can be written <n n="foo">1</n>
 - test program for named pipes
 - test program for mailslots
+- make object store hierachical
+- integrate NtCreateFile with the object management code
+
 
