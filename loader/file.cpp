@@ -113,7 +113,7 @@ NTSTATUS file_create_info_t::on_open( object_dir_t* dir, object_t*& obj, open_in
 	dprintf("file_create_info_t::on_open()\n");
 	if (!obj)
 		return STATUS_OBJECT_NAME_NOT_FOUND;
-	return STATUS_OBJECT_TYPE_MISMATCH;
+	return STATUS_SUCCESS;
 }
 
 NTSTATUS file_t::read( PVOID Buffer, ULONG Length, ULONG *bytes_read )

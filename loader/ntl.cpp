@@ -304,6 +304,7 @@ int main(int argc, char **argv)
 	create_directory_object( (PWSTR) L"\\BaseNamedObjects" );
 	create_sync_event( (PWSTR) L"\\Security\\LSA_AUTHENTICATION_INITIALIZED" );
 	create_sync_event( (PWSTR) L"\\SeLsaInitEvent" );
+	init_random();
 	// XP
 	create_directory_object( (PWSTR) L"\\KernelObjects" );
 	create_sync_event( (PWSTR) L"\\KernelObjects\\CritSecOutOfMemoryEvent" );

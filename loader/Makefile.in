@@ -62,6 +62,7 @@ CPP_SOURCES = \
 	profile.cpp \
 	process.cpp \
 	ptrace_base.cpp \
+	random.cpp \
 	reg.cpp \
 	section.cpp \
 	semaphore.cpp \
@@ -118,6 +119,7 @@ stat:
 
 TESTLIST = \
 	completion \
+	device \
 	event \
 	file \
 	font \

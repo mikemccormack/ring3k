@@ -25,6 +25,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "object.h"
+
 class completion_port_t : public sync_object_t
 {
 public:

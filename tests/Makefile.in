@@ -14,6 +14,7 @@ WINDRES=@MINGW32WINDRES@
 TESTS = \
 	atom.c \
 	completion.c \
+	device.c \
 	event.c \
 	eventpair.c \
 	file.c \

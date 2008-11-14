@@ -18,25 +18,35 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef __TEST_LOG_H__
-#define __TEST_LOG_H__
 
-NTSTATUS log_init( void );
-NTSTATUS log_fini(void);
+#include <stdarg.h>
+#include "ntapi.h"
+#include "log.h"
 
-void init_us( PUNICODE_STRING us, WCHAR *string );
-void init_oa( OBJECT_ATTRIBUTES* oa, UNICODE_STRING* us, WCHAR *path );
+WCHAR randev[] = L"\\Device\\KsecDD";
 
-extern ULONG pass_count, fail_count;
+void test_open_random_number_device(void)
+{
+	IO_STATUS_BLOCK iosb;
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us;
+	HANDLE file = 0;
+	NTSTATUS r;
 
-void dprintf(char *string, ...) __attribute__((format (printf,1,2)));
+	init_oa( &oa, &us, randev );
 
-#define ok(cond, str, ...) \
-    do { \
-        if (!(cond)) { \
-            dprintf( "%d: " str, __LINE__, ## __VA_ARGS__ ); \
-            fail_count++; \
-        } else pass_count++; \
-    } while (0)
+	r = NtOpenFile( &file, SYNCHRONIZE | FILE_READ_DATA, &oa, &iosb,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		FILE_SYNCHRONOUS_IO_ALERT );
+	ok( r == STATUS_SUCCESS, "failed to open file %08lx\n", r);
 
-#endif // __TEST_LOG_H__
+	r = NtClose( file );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+}
+
+void NtProcessStartup( void )
+{
+	log_init();
+	test_open_random_number_device();
+	log_fini();
+}

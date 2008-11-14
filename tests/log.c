@@ -156,3 +156,15 @@ void init_us( PUNICODE_STRING us, WCHAR *string )
 	us->MaximumLength = 0;
 	us->Buffer = string;
 }
+
+void init_oa( OBJECT_ATTRIBUTES* oa, UNICODE_STRING* us, PWSTR path )
+{
+	init_us( us, path );
+
+	oa->Length = sizeof *oa;
+	oa->RootDirectory = 0;
+	oa->ObjectName = us;
+	oa->Attributes = OBJ_CASE_INSENSITIVE;
+	oa->SecurityDescriptor = 0;
+	oa->SecurityQualityOfService = 0;
+}

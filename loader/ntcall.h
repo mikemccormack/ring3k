@@ -88,6 +88,9 @@ extern ULONG KiIntSystemCall;
 // from section.cpp
 const char *get_section_symbol( object_t *section, ULONG address );
 
+// from random.cpp
+void init_random();
+
 class win32k_info_t
 {
 public:
