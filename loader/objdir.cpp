@@ -34,21 +34,6 @@
 #include "ntcall.h"
 #include "symlink.h"
 
-class object_dir_impl_t : public object_dir_t
-{
-	object_list_t object_list;
-public:
-	object_dir_impl_t();
-	virtual ~object_dir_impl_t();
-	virtual bool access_allowed( ACCESS_MASK access, ACCESS_MASK handle_access );
-	virtual void unlink( object_t *child );
-	virtual void append( object_t *child );
-public:
-	object_t *lookup( UNICODE_STRING& name, bool ignore_case );
-	NTSTATUS add( object_t *obj, UNICODE_STRING& name, bool ignore_case );
-	virtual NTSTATUS open( object_t*& obj, open_info_t& info );
-};
-
 static object_dir_impl_t *root = 0;
 
 object_dir_t::object_dir_t()
@@ -70,6 +55,7 @@ object_dir_impl_t::object_dir_impl_t()
 
 object_dir_impl_t::~object_dir_impl_t()
 {
+	//dprintf("destroying directory %pus\n", &name );
 	object_iter_t i(object_list);
 	while( i )
 	{

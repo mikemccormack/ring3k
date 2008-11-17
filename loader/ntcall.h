@@ -91,6 +91,9 @@ const char *get_section_symbol( object_t *section, ULONG address );
 // from random.cpp
 void init_random();
 
+// from pipe.cpp
+void init_pipe_device();
+
 class win32k_info_t
 {
 public:

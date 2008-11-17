@@ -47,6 +47,7 @@
 #include "fiber.h"
 #include "file.h"
 #include "event.h"
+#include "symlink.h"
 
 process_list_t processes;
 thread_t *current;
@@ -297,14 +298,19 @@ int main(int argc, char **argv)
 	init_root();
 	create_directory_object( (PWSTR) L"\\" );
 	create_directory_object( (PWSTR) L"\\??" );
+	unicode_string_t link_name, link_target;
+	link_name.set( L"\\DosDevices" );
+	link_target.copy( L"\\??" );
+	create_symlink( link_name, link_target );
 	create_directory_object( (PWSTR) L"\\Device" );
 	create_directory_object( (PWSTR) L"\\Device\\MailSlot" );
 	create_directory_object( (PWSTR) L"\\Security" );
-	create_directory_object( (PWSTR) L"\\DosDevices" );
+	//create_directory_object( (PWSTR) L"\\DosDevices" );
 	create_directory_object( (PWSTR) L"\\BaseNamedObjects" );
 	create_sync_event( (PWSTR) L"\\Security\\LSA_AUTHENTICATION_INITIALIZED" );
 	create_sync_event( (PWSTR) L"\\SeLsaInitEvent" );
 	init_random();
+	init_pipe_device();
 	// XP
 	create_directory_object( (PWSTR) L"\\KernelObjects" );
 	create_sync_event( (PWSTR) L"\\KernelObjects\\CritSecOutOfMemoryEvent" );

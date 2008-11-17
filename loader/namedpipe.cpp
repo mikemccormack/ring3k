@@ -29,12 +29,52 @@
 #include "ntcall.h"
 
 #include "file.h"
+#include "objdir.h"
 #include "debug.h"
 
 class named_pipe_t;
 
 typedef list_anchor<named_pipe_t,0> pipe_server_list_t;
 typedef list_element<named_pipe_t> pipe_list_element_t;
+
+class pipe_device_t : public object_dir_impl_t
+{
+public:
+	virtual NTSTATUS open( object_t *&out, open_info_t& info );
+};
+
+NTSTATUS pipe_device_t::open( object_t *&out, open_info_t& info )
+{
+	dprintf("pipe = %pus\n", &info.path );
+	return object_dir_impl_t::open( out, info );
+}
+
+class pipe_device_factory : public object_factory
+{
+public:
+	NTSTATUS alloc_object(object_t** obj);
+};
+
+NTSTATUS pipe_device_factory::alloc_object(object_t** obj)
+{
+	*obj = new pipe_device_t;
+	if (!*obj)
+		return STATUS_NO_MEMORY;
+	return STATUS_SUCCESS;
+}
+
+void init_pipe_device()
+{
+	pipe_device_factory factory;
+	unicode_string_t name;
+	name.set( L"\\Device\\NamedPipe");
+
+	NTSTATUS r;
+	object_t *obj = 0;
+	r = factory.create_kernel( obj, name );
+	if (r < STATUS_SUCCESS)
+		die("failed to create named pipe\n");
+}
 
 class pipe_container_t : public object_t
 {
@@ -68,6 +108,7 @@ public:
 	~named_pipe_t();
 	virtual NTSTATUS read( PVOID buffer, ULONG length, ULONG *read );
 	virtual NTSTATUS write( PVOID buffer, ULONG length, ULONG *written );
+	NTSTATUS open( object_t *&out, open_info_t& info );
 };
 
 NTSTATUS pipe_container_t::create( named_pipe_t *& pipe, ULONG max_inst )
@@ -94,6 +135,13 @@ named_pipe_t::~named_pipe_t()
 	release( container );
 }
 
+NTSTATUS named_pipe_t::open( object_t *&out, open_info_t& info )
+{
+	// should return a pointer to a pipe client
+	dprintf("implement\n");
+	return STATUS_NOT_IMPLEMENTED;
+}
+
 NTSTATUS named_pipe_t::read( PVOID buffer, ULONG length, ULONG *read )
 {
 	dprintf("implement\n");
@@ -104,6 +152,52 @@ NTSTATUS named_pipe_t::write( PVOID buffer, ULONG length, ULONG *written )
 {
 	dprintf("implement\n");
 	return STATUS_NOT_IMPLEMENTED;
+}
+
+class pipe_factory : public object_factory
+{
+	ULONG MaxInstances;
+public:
+	pipe_factory( ULONG _MaxInstances );
+	NTSTATUS alloc_object(object_t** obj);
+	NTSTATUS on_open( object_dir_t* dir, object_t*& obj, open_info_t& info );
+};
+
+pipe_factory::pipe_factory( ULONG _MaxInstances ) :
+	MaxInstances( _MaxInstances )
+{
+}
+
+NTSTATUS pipe_factory::alloc_object(object_t** obj)
+{
+	assert(0);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS pipe_factory::on_open( object_dir_t* dir, object_t*& obj, open_info_t& info )
+{
+	pipe_container_t *container = 0;
+	if (!obj)
+	{
+		container = new pipe_container_t( MaxInstances );
+		if (!container)
+			return STATUS_NO_MEMORY;
+	}
+	else
+	{
+		container = dynamic_cast<pipe_container_t*>( obj );
+		if (!container)
+			return STATUS_OBJECT_TYPE_MISMATCH;
+	}
+
+	assert( container );
+
+	named_pipe_t *pipe = 0;
+	NTSTATUS r;
+	r = container->create( pipe, MaxInstances );
+	if (r == STATUS_SUCCESS)
+		obj = pipe;
+	return r;
 }
 
 NTSTATUS NTAPI NtCreateNamedPipeFile(
@@ -122,52 +216,40 @@ NTSTATUS NTAPI NtCreateNamedPipeFile(
 	ULONG OutBufferSize,
 	PLARGE_INTEGER DefaultTimeout)
 {
+	LARGE_INTEGER timeout;
 	object_attributes_t oa;
 	NTSTATUS r;
 
-	r = oa.copy_from_user( ObjectAttributes );
-	if (r != STATUS_SUCCESS)
+	if (CreateDisposition != FILE_OPEN_IF)
+		return STATUS_INVALID_PARAMETER;
+
+	if (MaxInstances == 0)
+		return STATUS_INVALID_PARAMETER;
+
+	if (ObjectAttributes == NULL)
+		return STATUS_INVALID_PARAMETER;
+
+	if (!(ShareAccess & FILE_SHARE_READ))
+		return STATUS_INVALID_PARAMETER;
+	if (!(ShareAccess & FILE_SHARE_WRITE))
+		return STATUS_INVALID_PARAMETER;
+
+	r = copy_from_user( &timeout, DefaultTimeout, sizeof timeout );
+	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("name = %pus\n", oa.ObjectName );
+	if (timeout.QuadPart > 0)
+		return STATUS_INVALID_PARAMETER;
+
+	r = verify_for_write( PipeHandle, sizeof *PipeHandle );
+	if (r < STATUS_SUCCESS)
+		return r;
 
 	r = verify_for_write( IoStatusBlock, sizeof IoStatusBlock );
 	if (r != STATUS_SUCCESS)
 		return r;
 
-	// normal object factory doesn't apply here
-	// multiple named pipe servers can share the same name
-	pipe_container_t *container = 0;
-	object_t *obj = 0;
-	r = find_object_by_name( &obj, &oa );
-	if (r == STATUS_SUCCESS)
-	{
-		container = dynamic_cast<pipe_container_t*>( obj );
-		if (!container)
-			return STATUS_OBJECT_TYPE_MISMATCH;
-	}
-	else
-	{
-		container = new pipe_container_t( MaxInstances );
-		if (!container)
-			return STATUS_NO_MEMORY;
+	pipe_factory factory( MaxInstances );
 
-		r = name_object( container, &oa );
-		if (r != STATUS_SUCCESS)
-			return r;
-	}
-
-	named_pipe_t *pipe = 0;
-	r = container->create( pipe, MaxInstances );
-	if (r == STATUS_SUCCESS)
-	{
-		HANDLE handle = 0;
-		r = process_alloc_user_handle( current->process, pipe, AccessMask, PipeHandle, &handle );
-		dprintf("new handle is %p\n", handle );
-		release( pipe );
-	}
-
-	release( container );
-
-	return r;
+	return factory.create( PipeHandle, AccessMask, ObjectAttributes );
 }

@@ -40,6 +40,9 @@ void test_create_pipe( void )
 	r = NtCreateNamedPipeFile(0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
 
+	r = NtCreateNamedPipeFile(&pipe,0,0,0,0,0,0,0,0,0,0,0,0,0);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
 	us.Buffer = pipename;
 	us.Length = sizeof pipename - 2;
 	us.MaximumLength = us.Length;
@@ -53,6 +56,65 @@ void test_create_pipe( void )
 
 	iosb.Status = 0;
 	iosb.Information = 0;
+
+	r = NtCreateNamedPipeFile(&pipe, 0, 0, &iosb, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	// timeout should be negative
+	timeout.QuadPart = -100000LL;
+	r = NtCreateNamedPipeFile(&pipe, 0, 0, &iosb, 0, 0, 0, 0, 0, 0, 0, 0, 0, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa, &iosb, 0, 0, 0, 0, 0, 0, 0, 0, 0, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa, &iosb, 0, 0, 0, 0, 0, 0, 0, 0x800, 0x800, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa, &iosb, 0, 0, 0, 0, 0, 0, -1, 0x800, 0x800, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa, &iosb, 0, 0, 0, 0, TRUE, 0, -1, 0x800, 0x800, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa, &iosb, 0, 0, 0, TRUE, TRUE, 0, -1, 0x800, 0x800, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa, &iosb, 0, 0, 0, TRUE, TRUE, 0, -1, 0x800, 0x800, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa,
+				&iosb, FILE_SHARE_READ|FILE_SHARE_WRITE, 0, 0, TRUE,
+				TRUE, 0, -1, 0x800, 0x800, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa,
+				&iosb, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN_IF, 0, TRUE,
+				TRUE, 0, -1, 0, 0, &timeout);
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+	NtClose( pipe );
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa,
+				&iosb, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN_IF, 0, TRUE,
+				TRUE, 0, 0, 0, 0, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa,
+				&iosb, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN_IF, 0, 0,
+				0, 0, 0, 0, 0, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	// no sharing
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa,
+				&iosb, 0, FILE_OPEN_IF, 0, TRUE,
+				TRUE, 0, -1, 0, 0, &timeout);
+	ok( r == STATUS_INVALID_PARAMETER, "return wrong %08lx\n", r);
+
+	// no io status block
+	r = NtCreateNamedPipeFile(&pipe, 0, &oa,
+				0, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN_IF, 0, TRUE,
+				TRUE, 0, -1, 0, 0, &timeout);
+	ok( r == STATUS_ACCESS_VIOLATION, "return wrong %08lx\n", r);
 
 	// timeout should be negative
 	timeout.QuadPart = 100000LL;
@@ -92,6 +154,67 @@ void test_create_pipe( void )
 
 	r = NtClose( pipe );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+}
+
+NTSTATUS try_create_pipe( PWSTR name )
+{
+	IO_STATUS_BLOCK iosb;
+	HANDLE pipe = 0;
+	NTSTATUS r;
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us;
+	LARGE_INTEGER timeout;
+
+	init_oa( &oa, &us, name );
+	us.MaximumLength = us.Length;
+
+	iosb.Status = 0;
+	iosb.Information = 0;
+
+	timeout.QuadPart = -100000LL;
+
+	r = NtCreateNamedPipeFile( &pipe, GENERIC_READ|GENERIC_WRITE|SYNCHRONIZE,
+				&oa, &iosb, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN_IF, 0, TRUE,
+				TRUE, FALSE, -1, 0, 0, &timeout );
+	if (r == STATUS_SUCCESS)
+		r = NtClose( pipe );
+
+	return r;
+}
+
+void test_create_pipe_names( void )
+{
+	NTSTATUS r;
+
+	r = try_create_pipe( L"\\" );
+	ok( r == STATUS_OBJECT_TYPE_MISMATCH, "return wrong %08lx\n", r);
+
+	//r = try_create_pipe( pipedev );
+	//ok( r == STATUS_OBJECT_NAME_INVALID, "return wrong %08lx\n", r);
+
+	r = try_create_pipe( waitpipe );
+	ok( r == STATUS_OBJECT_PATH_SYNTAX_BAD, "return wrong %08lx\n", r);
+
+	//r = try_create_pipe( L"\\foobar" );
+	//ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
+
+	r = try_create_pipe( L"\\device\\namedpipe\\foobar" );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	//r = try_create_pipe( L"\\device\\namedpipe\\foo\\bar" );
+	//ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = try_create_pipe( L"\\device\\namedpipe\\&" );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	r = try_create_pipe( L"\\??\\PIPE\\xyz" );
+	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
+
+	//r = try_create_pipe( L"\\??\\xyz" );
+	//ok( r == STATUS_OBJECT_NAME_NOT_FOUND, "return wrong %08lx\n", r);
+
+	//r = try_create_pipe( L"\\device\\namedpipe\\foobar\\" );
+	//ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 }
 
 void pipe_client( PVOID param )
@@ -252,10 +375,25 @@ void test_pipe_server( void )
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
 }
 
+void create_link( PWSTR linkname, PWSTR targetname )
+{
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING us, target;
+	HANDLE symlink;
+
+	init_oa( &oa, &us, linkname );
+	init_us( &target, targetname );
+	target.MaximumLength = target.Length;
+
+	NtCreateSymbolicLinkObject( &symlink, DIRECTORY_ALL_ACCESS, &oa, &target );
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
+	create_link( L"\\??\\PIPE", L"\\Device\\NamedPipe" );
 	test_create_pipe();
-	test_pipe_server();
+	test_create_pipe_names();
+	//test_pipe_server();
 	log_fini();
 }
