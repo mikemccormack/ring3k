@@ -559,7 +559,8 @@ void pipe_server_t::queue_message_to_client( pipe_message_t *msg )
 }
 
 pipe_client_t::pipe_client_t( pipe_container_t *container ) :
-	server( NULL )
+	server( NULL ),
+	thread( NULL )
 {
 }
 
@@ -568,7 +569,7 @@ NTSTATUS pipe_client_t::read( PVOID buffer, ULONG length, ULONG *read )
 	pipe_message_t *msg;
 
 	// only allow reading in the correct state
-	if (server->state != pipe_server_t::pipe_connected)
+	if (server == NULL || server->state != pipe_server_t::pipe_connected)
 		return STATUS_PIPE_BROKEN;
 
 	// only allow one reader at a time
@@ -605,6 +606,9 @@ NTSTATUS pipe_client_t::read( PVOID buffer, ULONG length, ULONG *read )
 NTSTATUS pipe_client_t::write( PVOID buffer, ULONG length, ULONG *written )
 {
 	pipe_message_t *msg = pipe_message_t::alloc_pipe_message( length );
+
+	if (server == NULL || server->state != pipe_server_t::pipe_connected)
+		return STATUS_PIPE_BROKEN;
 
 	NTSTATUS r;
 	r = copy_from_user( msg->data_ptr(), buffer, length );
@@ -711,7 +715,7 @@ NTSTATUS NTAPI NtCreateNamedPipeFile(
 		return r;
 
 	r = verify_for_write( IoStatusBlock, sizeof IoStatusBlock );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	pipe_factory factory( MaxInstances );
