@@ -78,6 +78,12 @@ NTSTATUS io_object_t::set_position( LARGE_INTEGER& ofs )
 	return STATUS_OBJECT_TYPE_MISMATCH;
 }
 
+NTSTATUS io_object_t::fs_control( event_t* event, IO_STATUS_BLOCK iosb, ULONG FsControlCode,
+		 PVOID InputBuffer, ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength )
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
 file_t::~file_t()
 {
 	close( fd );
@@ -706,7 +712,8 @@ NTSTATUS open_file( file_t *&file, UNICODE_STRING& name )
 	NTSTATUS r = open_root( obj, info );
 	if (r < STATUS_SUCCESS)
 		return r;
-	file = static_cast<file_t*>( obj );
+	file = dynamic_cast<file_t*>( obj );
+	assert( file != NULL );
 	return STATUS_SUCCESS;
 }
 
@@ -810,7 +817,7 @@ NTSTATUS NTAPI NtOpenFile(
 
 NTSTATUS NTAPI NtFsControlFile(
 	HANDLE FileHandle,
-	HANDLE Event,
+	HANDLE EventHandle,
 	PIO_APC_ROUTINE ApcRoutine,
 	PVOID ApcContext,
 	PIO_STATUS_BLOCK IoStatusBlock,
@@ -821,15 +828,37 @@ NTSTATUS NTAPI NtFsControlFile(
 	ULONG OutputBufferLength )
 {
 	dprintf("%p %p %p %p %p %08lx %p %lu %p %lu\n", FileHandle,
-			Event, ApcRoutine, ApcContext, IoStatusBlock, FsControlCode,
+			EventHandle, ApcRoutine, ApcContext, IoStatusBlock, FsControlCode,
 			InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength );
-	switch ( FsControlCode )
+
+	IO_STATUS_BLOCK iosb;
+	io_object_t *io = 0;
+	event_t *event = 0;
+	NTSTATUS r;
+
+	r = object_from_handle( io, FileHandle, 0 );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
+	if (r != STATUS_SUCCESS)
+		return r;
+
+	if (EventHandle)
 	{
-	case FSCTL_IS_VOLUME_MOUNTED:
-		dprintf("FSCTL_IS_VOLUME_MOUNTED\n");
-		return STATUS_INVALID_HANDLE;
+		r = object_from_handle( event, EventHandle, SYNCHRONIZE );
+		if (r != STATUS_SUCCESS)
+			return r;
 	}
-	return STATUS_NOT_IMPLEMENTED;
+
+	r = io->fs_control( event, iosb, FsControlCode,
+		 InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength );
+
+	iosb.Status = r;
+
+	copy_to_user( IoStatusBlock, &iosb, sizeof iosb );
+
+	return r;
 }
 
 NTSTATUS NTAPI NtDeviceIoControlFile(

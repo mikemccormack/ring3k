@@ -366,7 +366,7 @@ void test_pipe_server( void )
 	r = NtFsControlFile( pipe, event, 0, 0, &iosb, FSCTL_PIPE_DISCONNECT, 0, 0, 0, 0 );
 	if (r == STATUS_PENDING)
 		r = NtWaitForSingleObject( event, TRUE, 0 );
-	ok( r == STATUS_SUCCESS, "failed to listen %08lx\n", r );
+	ok( r == STATUS_SUCCESS, "failed to disconnect %08lx\n", r );
 
 	r = NtWaitForSingleObject( thread, TRUE, 0 );
 	ok( r == STATUS_SUCCESS, "return wrong %08lx\n", r);
@@ -394,6 +394,6 @@ void NtProcessStartup( void )
 	create_link( L"\\??\\PIPE", L"\\Device\\NamedPipe" );
 	test_create_pipe();
 	test_create_pipe_names();
-	//test_pipe_server();
+	test_pipe_server();
 	log_fini();
 }

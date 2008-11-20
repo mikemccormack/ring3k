@@ -89,10 +89,9 @@ NTSTATUS unicode_string_t::copy_wstr_from_user()
 	buf = 0;
 	if (Buffer)
 	{
-		buf = new WCHAR[ Length ];
+		buf = new WCHAR[ Length/2 ];
 		if (!buf)
 			return STATUS_NO_MEMORY;
-		memset( buf, 0, Length );
 		NTSTATUS r = ::copy_from_user( buf, Buffer, Length );
 		if (r != STATUS_SUCCESS)
 		{
@@ -103,6 +102,13 @@ NTSTATUS unicode_string_t::copy_wstr_from_user()
 		Buffer = buf;
 	}
 	return STATUS_SUCCESS;
+}
+
+NTSTATUS unicode_string_t::copy_wstr_from_user( PWSTR String, ULONG _Length )
+{
+	Buffer = String;
+	Length = _Length;
+	return copy_wstr_from_user();
 }
 
 NTSTATUS unicode_string_t::copy( const UNICODE_STRING* ptr )

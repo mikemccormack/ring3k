@@ -96,7 +96,7 @@ public:
 	virtual ~watch_t();
 };
 
-class sync_object_t : public object_t {
+class sync_object_t : virtual public object_t {
 private:
 	watch_list_t watchers;
 public:

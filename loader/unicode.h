@@ -45,6 +45,7 @@ public:
 	~unicode_string_t();
 	unicode_string_t& operator=(const unicode_string_t& in);
 	void clear();
+	NTSTATUS copy_wstr_from_user( PWSTR String, ULONG Length );
 };
 
 class object_attributes_t : public OBJECT_ATTRIBUTES

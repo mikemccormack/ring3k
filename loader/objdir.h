@@ -23,7 +23,7 @@
 
 #include "object.h"
 
-class object_dir_t : public object_t {
+class object_dir_t : virtual public object_t {
 protected:
 	friend class object_t;
 	static void set_obj_parent( object_t *child, object_dir_t *dir );
