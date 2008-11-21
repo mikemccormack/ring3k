@@ -150,6 +150,10 @@ public:
 	virtual NTSTATUS read( PVOID buffer, ULONG length, ULONG *read );
 	virtual NTSTATUS write( PVOID buffer, ULONG length, ULONG *written );
 	NTSTATUS set_pipe_info( FILE_PIPE_INFORMATION& pipe_info );
+	virtual NTSTATUS fs_control( event_t* event, IO_STATUS_BLOCK iosb, ULONG FsControlCode,
+		 PVOID InputBuffer, ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength );
+	NTSTATUS transceive(
+		 PVOID InputBuffer, ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength );
 };
 
 // server factory, used by NtCreateNamedPipeFile
@@ -621,6 +625,34 @@ NTSTATUS pipe_client_t::write( PVOID buffer, ULONG length, ULONG *written )
 
 	server->queue_message_from_client( msg );
 	*written = length;
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS pipe_client_t::fs_control( event_t* event, IO_STATUS_BLOCK iosb, ULONG FsControlCode,
+		 PVOID InputBuffer, ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength )
+{
+	dprintf("pipe_client_t %08lx\n", FsControlCode);
+
+	if (FsControlCode == FSCTL_PIPE_TRANSCEIVE)
+		return transceive( InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength );
+
+	return STATUS_INVALID_PARAMETER;
+}
+
+NTSTATUS pipe_client_t::transceive(
+		PVOID InputBuffer, ULONG InputBufferLength,
+		PVOID OutputBuffer, ULONG OutputBufferLength )
+{
+	NTSTATUS r;
+	ULONG out = 0;
+	r = write( InputBuffer, InputBufferLength, &out );
+	if (r < STATUS_SUCCESS)
+		return r;
+
+	r = read( OutputBuffer, OutputBufferLength, &out );
+	if (r < STATUS_SUCCESS)
+		return r;
+
 	return STATUS_SUCCESS;
 }
 

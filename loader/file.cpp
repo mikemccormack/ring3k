@@ -849,12 +849,14 @@ NTSTATUS NTAPI NtFsControlFile(
 	if (r < STATUS_SUCCESS)
 		return r;
 
+#if 0
 	if (EventHandle)
 	{
 		r = object_from_handle( event, EventHandle, SYNCHRONIZE );
 		if (r < STATUS_SUCCESS)
 			return r;
 	}
+#endif
 
 	r = io->fs_control( event, iosb, FsControlCode,
 		 InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength );
