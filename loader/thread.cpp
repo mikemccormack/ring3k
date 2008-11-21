@@ -291,7 +291,7 @@ NTSTATUS thread_impl_t::kernel_debugger_output_string( struct kernel_debug_strin
 	else
 		fprintf(stderr, "%04lx: debug - bad address\n", trace_id());
 
-	delete string;
+	delete[] string;
 	return r;
 }
 

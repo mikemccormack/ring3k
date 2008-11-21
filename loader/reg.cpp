@@ -235,7 +235,7 @@ regval_t::regval_t( UNICODE_STRING *_name, ULONG _type, ULONG _size ) :
 
 regval_t::~regval_t()
 {
-	delete data;
+	delete[] data;
 }
 
 ULONG skip_slashes( UNICODE_STRING *str )
@@ -257,7 +257,7 @@ ULONG get_next_segment( UNICODE_STRING *str )
 {
 	ULONG n = 0;
 
-	while (str->Buffer[ n ] != '\\' && n < str->Length/sizeof(WCHAR))
+	while ( n < str->Length/sizeof(WCHAR) && str->Buffer[ n ] != '\\' )
 		n++;
 
 	return n * sizeof (WCHAR);

@@ -656,7 +656,7 @@ NTSTATUS directory_t::open_file(
 	if (Options & FILE_DIRECTORY_FILE)
 	{
 		file_fd = open_unicode_dir( unix_path, mode, created );
-		delete unix_path;
+		delete[] unix_path;
 		if (file_fd == -1)
 			return STATUS_OBJECT_PATH_NOT_FOUND;
 
@@ -671,7 +671,7 @@ NTSTATUS directory_t::open_file(
 	else
 	{
 		file_fd = open_unicode_file( unix_path, mode, created );
-		delete unix_path;
+		delete[] unix_path;
 		if (file_fd == -1)
 			return STATUS_OBJECT_PATH_NOT_FOUND;
 

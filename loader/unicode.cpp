@@ -85,7 +85,7 @@ NTSTATUS unicode_string_t::copy_from_user(PUNICODE_STRING ptr)
 NTSTATUS unicode_string_t::copy_wstr_from_user()
 {
 	if (buf)
-		delete buf;
+		delete[] buf;
 	buf = 0;
 	if (Buffer)
 	{
@@ -95,7 +95,7 @@ NTSTATUS unicode_string_t::copy_wstr_from_user()
 		NTSTATUS r = ::copy_from_user( buf, Buffer, Length );
 		if (r != STATUS_SUCCESS)
 		{
-			delete buf;
+			delete[] buf;
 			buf = 0;
 			return r;
 		}
@@ -185,7 +185,7 @@ NTSTATUS unicode_string_t::copy( const char *str )
 void unicode_string_t::clear()
 {
 	if (buf)
-		delete buf;
+		delete[] buf;
 	buf = 0;
 	Length = 0;
 	MaximumLength = 0;
@@ -241,7 +241,7 @@ unicode_string_t& unicode_string_t::operator=(const unicode_string_t& in)
 {
 	// free the old buffer
 	if (buf)
-		delete buf;
+		delete[] buf;
 
 	// copy the other string
 	Length = in.Length;
