@@ -332,12 +332,10 @@ int main(int argc, char **argv)
 	release( initial_thread );
 
 	shutdown_kthread();
-
 	do_cleanup();
 
 	free_root();
 	fiber_t::fibers_finish();
-	delete us.Buffer;
 	free_registry();
 	free_ntdll();
 
