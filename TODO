@@ -2,11 +2,9 @@ Things to do:
 
 - figure out ntsvcs (http://www.hsc.fr/ressources/articles/win_net_srv/msrpc_pnp.html)
 - catch exceptions thrown by new
-- fix cases where non-zero status can be success
 - figure out how to run cmd.exe
 - make all waits safe for terminate (and suspend)
   write a test for thread exit issues and fix
-- implement named pipes
 - implement mailslots
 - implement NtQueryInformationToken 0x20 11 (nil) 0 0x6f5fc
 - document registry format
@@ -35,5 +33,6 @@ Semi Completed:
 - test program for mailslots
 - make object store hierachical
 - integrate NtCreateFile with the object management code
-
+- implement named pipes
+- fix cases where non-zero status can be success
 
