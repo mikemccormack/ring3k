@@ -187,7 +187,7 @@ int security_reference_monitor_t::run()
 	NTSTATUS r = NtCreatePort( &port, &rm_oa, 0x100, 0x100, 0 );
 	if (r == STATUS_THREAD_IS_TERMINATING)
 		return 0;
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("NtCreatePort(SeRmCommandPort) failed r = %08lx\n", r);
 
 	BYTE buf[maxlen];
@@ -195,20 +195,20 @@ int security_reference_monitor_t::run()
 	r = NtListenPort( port, req );
 	if (r == STATUS_THREAD_IS_TERMINATING)
 		return 0;
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("NtListenPort(SeRmCommandPort) failed r = %08lx\n", r);
 
 	HANDLE conn_port = 0;
 	r = NtAcceptConnectPort( &conn_port, 0, req, TRUE, NULL, NULL );
 	if (r == STATUS_THREAD_IS_TERMINATING)
 		return 0;
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("NtAcceptConnectPort(SeRmCommandPort) failed r = %08lx\n", r);
 
 	r = NtCompleteConnectPort( conn_port );
 	if (r == STATUS_THREAD_IS_TERMINATING)
 		return 0;
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("NtCompleteConnectPort(SeRmCommandPort) failed r = %08lx\n", r);
 
 	unicode_string_t lsa;
@@ -223,7 +223,7 @@ int security_reference_monitor_t::run()
 	r = NtConnectPort( &client, &lsa, &qos, NULL, NULL, NULL, NULL, NULL );
 	if (r == STATUS_THREAD_IS_TERMINATING)
 		return 0;
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("NtConnectPort(SeLsaCommandPort) failed r = %08lx\n", r);
 
 	while (!terminated)
@@ -234,7 +234,7 @@ int security_reference_monitor_t::run()
 		if (r == STATUS_THREAD_IS_TERMINATING)
 			return 0;
 
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			die("NtReplyWaitReceivePort(SeRmCommandPort) failed r = %08lx\n", r);
 
 		dprintf("got message %ld\n", req->MessageId );
@@ -244,7 +244,7 @@ int security_reference_monitor_t::run()
 		if (r == STATUS_THREAD_IS_TERMINATING)
 			return 0;
 
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			die("NtReplyPort(SeRmCommandPort) failed r = %08lx\n", r);
 	}
 
@@ -289,7 +289,7 @@ int plug_and_play_t::run()
 				TRUE, FALSE, -1, 0, 0, &timeout );
 	if (r == STATUS_THREAD_IS_TERMINATING)
 		return 0;
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		dprintf("failed to create ntsvcs %08lx\n", r);
 
 	if (terminated)
@@ -298,7 +298,7 @@ int plug_and_play_t::run()
 	r = NtFsControlFile( pipe, 0, 0, 0, &iosb, FSCTL_PIPE_LISTEN, 0, 0, 0, 0 );
 	if (r == STATUS_THREAD_IS_TERMINATING)
 		return 0;
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		dprintf("failed to connect ntsvcs %08lx\n", r);
 
 	stop();

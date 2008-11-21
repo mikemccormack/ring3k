@@ -189,7 +189,7 @@ event_t* create_sync_event( PWSTR name, BOOL InitialState )
 		oa.ObjectName = &us;
 
 		NTSTATUS r = name_object( event, &oa );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 		{
 			dprintf("name_object failed\n");
 			release( event );
@@ -230,13 +230,13 @@ NTSTATUS nteventfunc( HANDLE Handle, PULONG PreviousState, void (event_t::*fn)(P
 	if (PreviousState)
 	{
 		r = verify_for_write( PreviousState, sizeof PreviousState );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
 	event_t *event = 0;
 	r = object_from_handle( event, Handle, EVENT_MODIFY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	(event->*fn)( &prev );
@@ -277,7 +277,7 @@ NTSTATUS NTAPI NtClearEvent(
 	dprintf("%p\n", Handle);
 
 	r = object_from_handle( event, Handle, EVENT_MODIFY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	ULONG prev;
@@ -296,7 +296,7 @@ NTSTATUS NTAPI NtQueryEvent(
 	NTSTATUS r;
 
 	r = object_from_handle( event, Handle, EVENT_QUERY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	union {
@@ -319,7 +319,7 @@ NTSTATUS NTAPI NtQueryEvent(
 	event->query( info.basic );
 
 	r = copy_to_user( EventInformation, &info, sz );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (ReturnLength)
@@ -397,7 +397,7 @@ NTSTATUS event_pair_operation( HANDLE handle, NTSTATUS (event_pair_t::*op)() )
 	event_pair_t *eventpair = 0;
 	NTSTATUS r;
 	r = object_from_handle( eventpair, handle, GENERIC_WRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	return (eventpair->*op)();

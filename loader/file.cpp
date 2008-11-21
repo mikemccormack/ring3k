@@ -137,7 +137,7 @@ NTSTATUS file_t::read( PVOID Buffer, ULONG Length, ULONG *bytes_read )
 		size_t len = Length - ofs;
 
 		r = current->process->vm->get_kernel_address( &p, &len );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		int ret = ::read( fd, p, len );
@@ -165,7 +165,7 @@ NTSTATUS file_t::write( PVOID Buffer, ULONG Length, ULONG *written )
 		size_t len = Length - ofs;
 
 		NTSTATUS r = current->process->vm->get_kernel_address( &p, &len );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		int ret = ::write( fd, p, len );
@@ -733,7 +733,7 @@ void init_drives()
 	object_t *obj = 0;
 	NTSTATUS r;
 	r = factory.create_kernel( obj, dirname );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf( "failed to create %pus\n", &dirname);
 		die("fatal\n");
@@ -742,7 +742,7 @@ void init_drives()
 	unicode_string_t c_link;
 	c_link.set( L"\\??\\c:" );
 	r = create_symlink( c_link, dirname );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf( "failed to create symlink %pus (%08lx)\n", &c_link, r);
 		die("fatal\n");
@@ -767,18 +767,18 @@ NTSTATUS NTAPI NtCreateFile(
 	NTSTATUS r;
 
 	r = oa.copy_from_user( ObjectAttributes );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("root %p attr %08lx %pus\n",
 			oa.RootDirectory, oa.Attributes, oa.ObjectName);
 
 	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = verify_for_write( FileHandle, sizeof *FileHandle );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (!(CreateOptions & FILE_DIRECTORY_FILE))
@@ -842,17 +842,17 @@ NTSTATUS NTAPI NtFsControlFile(
 	NTSTATUS r;
 
 	r = object_from_handle( io, FileHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (EventHandle)
 	{
 		r = object_from_handle( event, EventHandle, SYNCHRONIZE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -903,16 +903,16 @@ NTSTATUS NTAPI NtWriteFile(
 	NTSTATUS r;
 
 	r = object_from_handle( io, FileHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	ULONG ofs = 0;
 	r = io->write( Buffer, Length, &ofs );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	IO_STATUS_BLOCK iosb;
@@ -989,16 +989,16 @@ NTSTATUS NTAPI NtReadFile(
 	io_object_t *io = 0;
 
 	r = object_from_handle( io, FileHandle, GENERIC_READ );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	ULONG ofs = 0;
 	r = io->read( Buffer, Length, &ofs );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	IO_STATUS_BLOCK iosb;
@@ -1019,7 +1019,7 @@ NTSTATUS NTAPI NtDeleteFile(
 	dprintf("%p\n", ObjectAttributes);
 
 	r = oa.copy_from_user( ObjectAttributes );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("root %p attr %08lx %pus\n",
@@ -1071,7 +1071,7 @@ NTSTATUS NTAPI NtSetInformationFile(
 	} info;
 
 	r = object_from_handle( file, FileHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	switch (FileInformationClass)
@@ -1094,7 +1094,7 @@ NTSTATUS NTAPI NtSetInformationFile(
 	}
 
 	r = copy_from_user( &info, FileInformation, len );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	completion_port_t *completion_port = 0;
@@ -1106,7 +1106,7 @@ NTSTATUS NTAPI NtSetInformationFile(
 		break;
 	case FileCompletionInformation:
 		r = object_from_handle( completion_port, info.completion.CompletionPort, IO_COMPLETION_MODIFY_STATE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		file->set_completion_port( completion_port, info.completion.CompletionKey );
 		break;
@@ -1137,7 +1137,7 @@ NTSTATUS NTAPI NtQueryInformationFile(
 	NTSTATUS r;
 
 	r = object_from_handle( file, FileHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	union {
@@ -1167,7 +1167,7 @@ NTSTATUS NTAPI NtQueryInformationFile(
 		r = STATUS_INVALID_PARAMETER;
 	}
 
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (len > FileInformationLength)
@@ -1238,7 +1238,7 @@ NTSTATUS NTAPI NtQueryDirectoryFile(
 
 	directory_t *dir = 0;
 	r = object_from_handle( dir, DirectoryHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	// default (empty) mask matches all...
@@ -1246,7 +1246,7 @@ NTSTATUS NTAPI NtQueryDirectoryFile(
 	if (FileName)
 	{
 		r = mask.copy_from_user( FileName );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		dprintf("Filename = %pus (len=%d)\n", &mask, mask.Length);
@@ -1261,7 +1261,7 @@ NTSTATUS NTAPI NtQueryDirectoryFile(
 	if (dir->is_firstscan())
 	{
 		r = dir->set_mask(&mask);
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -1287,13 +1287,13 @@ NTSTATUS NTAPI NtQueryDirectoryFile(
 	info.AllocationSize.QuadPart = de->st.st_blocks * 512;
 
 	r = copy_to_user( FileInformation, &info, sizeof info );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	const ULONG ofs = FIELD_OFFSET(FILE_BOTH_DIRECTORY_INFORMATION, FileName);
 	PWSTR p = (PWSTR)((PBYTE)FileInformation + ofs);
 	r = copy_to_user( p, de->name.Buffer, de->name.Length );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	IO_STATUS_BLOCK iosb;
@@ -1313,7 +1313,7 @@ NTSTATUS NTAPI NtQueryFullAttributesFile(
 	NTSTATUS r;
 
 	r = oa.copy_from_user( ObjectAttributes );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("name = %pus\n", oa.ObjectName);

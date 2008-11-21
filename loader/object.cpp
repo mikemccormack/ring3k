@@ -192,11 +192,11 @@ NTSTATUS object_factory::on_open( object_dir_t* dir, object_t*& obj, open_info_t
 
 	NTSTATUS r;
 	r = alloc_object( &obj );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = obj->name.copy( &info.path );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dir->append( obj );
@@ -220,13 +220,13 @@ NTSTATUS object_factory::create(
 	NTSTATUS r;
 
 	r = verify_for_write( Handle, sizeof *Handle );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (ObjectAttributes)
 	{
 		r = oa.copy_from_user( ObjectAttributes );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		dprintf("name = %pus\n", oa.ObjectName);
@@ -373,7 +373,7 @@ NTSTATUS NTAPI NtQueryObject(
 	NTSTATUS r;
 	object_t *obj = 0;
 	r = object_from_handle( obj, Object, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	switch (ObjectInformationClass)
@@ -427,11 +427,11 @@ NTSTATUS NTAPI NtSetInformationObject(
 	NTSTATUS r;
 	object_t *obj = 0;
 	r = object_from_handle( obj, Object, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_from_user( &info, ObjectInformation, sz );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	switch (ObjectInformationClass)
@@ -462,14 +462,14 @@ NTSTATUS NTAPI NtDuplicateObject(
 
 	process_t *sp = 0;
 	r = process_from_handle( SourceProcessHandle, &sp );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("source process %p\n", sp );
 
 	object_t *obj = 0;
 	r = sp->handle_table.object_from_handle( obj, SourceHandle, DesiredAccess );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	// don't lose the object if it's closed
@@ -508,12 +508,12 @@ NTSTATUS NTAPI NtQuerySecurityObject(
 
 	// always checked
 	r = verify_for_write( ReturnLength, sizeof *ReturnLength );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	object_t *obj = 0;
 	r = object_from_handle( obj, ObjectHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	SECURITY_DESCRIPTOR_RELATIVE sdr;
@@ -540,7 +540,7 @@ NTSTATUS NTAPI NtQuerySecurityObject(
 		sdr.Dacl = 0; // Discretionary Access Control List
 
 		r = copy_to_user( SecurityDescriptor, &sdr, sizeof sdr );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 	else
@@ -563,7 +563,7 @@ NTSTATUS NTAPI NtPrivilegeObjectAuditAlarm(
 	NTSTATUS r;
 
 	r = us.copy_from_user( SubsystemName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	dprintf("SubsystemName = %pus\n", &us);
 
@@ -590,7 +590,7 @@ NTSTATUS NTAPI NtCloseObjectAuditAlarm(
 	NTSTATUS r;
 
 	r = us.copy_from_user( SubsystemName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	dprintf("SubsystemName = %pus\n", &us);
 

@@ -286,7 +286,7 @@ bool pe_section_t::add_relay_stub( address_space *vm, BYTE *stub_addr, ULONG fun
 	// copy the stub
 	//PBYTE stub_addr = p + relay_code_size + sizeof stub*i;
 	NTSTATUS r = vm->copy_to_user( stub_addr, &stub, sizeof stub );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("stub copy failed %08lx\n", r);
 		return false;
@@ -295,7 +295,7 @@ bool pe_section_t::add_relay_stub( address_space *vm, BYTE *stub_addr, ULONG fun
 	// write the offset of the stub back to the import table
 	ULONG ofs = stub_addr - (PBYTE) nt->OptionalHeader.ImageBase;
 	r = vm->copy_to_user( user_addr, &ofs, sizeof ofs );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("failed to set address %08lx\n", r);
 		return false;
@@ -330,7 +330,7 @@ void pe_section_t::add_relay(address_space *vm)
 	ULONG sz = (exp->NumberOfNames * sizeof (relay_stub) + 0xfff) & ~0xfff;
 	dprintf("relay stubs at %p, %08lx\n", p, sz);
 	NTSTATUS r = vm->allocate_virtual_memory( &p, 0, sz, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		die("anonymous map failed %08lx\n", r);
 		return;
@@ -344,7 +344,7 @@ void pe_section_t::add_relay(address_space *vm)
 	}
 
 	r = vm->copy_to_user( p, relay_code, relay_code_size );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("relay copy failed %08lx\n", r);
 		return;
@@ -381,7 +381,7 @@ NTSTATUS pe_section_t::mapit( address_space *vm, BYTE *&base, ULONG ZeroBits, UL
 	p = (BYTE*) nt->OptionalHeader.ImageBase;
 	dprintf("image at %p\n", p);
 	r = vm->allocate_virtual_memory( &p, ZeroBits, 0x1000, MEM_COMMIT, PAGE_READONLY );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("map failed\n");
 		goto fail;
@@ -393,7 +393,7 @@ NTSTATUS pe_section_t::mapit( address_space *vm, BYTE *&base, ULONG ZeroBits, UL
 	mb->set_section( this );
 
 	r = vm->copy_to_user( p, addr, 0x1000 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		dprintf("copy_to_user failed\n");
 
 	sections = (IMAGE_SECTION_HEADER*) (addr + dos->e_lfanew + sizeof (*nt));
@@ -422,7 +422,7 @@ NTSTATUS pe_section_t::mapit( address_space *vm, BYTE *&base, ULONG ZeroBits, UL
 		p = (BYTE*) (nt->OptionalHeader.ImageBase + sections[i].VirtualAddress);
 		// FIXME - map sections with correct permissions
 		r = vm->allocate_virtual_memory( &p, 0, sz, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			die("anonymous map failed %08x\n", r);
 		mb = vm->find_block( p );
 		mb->set_section( this );
@@ -430,7 +430,7 @@ NTSTATUS pe_section_t::mapit( address_space *vm, BYTE *&base, ULONG ZeroBits, UL
 		if (sections[i].SizeOfRawData)
 		{
 			r = vm->copy_to_user( p, addr + sections[i].PointerToRawData, sections[i].SizeOfRawData);
-			if (r != STATUS_SUCCESS)
+			if (r < STATUS_SUCCESS)
 				dprintf("copy_to_user failed\n");
 		}
 	}
@@ -591,14 +591,14 @@ void *get_entry_point( process_t *p )
 	dos = (IMAGE_DOS_HEADER*) ppeb->ImageBaseAddress;
 
 	r = p->vm->copy_from_user( &ofs, &dos->e_lfanew, sizeof dos->e_lfanew );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return NULL;
 
 	nt = (IMAGE_NT_HEADERS*) ((BYTE*) dos + ofs);
 
 	r = p->vm->copy_from_user( &entry, &nt->OptionalHeader.AddressOfEntryPoint,
 						   sizeof nt->OptionalHeader.AddressOfEntryPoint );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return NULL;
 
 	return ((BYTE*)dos) + entry;
@@ -631,7 +631,7 @@ section_factory::section_factory(
 NTSTATUS section_factory::alloc_object(object_t** obj)
 {
 	NTSTATUS r = create_section( obj, file, SectionSize, Attributes, Protect );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	if (!*obj)
 		return STATUS_NO_MEMORY;
@@ -673,7 +673,7 @@ NTSTATUS NTAPI NtCreateSection(
 	}
 
 	r = verify_for_write( SectionHandle, sizeof *SectionHandle );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	// PE sections cannot be written to
@@ -693,7 +693,7 @@ NTSTATUS NTAPI NtCreateSection(
 			return STATUS_INVALID_FILE_FOR_SECTION;
 
 		r = object_from_handle( file, FileHandle, 0 );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		SectionSize = 0;
@@ -717,7 +717,7 @@ NTSTATUS NTAPI NtCreateSection(
 		if (FileHandle)
 		{
 			r = object_from_handle( file, FileHandle, 0 );
-			if (r != STATUS_SUCCESS)
+			if (r < STATUS_SUCCESS)
 				return r;
 		}
 	}
@@ -725,7 +725,7 @@ NTSTATUS NTAPI NtCreateSection(
 	if (SectionSize)
 	{
 		r = copy_from_user( &sz, SectionSize, sizeof sz );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		if (sz.QuadPart == 0)
 			return STATUS_INVALID_PARAMETER_4;
@@ -766,28 +766,28 @@ NTSTATUS NTAPI NtMapViewOfSection(
 			SectionOffset, ViewSize, InheritDisposition, AllocationType, Protect );
 
 	r = process_from_handle( ProcessHandle, &p );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	section_t *section = 0;
 	r = object_from_handle( section, SectionHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_from_user( &addr, BaseAddress, sizeof addr );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (addr)
 		dprintf("requested specific address %p\n", addr);
 
 	r = verify_for_write( ViewSize, sizeof *ViewSize );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = section->mapit( p->vm, addr, ZeroBits,
 						MEM_COMMIT | (AllocationType&MEM_TOP_DOWN), Protect );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_to_user( BaseAddress, &addr, sizeof addr );
@@ -807,7 +807,7 @@ NTSTATUS NTAPI NtUnmapViewOfSection(
 	dprintf("%p %p\n", ProcessHandle, BaseAddress );
 
 	r = process_from_handle( ProcessHandle, &p );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = p->vm->unmap_view( BaseAddress );
@@ -834,7 +834,7 @@ NTSTATUS NTAPI NtQuerySection(
 
 	section_t *section = 0;
 	r = object_from_handle( section, SectionHandle, SECTION_QUERY );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	memset( &info, 0, sizeof info );
@@ -855,7 +855,7 @@ NTSTATUS NTAPI NtQuerySection(
 		r = STATUS_INVALID_PARAMETER;
 	}
 
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (len > SectionInformationLength)

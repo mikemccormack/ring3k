@@ -322,7 +322,7 @@ NTSTATUS copy_msg_from_user( message_t **message, LPC_MESSAGE *Reply, ULONG max_
 	NTSTATUS r;
 
 	r = copy_from_user( &reply_hdr, Reply, sizeof reply_hdr );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (reply_hdr.DataSize > max_data)
@@ -338,7 +338,7 @@ NTSTATUS copy_msg_from_user( message_t **message, LPC_MESSAGE *Reply, ULONG max_
 
 	memcpy( &msg->req, &reply_hdr, sizeof reply_hdr );
 	r = copy_from_user( &msg->req.Data, &Reply->Data[0], len );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		delete msg;
 	else
 		*message = msg;
@@ -568,7 +568,7 @@ NTSTATUS connect_port(
 	oa.SecurityQualityOfService = 0;
 
 	r = get_named_object( &obj, &oa );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	// maybe the object should just be a queue...
@@ -596,7 +596,7 @@ NTSTATUS connect_port(
 	if (write_sec->SectionHandle)
 	{
 		r = object_from_handle( port->section, write_sec->SectionHandle, 0 );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		addref(port->section);
 	}
@@ -627,7 +627,7 @@ NTSTATUS connect_port(
 
 	r = alloc_user_handle( port, 0, out_handle );
 	release( port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("ServerSharedMemory = %p\n", ServerSharedMemory);
@@ -693,7 +693,7 @@ NTSTATUS port_t::accept_connect(
 	if (server_write_sec->SectionHandle)
 	{
 		r = object_from_handle( section, server_write_sec->SectionHandle, 0 );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		addref(section);
 		view_size = server_write_sec->ViewSize;
@@ -702,14 +702,14 @@ NTSTATUS port_t::accept_connect(
 		assert(t->port->other_section_base == 0);
 		r = section->mapit( t->process->vm, t->port->other_section_base, 0,
 						MEM_COMMIT, PAGE_READWRITE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		// map our section into our process
 		assert(our_section_base == 0);
 		r = section->mapit( current->process->vm, our_section_base, 0,
 						MEM_COMMIT, PAGE_READWRITE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		dprintf("ours=%p theirs=%p\n", t->port->other_section_base, our_section_base);
@@ -722,13 +722,13 @@ NTSTATUS port_t::accept_connect(
 		// map their section into our process
 		r = other->section->mapit( current->process->vm, other_section_base, 0,
 						MEM_COMMIT, PAGE_READWRITE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		// map their section into their process
 		r = other->section->mapit( t->process->vm, t->port->our_section_base, 0,
 						MEM_COMMIT, PAGE_READWRITE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		dprintf("theirs=%p ours=%p\n", other_section_base, t->port->our_section_base);
 	}
@@ -777,7 +777,7 @@ NTSTATUS port_t::reply_wait_receive( message_t *reply, message_t *& received )
 	if (reply)
 	{
 		NTSTATUS r = send_reply( reply );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -813,11 +813,11 @@ NTSTATUS NTAPI NtCreatePort(
 	dprintf("%p %p %lu %lu %p\n", Port, ObjectAttributes, MaxConnectInfoLength, MaxDataLength, Reserved);
 
 	r = verify_for_write( Port, sizeof *Port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = oa.copy_from_user( ObjectAttributes );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (MaxDataLength > 0x148)
@@ -848,14 +848,14 @@ NTSTATUS NTAPI NtListenPort(
 	dprintf("%p %p\n", PortHandle, ConnectionRequest);
 
 	r = port_from_handle( PortHandle, port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if ((ULONG)ConnectionRequest&3)
 		return STATUS_DATATYPE_MISALIGNMENT;
 
 	r = verify_for_write( ConnectionRequest, sizeof *ConnectionRequest );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	message_t *msg = 0;
@@ -906,7 +906,7 @@ NTSTATUS NTAPI NtSecureConnectPort(
 			MaximumMessageLength, ConnectionInfo, ConnectionInfoLength);
 
 	r = verify_for_write( ClientPortHandle, sizeof (HANDLE) );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	LPC_SECTION_WRITE write_sec;
@@ -914,7 +914,7 @@ NTSTATUS NTAPI NtSecureConnectPort(
 	if (ClientSharedMemory)
 	{
 		r = copy_from_user( &write_sec, ClientSharedMemory, sizeof write_sec );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		if (write_sec.Length != sizeof write_sec)
 			return STATUS_INVALID_PARAMETER;
@@ -925,7 +925,7 @@ NTSTATUS NTAPI NtSecureConnectPort(
 	if (ServerSharedMemory)
 	{
 		r = copy_from_user( &read_sec, ServerSharedMemory, sizeof read_sec );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		if (read_sec.Length != sizeof read_sec)
 			return STATUS_INVALID_PARAMETER;
@@ -933,11 +933,11 @@ NTSTATUS NTAPI NtSecureConnectPort(
 
 	PSECURITY_QUALITY_OF_SERVICE qos;
 	r = copy_from_user( &qos, SecurityQos, sizeof qos );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = name.copy_from_user( ServerPortName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (!name.Buffer)
@@ -947,7 +947,7 @@ NTSTATUS NTAPI NtSecureConnectPort(
 	{
 		section_t* sec = 0;
 		r = object_from_handle( sec, write_sec.SectionHandle, 0 );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return STATUS_INVALID_HANDLE;
 	}
 
@@ -956,14 +956,14 @@ NTSTATUS NTAPI NtSecureConnectPort(
 	if (ConnectionInfoLength)
 	{
 		r = copy_from_user( &info_length, ConnectionInfoLength, sizeof info_length );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
 	if (MaximumMessageLength)
 	{
 		r = verify_for_write( MaximumMessageLength, sizeof *MaximumMessageLength );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -1024,25 +1024,25 @@ NTSTATUS NTAPI NtReplyWaitReceivePort(
 	dprintf("%p %p %p %p\n", PortHandle, ReceivePortHandle, Reply, IncomingRequest);
 
 	r = port_from_handle( PortHandle, port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (ReceivePortHandle)
 	{
 		r = verify_for_write( ReceivePortHandle, sizeof *ReceivePortHandle );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
 	if (Reply)
 	{
 		r = copy_msg_from_user( &reply_msg, Reply, port->queue->max_data );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
 	r = verify_for_write( IncomingRequest, sizeof *IncomingRequest );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		delete reply_msg;
 		return r;
@@ -1050,7 +1050,7 @@ NTSTATUS NTAPI NtReplyWaitReceivePort(
 
 	message_t *received = 0;
 	r = port->reply_wait_receive( reply_msg, received );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_msg_to_user( IncomingRequest, received );
@@ -1076,11 +1076,11 @@ NTSTATUS NTAPI NtRequestWaitReplyPort(
 	dprintf("%p %p %p\n", PortHandle, Request, Reply );
 
 	r = port_from_handle( PortHandle, port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_msg_from_user( &msg, Request, port->queue->max_data );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	msg->req.MessageType = LPC_REQUEST;
@@ -1110,11 +1110,11 @@ NTSTATUS NTAPI NtAcceptConnectPort(
 
 	message_t *reply = 0;
 	r = copy_msg_from_user( &reply, ConnectionReply, 0x148 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = verify_for_write( ServerPortHandle, sizeof *ServerPortHandle );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	LPC_SECTION_WRITE write_sec;
@@ -1122,7 +1122,7 @@ NTSTATUS NTAPI NtAcceptConnectPort(
 	if (ServerSharedMemory)
 	{
 		r = copy_from_user( &write_sec, ServerSharedMemory, sizeof write_sec );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		if (write_sec.Length != sizeof write_sec)
 			return STATUS_INVALID_PARAMETER;
@@ -1132,12 +1132,12 @@ NTSTATUS NTAPI NtAcceptConnectPort(
 	{
 		LPC_SECTION_READ read_sec;
 		r = copy_from_user( &read_sec, ClientSharedMemory, sizeof read_sec );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		if (read_sec.Length != sizeof read_sec)
 			return STATUS_INVALID_PARAMETER;
 		r = verify_for_write( ClientSharedMemory, sizeof *ClientSharedMemory );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -1176,7 +1176,7 @@ NTSTATUS NTAPI NtAcceptConnectPort(
 
 	// tie the ports together
 	r = port->accept_connect( t, reply, &write_sec );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		delete port;
 		return r;
@@ -1225,7 +1225,7 @@ NTSTATUS NTAPI NtCompleteConnectPort(
 	dprintf("%p\n", PortHandle);
 
 	r = port_from_handle( PortHandle, port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	return complete_connect_port( port );
@@ -1242,17 +1242,17 @@ NTSTATUS NTAPI NtReplyPort(
 	dprintf("%p %p\n", PortHandle, reply );
 
 	r = port_from_handle( PortHandle, port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_msg_from_user( &msg, reply, port->queue->max_data );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		goto error;
 
 	r = port->send_reply( msg );
 
 error:
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		msg_free_unlinked( msg );
 
 	return r;
@@ -1267,7 +1267,7 @@ NTSTATUS NTAPI NtRegisterThreadTerminatePort(
 	dprintf("%p\n", PortHandle);
 
 	r = port_from_handle( PortHandle, port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	current->register_terminate_port( port );
@@ -1285,12 +1285,12 @@ NTSTATUS NTAPI NtRequestPort(
 	dprintf("%p %p\n", PortHandle, Request);
 
 	r = port_from_handle( PortHandle, port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	message_t *msg = 0;
 	r = copy_msg_from_user( &msg, Request, port->queue->max_data );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	msg->req.MessageType = LPC_DATAGRAM;
@@ -1306,7 +1306,7 @@ NTSTATUS NTAPI NtSetDefaultHardErrorPort(
 	dprintf("%p\n", PortHandle );
 
 	r = port_from_handle( PortHandle, port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("does nothing\n");
@@ -1328,7 +1328,7 @@ NTSTATUS NTAPI NtQueryInformationPort(
 	dprintf("%p\n", PortHandle );
 
 	r = port_from_handle( PortHandle, port );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	switch (InformationClass)

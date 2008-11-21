@@ -73,6 +73,6 @@ void init_random()
 	object_t *obj = 0;
 	NTSTATUS r;
 	r = factory.create_kernel( obj, rand );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("failed to create random device\n");
 }

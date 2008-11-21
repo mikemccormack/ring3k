@@ -286,7 +286,7 @@ void debugger_backtrace(PCONTEXT ctx)
 		}
 
 		r = copy_from_user( &x[0], (void*) frame, sizeof x );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 		{
 			fprintf(stderr, "<invalid address>\n");
 			break;
@@ -312,7 +312,7 @@ int ud_input_hook(struct ud* ud_obj)
 	ud_info *info = (ud_info*) ud_obj;
 	BYTE b = 0;
 	NTSTATUS r = copy_from_user( &b, info->src, 1 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return UD_EOI;
 	info->src++;
 	return b;

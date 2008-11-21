@@ -174,7 +174,7 @@ NTSTATUS do_nt_syscall(ULONG id, ULONG func, ULONG *uargs, ULONG retaddr)
 
 	/* call it */
 	r = copy_from_user( args, uargs, ntcall->numargs*sizeof (args[0]) );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		goto end;
 
 	trace_syscall_enter(id, ntcall, args, retaddr );

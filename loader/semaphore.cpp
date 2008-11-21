@@ -125,7 +125,7 @@ NTSTATUS NTAPI NtReleaseSemaphore(
 
 	semaphore_t *semaphore = 0;
 	r = object_from_handle( semaphore, SemaphoreHandle, SEMAPHORE_MODIFY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	ULONG prev;

@@ -352,7 +352,7 @@ NTSTATUS open_key( regkey_t **out, OBJECT_ATTRIBUTES *oa )
 	if (oa->RootDirectory)
 	{
 		r = object_from_handle( key, oa->RootDirectory, 0 );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 	else
@@ -379,7 +379,7 @@ NTSTATUS create_key( regkey_t **out, OBJECT_ATTRIBUTES *oa, bool& opened_existin
 	if (oa->RootDirectory)
 	{
 		r = object_from_handle( key, oa->RootDirectory, 0 );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 	else
@@ -459,7 +459,7 @@ NTSTATUS reg_query_value(
 		info.full.NameLength = val->name.Length;
 
 		r = copy_to_user( KeyValueInformation, &info.full, info_sz );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		if (len > KeyValueInformationLength)
@@ -467,7 +467,7 @@ NTSTATUS reg_query_value(
 
 		r = copy_to_user( (BYTE*)KeyValueInformation + info_sz,
 						  val->name.Buffer, val->name.Length );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		r = copy_to_user( (BYTE*)KeyValueInformation + info.full.DataOffset,
@@ -484,7 +484,7 @@ NTSTATUS reg_query_value(
 		info.partial.DataLength = val->size;
 
 		r = copy_to_user( KeyValueInformation, &info.partial, info_sz );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		if (len > KeyValueInformationLength)
@@ -522,12 +522,12 @@ NTSTATUS NTAPI NtCreateKey(
 	if (Disposition)
 	{
 		r = verify_for_write( Disposition, sizeof *Disposition );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
 	r = oa.copy_from_user( ObjectAttributes );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("len %08lx root %p attr %08lx %pus\n",
@@ -537,7 +537,7 @@ NTSTATUS NTAPI NtCreateKey(
 	if (Class)
 	{
 		r = cls.copy_from_user( Class );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -571,11 +571,11 @@ NTSTATUS NTAPI NtOpenKey(
 
 	// copies the unicode string before validating object attributes struct
 	r = copy_from_user( &oa, ObjectAttributes, sizeof oa );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = us.copy_from_user( oa.ObjectName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	oa.ObjectName = &us;
 
@@ -643,19 +643,19 @@ NTSTATUS NTAPI NtQueryValueKey(
 			KeyValueInformation, KeyValueInformationLength, ResultLength );
 
 	r = check_key_value_info_class( KeyValueInformationClass );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = object_from_handle( key, KeyHandle, KEY_QUERY_VALUE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = us.copy_from_user( ValueName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = verify_for_write( ResultLength, sizeof *ResultLength );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("%pus\n", &us );
@@ -687,7 +687,7 @@ NTSTATUS NTAPI NtSetValueKey(
 	dprintf("%p %p %lu %lu %p %lu\n", KeyHandle, ValueName, TitleIndex, Type, Data, DataSize );
 
 	r = object_from_handle( key, KeyHandle, KEY_SET_VALUE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = us.copy_from_user( ValueName );
@@ -730,11 +730,11 @@ NTSTATUS NTAPI NtEnumerateValueKey(
 			KeyValueInformation, KeyValueInformationLength, ResultLength );
 
 	r = object_from_handle( key, KeyHandle, KEY_QUERY_VALUE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = verify_for_write( ResultLength, sizeof *ResultLength );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	regval_iter i(key->values);
@@ -763,11 +763,11 @@ NTSTATUS NTAPI NtDeleteValueKey(
 	dprintf("%p %p\n", KeyHandle, ValueName);
 
 	r = us.copy_from_user( ValueName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = object_from_handle( key, KeyHandle, KEY_SET_VALUE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	r = delete_value( key, &us );
 
@@ -780,7 +780,7 @@ NTSTATUS NTAPI NtDeleteKey(
 	NTSTATUS r;
 	regkey_t *key = 0;
 	r = object_from_handle( key, KeyHandle, DELETE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	key->delkey();
@@ -793,7 +793,7 @@ NTSTATUS NTAPI NtFlushKey(
 {
 	regkey_t *key = 0;
 	NTSTATUS r = object_from_handle( key, KeyHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	dprintf("flush!\n");
 	return r;
@@ -880,13 +880,13 @@ NTSTATUS NTAPI NtEnumerateKey(
 {
 	regkey_t *key = 0;
 	NTSTATUS r = object_from_handle( key, KeyHandle, KEY_ENUMERATE_SUB_KEYS );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (ResultLength)
 	{
 		r = verify_for_write( ResultLength, sizeof *ResultLength );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -914,7 +914,7 @@ NTSTATUS NTAPI NtNotifyChangeKey(
 {
 	regkey_t *key = 0;
 	NTSTATUS r = object_from_handle( key, KeyHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("does nothing...\n");
@@ -951,12 +951,12 @@ NTSTATUS NTAPI NtQueryKey(
 
 	NTSTATUS r;
 	r = verify_for_write( ReturnLength, sizeof *ReturnLength );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	regkey_t *key = 0;
 	r = object_from_handle( key, KeyHandle, KEY_QUERY_VALUE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	return key->query( KeyInformationClass, KeyInformation, KeyInformationLength, ReturnLength );
@@ -991,7 +991,7 @@ NTSTATUS regkey_t::query(
 			return STATUS_INFO_LENGTH_MISMATCH;
 
 		r = copy_to_user( KeyInformation, &info, sz );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		r = copy_to_user( (BYTE*)KeyInformation + FIELD_OFFSET( KEY_BASIC_INFORMATION, Name ), keyname.Buffer, keyname.Length );
@@ -1005,7 +1005,7 @@ NTSTATUS regkey_t::query(
 			return STATUS_INFO_LENGTH_MISMATCH;
 
 		r = copy_to_user( KeyInformation, &info, sz );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		dprintf("keycls = %pus\n", &keycls);

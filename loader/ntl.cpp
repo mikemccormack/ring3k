@@ -105,13 +105,13 @@ NTSTATUS create_initial_process( thread_t **t, UNICODE_STRING& us )
 	int r;
 
 	r = open_file( file, us );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	/* load the executable and ntdll */
 	r = create_section( &section, file, 0, SEC_IMAGE, PAGE_EXECUTE_READWRITE );
 	release( file );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	/* create the initial process */
@@ -119,7 +119,7 @@ NTSTATUS create_initial_process( thread_t **t, UNICODE_STRING& us )
 	release( section );
 	section = NULL;
 
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	PPEB ppeb = (PPEB) p->peb_section->get_kernel_address();
@@ -128,7 +128,7 @@ NTSTATUS create_initial_process( thread_t **t, UNICODE_STRING& us )
 	/* map the stack */
 	pstack = NULL;
 	r = p->vm->allocate_virtual_memory( &pstack, 0, stack_size, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	/* teb initialization data */
@@ -167,11 +167,11 @@ NTSTATUS init_ntdll( void )
 	us.set( ntdll );
 
 	r = open_file( file, us );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("failed to open ntdll\n");
 
 	r = create_section( &ntdll_section, file, 0, SEC_IMAGE, PAGE_EXECUTE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("failed to map ntdll\n");
 
 	KiIntSystemCall = get_proc_address( ntdll_section, "KiIntSystemCall" );
@@ -321,7 +321,7 @@ int main(int argc, char **argv)
 	us.copy( argv[n] );
 
 	r = create_initial_process( &initial_thread, us );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("create_initial_process() failed (%08x)\n", r);
 
 	// run the main loop

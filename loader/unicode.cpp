@@ -77,7 +77,7 @@ void unicode_string_t::set( PCWSTR str )
 NTSTATUS unicode_string_t::copy_from_user(PUNICODE_STRING ptr)
 {
 	NTSTATUS r = ::copy_from_user( static_cast<UNICODE_STRING*>(this), ptr, sizeof (UNICODE_STRING) );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	return copy_wstr_from_user();
 }
@@ -95,7 +95,7 @@ NTSTATUS unicode_string_t::copy_wstr_from_user()
 		if (!buf)
 			return STATUS_NO_MEMORY;
 		NTSTATUS r = ::copy_from_user( buf, Buffer, Length );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 		{
 			delete[] buf;
 			buf = 0;
@@ -295,7 +295,7 @@ NTSTATUS object_attributes_t::copy_from_user( POBJECT_ATTRIBUTES oa )
 	NTSTATUS r;
 
 	r = ::copy_from_user( static_cast<OBJECT_ATTRIBUTES*>( this ), oa, sizeof *oa );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (Length != sizeof (OBJECT_ATTRIBUTES))
@@ -306,7 +306,7 @@ NTSTATUS object_attributes_t::copy_from_user( POBJECT_ATTRIBUTES oa )
 		r = us.copy_from_user( ObjectName );
 		if (r == STATUS_INVALID_PARAMETER)
 			r = STATUS_OBJECT_NAME_INVALID;
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		ObjectName = &us;
 	}

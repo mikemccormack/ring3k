@@ -137,7 +137,7 @@ object_t *create_directory_object( PCWSTR name )
 	oa.Attributes = OBJ_CASE_INSENSITIVE;
 	oa.ObjectName = &us;
 	NTSTATUS r = name_object( obj, &oa );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		release( obj );
 		obj = 0;
@@ -160,7 +160,7 @@ NTSTATUS open_root( object_t*& obj, open_info_t& info )
 			return STATUS_OBJECT_PATH_SYNTAX_BAD;
 
 		r = object_from_handle( dir, info.root, DIRECTORY_QUERY );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 	else
@@ -289,7 +289,7 @@ NTSTATUS name_object_t::on_open( object_dir_t *dir, object_t*& obj, open_info_t&
 
 	NTSTATUS r;
 	r = obj->name.copy( &info.path );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dir->append( obj );
@@ -329,7 +329,7 @@ NTSTATUS get_named_object( object_t **out, const OBJECT_ATTRIBUTES *oa )
 		return STATUS_OBJECT_PATH_SYNTAX_BAD;
 
 	r = find_object_by_name( &obj, oa );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	*out = obj;
@@ -380,12 +380,12 @@ NTSTATUS NTAPI NtQueryDirectoryObject(
 
 	ULONG ofs = 0;
 	NTSTATUS r = copy_from_user( &ofs, Offset, sizeof ofs );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	object_dir_t* dir = 0;
 	r = object_from_handle( dir, DirectoryHandle, DIRECTORY_QUERY );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("fixme\n");

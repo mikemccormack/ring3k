@@ -346,27 +346,27 @@ NTSTATUS NTAPI NtRemoveIoCompletion(
 
 	completion_port_impl_t *port = 0;
 	r = object_from_handle( port, IoCompletionHandle, IO_COMPLETION_MODIFY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (IoCompletionKey)
 	{
 		r = verify_for_write( IoCompletionKey, sizeof *IoCompletionKey );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
 	if (IoCompletionValue)
 	{
 		r = verify_for_write( IoCompletionValue, sizeof *IoCompletionValue );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
 	if (IoStatusBlock)
 	{
 		r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -375,7 +375,7 @@ NTSTATUS NTAPI NtRemoveIoCompletion(
 	if (TimeOut)
 	{
 		r = copy_from_user( &t, TimeOut, sizeof t );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		TimeOut = &t;
 	}
@@ -413,7 +413,7 @@ NTSTATUS NTAPI NtSetIoCompletion(
 
 	completion_port_impl_t *port = 0;
 	r = object_from_handle( port, IoCompletionHandle, IO_COMPLETION_MODIFY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	port->set( IoCompletionKey, IoCompletionValue, Status, Information );

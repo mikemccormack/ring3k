@@ -379,18 +379,18 @@ NTSTATUS address_space_impl::allocate_virtual_memory( BYTE **start, int zero_bit
 	NTSTATUS r;
 
 	r = check_params( *start, zero_bits, length, state, prot );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (!*start)
 	{
 		r = find_free_area( zero_bits, length, state&MEM_TOP_DOWN, *start );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			 return r;
 	}
 
 	r = get_mem_region( *start, length, state );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	mblock *mb = xlate_entry( *start );
@@ -412,18 +412,18 @@ NTSTATUS address_space_impl::map_fd( BYTE **start, int zero_bits, size_t length,
 	NTSTATUS r;
 
 	r = check_params( *start, zero_bits, length, state, prot );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (!*start)
 	{
 		r = find_free_area( zero_bits, length, state&MEM_TOP_DOWN, *start );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			 return r;
 	}
 
 	r = get_mem_region( *start, length, state );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	mblock *mb = xlate_entry( *start );
@@ -641,7 +641,7 @@ NTSTATUS address_space_impl::copy_from_user( void *dest, const void *src, size_t
 		n = len;
 		x = (BYTE*) src;
 		r = get_kernel_address( &x, &n );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 		memcpy( dest, x, n );
 		assert( len >= n );
@@ -666,7 +666,7 @@ NTSTATUS address_space_impl::copy_to_user( void *dest, const void *src, size_t l
 		n = len;
 		x = (BYTE*)dest;
 		r = get_kernel_address( &x, &n );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 		//dprintf("%p %p %u\n", x, src, n);
 		memcpy( x, src, n );
@@ -693,7 +693,7 @@ NTSTATUS address_space_impl::verify_for_write( void *dest, size_t len )
 		n = len;
 		x = (BYTE*) dest;
 		r = get_kernel_address( &x, &n );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 		len -= n;
 		dest = (BYTE*)dest + n;
@@ -752,7 +752,7 @@ NTSTATUS NTAPI NtAllocateVirtualMemory(
 		return STATUS_INVALID_PARAMETER_3;
 
 	r = process_from_handle( ProcessHandle, &process );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	/* round address and size */
@@ -768,7 +768,7 @@ NTSTATUS NTAPI NtAllocateVirtualMemory(
 
 	dprintf("returns  %p %08lx  %08lx\n", addr, size, r);
 
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_to_user( AllocationSize, &size, sizeof (ULONG) );
@@ -810,7 +810,7 @@ NTSTATUS NTAPI NtQueryVirtualMemory(
 
 	process_t *p = 0;
 	r = process_from_handle( ProcessHandle, &p );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = p->vm->query( (BYTE*) BaseAddress, &info );
@@ -845,15 +845,15 @@ NTSTATUS NTAPI NtProtectVirtualMemory(
 			NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
 
 	r = process_from_handle( ProcessHandle, &process );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_from_user( &addr, BaseAddress, sizeof addr );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_from_user( &size, NumberOfBytesToProtect, sizeof size );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("%p %08lx\n", addr, size );
@@ -876,7 +876,7 @@ NTSTATUS NTAPI NtWriteVirtualMemory(
 	dprintf("%p %p %p %08lx %p\n", ProcessHandle, BaseAddress, Buffer, NumberOfBytesToWrite, NumberOfBytesWritten );
 
 	r = process_from_handle( ProcessHandle, &p );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	while (NumberOfBytesToWrite)
@@ -887,11 +887,11 @@ NTSTATUS NTAPI NtWriteVirtualMemory(
 		dest = (BYTE*)BaseAddress;
 
 		r = current->process->vm->get_kernel_address( &src, &len );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		r = p->vm->get_kernel_address( &dest, &len );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		dprintf("%p <- %p %u\n", dest, src, (unsigned int) len);
@@ -936,7 +936,7 @@ NTSTATUS NTAPI NtFreeVirtualMemory(
 	}
 
 	r = process_from_handle( ProcessHandle, &process );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_from_user( &size, RegionSize, sizeof (ULONG) );

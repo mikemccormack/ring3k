@@ -74,7 +74,7 @@ void *init_user_shared_memory()
 
 		sz.QuadPart = 0x10000;
 		r = create_section( &user_shared_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return 0;
 
 		user_shared_mem = (BYTE*) user_shared_section->get_kernel_address();
@@ -113,7 +113,7 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 
 	process_t *proc = 0;
 	r = process_from_handle( Process, &proc );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("%p %p %lu\n", Process, Buffer, BufferSize);
@@ -124,7 +124,7 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	}
 
 	r = copy_from_user( &info, Buffer, BufferSize );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
 	if (info.winxp.Version != version)
@@ -140,7 +140,7 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	BYTE *p = 0;
 	r = user_shared_section->mapit( proc->vm, p, 0,
 					MEM_COMMIT, PAGE_READONLY );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
 	if (0) trace_memory( proc->vm, p, ntusershm_trace );
@@ -153,7 +153,7 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	dprintf("user shared at %p\n", p);
 
 	r = copy_to_user( Buffer, &info, BufferSize );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
 	return STATUS_SUCCESS;
@@ -384,7 +384,7 @@ ATOM NTAPI NtUserRegisterClassExWOW(PNTWNDCLASSEX ClassInfo, PUNICODE_STRING Cla
 
 	NTSTATUS r;
 	r = copy_from_user( &clsinfo, ClassInfo, sizeof clsinfo );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	if (clsinfo.Size != sizeof clsinfo)
@@ -392,7 +392,7 @@ ATOM NTAPI NtUserRegisterClassExWOW(PNTWNDCLASSEX ClassInfo, PUNICODE_STRING Cla
 
 	unicode_string_t us;
 	r = us.copy_from_user( ClassName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	dprintf("Name  = %pus\n", &us);
@@ -433,12 +433,12 @@ HANDLE NTAPI NtUserCreateWindowStation(
 
 	NTSTATUS r;
 	r = copy_from_user( &oa, WindowStationName, sizeof oa );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	unicode_string_t us;
 	r = us.copy_from_user( oa.ObjectName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	dprintf("name = %pus\n", &us );
@@ -459,7 +459,7 @@ HANDLE NTAPI NtUserCreateDesktop(
 	object_attributes_t oa;
 	NTSTATUS r;
 	r = oa.copy_from_user( DesktopName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	dprintf("name = %pus\n", oa.ObjectName );
@@ -535,7 +535,7 @@ ULONG NTAPI NtUserRegisterWindowMessage(PUNICODE_STRING Message)
 	unicode_string_t us;
 
 	NTSTATUS r = us.copy_from_user( Message );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	dprintf("message = %pus -> %04lx\n", &us, message_no);
@@ -561,7 +561,7 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 {
 	USER32_UNICODE_STRING str;
 	NTSTATUS r = ::copy_from_user( &str, String, sizeof str );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	Length = str.Length;
 	MaximumLength = str.MaximumLength;
@@ -591,14 +591,14 @@ HANDLE NTAPI NtUserCreateWindowEx(
 
 	user32_unicode_string_t window_name;
 	r = window_name.copy_from_user( WindowName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	dprintf("WindowName = %pus\n", &window_name );
 
 	user32_unicode_string_t class_name;
 	r = class_name.copy_from_user( ClassName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	dprintf("ClassName = %pus\n", &class_name );
@@ -621,7 +621,7 @@ LONG NTAPI NtUserGetClassInfo(
 {
 	unicode_string_t class_name;
 	NTSTATUS r = class_name.copy_from_user( ClassName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	dprintf("%pus\n", &class_name );
 

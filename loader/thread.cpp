@@ -273,7 +273,7 @@ NTSTATUS thread_impl_t::kernel_debugger_output_string( struct kernel_debug_strin
 	NTSTATUS r;
 
 	r = copy_from_user( &header, hdr, sizeof header );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("debug string output header invalid\n");
 		return r;
@@ -443,7 +443,7 @@ void thread_impl_t::start_exception_handler(exception_stack_frame& info)
 	ctx.Esp = (LONG) stack;
 
 	NTSTATUS r = copy_to_user( stack, &info, sizeof info );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("%04lx: invalid stack handling exception at %08lx\n", id, ctx.Eip);
 		terminate(r);
@@ -521,7 +521,7 @@ NTSTATUS thread_impl_t::do_user_callback( ULONG index, ULONG &length, PVOID &buf
 
 	ULONG new_esp = ctx.Esp - sizeof frame;
 	NTSTATUS r = copy_to_user( (void*) new_esp, &frame, sizeof frame );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("%04lx: invalid stack handling exception at %08lx\n", id, ctx.Eip);
 		terminate(r);
@@ -604,7 +604,7 @@ BOOLEAN thread_impl_t::deliver_apc(NTSTATUS thread_return)
 	// push current context ... for NtContinue
 	new_esp -= sizeof ctx;
 	r = copy_to_user( (void*) new_esp, &ctx, sizeof ctx );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		goto end;
 
 	// setup APC
@@ -616,7 +616,7 @@ BOOLEAN thread_impl_t::deliver_apc(NTSTATUS thread_return)
 
 	new_esp -= sizeof apc_stack;
 	r = copy_to_user( (void*) new_esp, apc_stack, sizeof apc_stack );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		goto end;
 
 	void *pKiUserApcDispatcher;
@@ -629,7 +629,7 @@ BOOLEAN thread_impl_t::deliver_apc(NTSTATUS thread_return)
 	context_changed = 1;
 
 end:
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		terminate( r );
 	delete apc;
 	return TRUE;
@@ -806,7 +806,7 @@ void thread_impl_t::handle_fault()
 
 	memset( inst, 0, sizeof inst );
 	r = copy_from_user( inst, (void*) ctx.Eip, 2 );
-	if (r != STATUS_SUCCESS ||
+	if (r < STATUS_SUCCESS ||
 		inst[0] != 0xcd ||
 		!software_interrupt( inst[1] ))
 	{
@@ -932,7 +932,7 @@ NTSTATUS NTAPI NtResumeThread(
 	dprintf("%p %p\n", ThreadHandle, PreviousSuspendCount );
 
 	r = object_from_handle( thread, ThreadHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = thread->resume( &count );
@@ -1098,7 +1098,7 @@ NTSTATUS thread_impl_t::wait_on_handles(
 		dprintf("handle[%ld] = %08lx\n", i, (ULONG) handles[i]);
 		object_t *any = 0;
 		r = object_from_handle( any, handles[i], SYNCHRONIZE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 		{
 			end_wait();
 			return r;
@@ -1112,7 +1112,7 @@ NTSTATUS thread_impl_t::wait_on_handles(
 		}
 
 		r = wait_on( obj );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 		{
 			end_wait();
 			return r;
@@ -1177,7 +1177,7 @@ NTSTATUS NTAPI NtWaitForSingleObject(
 
 	object_t *any = 0;
 	r = object_from_handle( any, Handle, SYNCHRONIZE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	sync_object_t *obj = dynamic_cast<sync_object_t*>( any );
@@ -1188,7 +1188,7 @@ NTSTATUS NTAPI NtWaitForSingleObject(
 	if (Timeout)
 	{
 		r = copy_from_user( &time, Timeout, sizeof *Timeout );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		Timeout = &time;
 	}
@@ -1216,7 +1216,7 @@ NTSTATUS NTAPI NtWaitForMultipleObjects(
 	if (Timeout)
 	{
 		r = copy_from_user( &t, Timeout, sizeof t );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		Timeout = &t;
 	}
@@ -1224,7 +1224,7 @@ NTSTATUS NTAPI NtWaitForMultipleObjects(
 	// copy the array of handles
 	HANDLE hcopy[MAXIMUM_WAIT_OBJECTS];
 	r = copy_from_user( hcopy, Handles, HandleCount * sizeof (HANDLE) );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	thread_impl_t *thread = dynamic_cast<thread_impl_t*>( current );
@@ -1238,7 +1238,7 @@ NTSTATUS NTAPI NtDelayExecution( BOOLEAN Alertable, PLARGE_INTEGER Interval )
 	NTSTATUS r;
 
 	r = copy_from_user( &timeout, Interval, sizeof timeout );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("timeout = %llx\n", timeout.QuadPart);
@@ -1271,7 +1271,7 @@ NTSTATUS create_thread( thread_t **pthread, process_t *p, PCLIENT_ID id, CONTEXT
 	if (!t)
 		return STATUS_INSUFFICIENT_RESOURCES;
 	NTSTATUS r = t->create( ctx, init_teb, suspended );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("releasing partially built thread\n");
 		release( t );
@@ -1310,11 +1310,11 @@ NTSTATUS thread_impl_t::create( CONTEXT *ctx, INITIAL_TEB *init_teb, BOOLEAN sus
 	LARGE_INTEGER sz;
 	sz.QuadPart = PAGE_SIZE;
 	r = create_section( &teb_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = teb_section->mapit( process->vm, addr, 0, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	teb = (PTEB) teb_section->get_kernel_address();
@@ -1367,7 +1367,7 @@ NTSTATUS thread_impl_t::create( CONTEXT *ctx, INITIAL_TEB *init_teb, BOOLEAN sus
 	init_stack.ret  = (void*) 0xf00baa;
 
 	r = process->vm->copy_to_user( stack, &init_stack, sizeof init_stack );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		dprintf("failed to copy initial stack data\n");
 
 	if (!suspended)
@@ -1399,15 +1399,15 @@ NTSTATUS NTAPI NtCreateThread(
 			Process, ClientId, Context, InitialTeb, CreateSuspended);
 
 	r = copy_from_user( &ctx, Context, sizeof ctx );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_from_user( &init_teb, InitialTeb, sizeof init_teb );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = process_from_handle( Process, &p );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	memset( &id, 0, sizeof id );
@@ -1435,7 +1435,7 @@ NTSTATUS NTAPI NtContinue(
 
 	CONTEXT c;
 	r = copy_from_user( &c, Context, sizeof c );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	c.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
@@ -1469,7 +1469,7 @@ NTSTATUS NTAPI NtTerminateThread(
 	else
 	{
 		r = object_from_handle( t, ThreadHandle, 0 );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -1529,13 +1529,13 @@ NTSTATUS NTAPI NtQueryInformationThread(
 	memset( &info, 0, sizeof info );
 
 	r = object_from_handle( t, ThreadHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (ReturnLength)
 	{
 		r = verify_for_write( ReturnLength, sizeof *ReturnLength );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -1571,7 +1571,7 @@ NTSTATUS NTAPI NtAlertThread(
 	dprintf("%p\n", ThreadHandle);
 
 	r = object_from_handle( t, ThreadHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	return t->alert();
@@ -1633,7 +1633,7 @@ NTSTATUS NTAPI NtSetInformationThread(
 
 	thread_impl_t *t = 0;
 	NTSTATUS r = object_from_handle( t, ThreadHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	switch (ThreadInformationClass)
@@ -1648,11 +1648,11 @@ NTSTATUS NTAPI NtSetInformationThread(
 		if (ThreadInformationLength != sizeof TokenHandle)
 			return STATUS_INFO_LENGTH_MISMATCH;
 		NTSTATUS r = copy_from_user( &TokenHandle, ThreadInformation, sizeof TokenHandle );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		token_t *token = 0;
 		r = object_from_handle(token, TokenHandle, 0);
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		t->set_token( token );
 		return STATUS_SUCCESS;
@@ -1661,7 +1661,7 @@ NTSTATUS NTAPI NtSetInformationThread(
 		{
 		ULONG index = 0;
 		NTSTATUS r = copy_from_user( &index, ThreadInformation, sizeof index );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		return t->zero_tls_cells( index );
 		}
@@ -1690,7 +1690,7 @@ NTSTATUS NTAPI NtQueueApcThread(
 
 	thread_t *t = 0;
 	NTSTATUS r = object_from_handle( t, ThreadHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	return t->queue_apc_thread(ApcRoutine, Arg1, Arg2, Arg3);
@@ -1704,11 +1704,11 @@ NTSTATUS NTAPI NtRaiseException( PEXCEPTION_RECORD ExceptionRecord, PCONTEXT Con
 	dprintf("%p %p %d\n", ExceptionRecord, Context, SearchFrames);
 
 	r = copy_from_user( &info.rec, ExceptionRecord, sizeof info.rec );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_from_user( &info.ctx, Context, sizeof info.ctx );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	// FIXME: perhaps we should blow away everything pushed on after the current frame
@@ -1763,12 +1763,12 @@ NTSTATUS NTAPI NtGetContextThread(
 
 	thread_t *t = 0;
 	NTSTATUS r = object_from_handle( t, ThreadHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	CONTEXT c;
 	r = copy_from_user( &c, Context, sizeof c );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	t->get_context( c );
@@ -1785,12 +1785,12 @@ NTSTATUS NTAPI NtSetContextThread(
 
 	thread_impl_t *t = 0;
 	NTSTATUS r = object_from_handle( t, ThreadHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	CONTEXT c;
 	r = copy_from_user( &c, Context, sizeof c );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	t->set_context( c );
@@ -1831,17 +1831,17 @@ NTSTATUS NTAPI NtImpersonateThread(
 
 	thread_t *t = 0;
 	NTSTATUS r = object_from_handle( t, ThreadHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	thread_t *target = 0;
 	r = object_from_handle( target, TargetThreadHandle, THREAD_DIRECT_IMPERSONATION );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	SECURITY_QUALITY_OF_SERVICE qos;
 	r = copy_from_user( &qos, SecurityQoS, sizeof qos );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	return STATUS_SUCCESS;

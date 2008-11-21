@@ -107,7 +107,7 @@ NTSTATUS win32k_process_init(process_t *process)
 		LARGE_INTEGER sz;
 		sz.QuadPart = GDI_SHARED_HANDLE_TABLE_SIZE;
 		r = create_section( &gdi_ht_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		gdi_handle_table = (BYTE*) gdi_ht_section->get_kernel_address();
@@ -121,7 +121,7 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	r = gdi_ht_section->mapit( current->process->vm, p, 0,
 				   MEM_COMMIT, PAGE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("r = %08lx\n", r);
 		assert(0);
@@ -145,7 +145,7 @@ NTSTATUS win32k_thread_init(thread_t *thread)
 	if (!thread->process->win32k_info)
 	{
 		r = win32k_process_init( thread->process );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -177,7 +177,7 @@ BOOLEAN NTAPI NtGdiAddFontResourceW(
 	if (FilenameLength > sizeof buf)
 		return FALSE;
 	NTSTATUS r = copy_from_user( buf, Filename, FilenameLength );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return FALSE;
 	dprintf("filename = %pws\n", buf);
 	return TRUE;
@@ -246,7 +246,7 @@ HGDIOBJ alloc_dc()
 		LARGE_INTEGER sz;
 		sz.QuadPart = 0x10000;
 		r = create_section( &dc_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return FALSE;
 
 		dc_shared_mem = (BYTE*) dc_section->get_kernel_address();
@@ -255,7 +255,7 @@ HGDIOBJ alloc_dc()
 	// FIXME: there are be many DCs per shared section
 	BYTE *p = 0;
 	r = dc_section->mapit( current->process->vm, p, 0, MEM_COMMIT, PAGE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return FALSE;
 
 	HGDIOBJ dc = alloc_gdi_object( FALSE, GDI_OBJECT_DC, (BYTE*)p );
@@ -481,7 +481,7 @@ ULONG NTAPI NtGdiExtGetObjectW(HGDIOBJ Object, ULONG Size, PVOID Buffer)
 		return 0;
 
 	NTSTATUS r = copy_to_user( Buffer, &info, len );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	return len;
@@ -584,7 +584,7 @@ HANDLE NTAPI NtGdiEnumFontOpen(
 {
 	ULONG len = sizeof (font_enum_entry)*2;
 	NTSTATUS r = copy_to_user( DataLength, &len, sizeof len );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return 0;
 
 	return alloc_gdi_object(FALSE, 0x3f, 0);
@@ -607,11 +607,11 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(
 	fill_terminal( &fee[1] );
 
 	NTSTATUS r = copy_to_user( Buffer, &fee, len );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return FALSE;
 
 	r = copy_to_user( ReturnLength, &len, sizeof len );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return FALSE;
 
 	return TRUE;
@@ -633,7 +633,7 @@ BOOLEAN NTAPI NtGdiGetTextMetricsW(HANDLE DeviceContext, PVOID Buffer, ULONG Len
 		return FALSE;
 
 	r = copy_to_user( Buffer, &fee.ntme, sizeof (TEXTMETRICW) );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return FALSE;
 
 	return TRUE;

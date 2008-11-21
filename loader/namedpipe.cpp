@@ -446,7 +446,7 @@ NTSTATUS pipe_server_t::read( PVOID buffer, ULONG length, ULONG *read )
 	{
 		len = min( length, msg->Length );
 		NTSTATUS r = copy_to_user( buffer, msg->data_ptr(), len );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		received_messages.unlink( msg );
 		delete msg;
@@ -461,7 +461,7 @@ NTSTATUS pipe_server_t::write( PVOID buffer, ULONG length, ULONG *written )
 
 	NTSTATUS r;
 	r = copy_from_user( msg->data_ptr(), buffer, length );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		delete msg;
 		return r;
@@ -595,7 +595,7 @@ NTSTATUS pipe_client_t::read( PVOID buffer, ULONG length, ULONG *read )
 	{
 		len = min( length, msg->Length );
 		NTSTATUS r = copy_to_user( buffer, msg->data_ptr(), len );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		server->sent_messages.unlink( msg );
 		delete msg;
@@ -613,7 +613,7 @@ NTSTATUS pipe_client_t::write( PVOID buffer, ULONG length, ULONG *written )
 
 	NTSTATUS r;
 	r = copy_from_user( msg->data_ptr(), buffer, length );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		delete msg;
 		return r;
@@ -654,7 +654,7 @@ NTSTATUS pipe_factory::on_open( object_dir_t* dir, object_t*& obj, open_info_t& 
 			return STATUS_NO_MEMORY;
 
 		r = container->name.copy( &info.path );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		dir->append( container );

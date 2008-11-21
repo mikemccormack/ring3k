@@ -71,7 +71,7 @@ NTSTATUS NTAPI NtRaiseHardError(
 		void *arg;
 
 		r = copy_from_user( &arg, &Arguments[i], sizeof (PUNICODE_STRING) );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 
 		if (StringArgumentsMask & (1<<i))
@@ -79,7 +79,7 @@ NTSTATUS NTAPI NtRaiseHardError(
 			unicode_string_t us;
 
 			r = us.copy_from_user( (UNICODE_STRING*) arg );
-			if (r != STATUS_SUCCESS)
+			if (r < STATUS_SUCCESS)
 				break;
 
 			dprintf("arg[%ld]: %pus\n", i, &us);
@@ -127,7 +127,7 @@ NTSTATUS NTAPI NtQuerySystemInformation(
 	if (ReturnLength)
 	{
 		r = copy_to_user( ReturnLength, &len, sizeof len );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -228,7 +228,7 @@ NTSTATUS NTAPI NtDisplayString( PUNICODE_STRING String )
 	NTSTATUS r;
 
 	r = us.copy_from_user( String );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("%pus\n", &us );
@@ -246,17 +246,17 @@ NTSTATUS NTAPI NtCreatePagingFile(
 	NTSTATUS r;
 
 	r = us.copy_from_user( FileName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	ULARGE_INTEGER init_sz, max_sz;
 
 	r = copy_from_user( &init_sz, InitialSize, sizeof init_sz );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = copy_from_user( &max_sz, MaximumSize, sizeof max_sz );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("unimplemented - %pus %llu %llu %08lx\n",
@@ -296,7 +296,7 @@ NTSTATUS NTAPI NtQueryPerformanceCounter(
 	NTSTATUS r;
 	freq.QuadPart = 1000LL;
 	r = copy_to_user( PerformanceCount, &now, sizeof now );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	r = copy_to_user( PerformanceFrequency, &freq, sizeof freq );
 	return r;

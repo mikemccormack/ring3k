@@ -352,13 +352,13 @@ NTSTATUS NtCancelTimer(
 
 	nttimer_t* timer = 0;
 	r = object_from_handle( timer, TimerHandle, TIMER_MODIFY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (PreviousState)
 	{
 		r = verify_for_write( PreviousState, sizeof *PreviousState );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -383,20 +383,20 @@ NTSTATUS NtSetTimer(
 	LARGE_INTEGER due;
 
 	NTSTATUS r = copy_from_user( &due, DueTime, sizeof due );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	dprintf("due = %llx\n", due.QuadPart);
 
 	nttimer_t* timer = 0;
 	r = object_from_handle( timer, TimerHandle, TIMER_MODIFY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (PreviousState)
 	{
 		r = verify_for_write( PreviousState, sizeof *PreviousState );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -419,7 +419,7 @@ NTSTATUS NTAPI NtQueryTimer(
 
 	nttimer_t* timer = 0;
 	r = object_from_handle( timer, TimerHandle, TIMER_MODIFY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	union {
@@ -438,7 +438,7 @@ NTSTATUS NTAPI NtQueryTimer(
 
 	// this seems like the wrong order, but agrees with what tests show
 	r = verify_for_write( TimerInformation, sz );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (sz != TimerInformationLength)
@@ -455,7 +455,7 @@ NTSTATUS NTAPI NtQueryTimer(
 	}
 
 	r = copy_to_user( TimerInformation, &info, sz );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (ResultLength)

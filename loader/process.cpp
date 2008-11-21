@@ -69,7 +69,7 @@ NTSTATUS process_t::create_parameters(
 
 	ppb = NULL;
 	r = vm->allocate_virtual_memory( (BYTE**) &ppb, 0, size, MEM_COMMIT, PAGE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("address_space_mmap failed\n");
 
 	p = (RTL_USER_PROCESS_PARAMETERS*) buffer;
@@ -93,7 +93,7 @@ NTSTATUS process_t::create_parameters(
 	// allocate the initial environment
 	penv = NULL;
 	r = vm->allocate_virtual_memory( (BYTE**) &penv, 0, PAGE_SIZE, MEM_COMMIT, PAGE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		die("address_space_mmap failed\n");
 
 	// write the initial environment
@@ -138,10 +138,10 @@ void *map_file( address_space *vm, const char *name )
 
 		p = NULL;
 		r = vm->allocate_virtual_memory( (BYTE**) &p, 0, size, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READONLY);
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			die("allocate_virtual_memory failed\n");
 		r = vm->copy_to_user( p, data, size );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			die("copying locale data failed\n");
 	}
 
@@ -210,7 +210,7 @@ NTSTATUS get_shared_memory_block( process_t *p )
 		LARGE_INTEGER sz;
 		sz.QuadPart = 0x10000;
 		r = create_section( &shared_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		// set the nt directory
@@ -232,7 +232,7 @@ NTSTATUS get_shared_memory_block( process_t *p )
 	}
 
 	r = shared_section->mapit( p->vm, shm, 0, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READONLY );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (0) trace_memory( p->vm, shm, kshm_trace );
@@ -318,7 +318,7 @@ NTSTATUS process_alloc_user_handle(
 
 	// write the handle into our process's VM
 	r = copy_to_user( out, &handle, sizeof handle );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 	{
 		dprintf("write to %p failed\n", out);
 		p->handle_table.free_handle( handle );
@@ -431,35 +431,35 @@ NTSTATUS create_process( process_t **pprocess, object_t *section )
 
 	// FIXME: use section->mapit, get rid of mapit(section, ...)
 	r = mapit( p->vm, p->exe, p->pexe );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	r = mapit( p->vm, ntdll_section, p->pntdll );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	/* map the NT shared memory block early, so it gets the right address */
 	r = get_shared_memory_block( p );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	LARGE_INTEGER sz;
 	sz.QuadPart = PAGE_SIZE;
 	r = create_section( &p->peb_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	/* reserve the GDI shared section */
 	BYTE *gdi_shared = GDI_SHARED_HANDLE_TABLE_ADDRESS;
 	ULONG size = GDI_SHARED_HANDLE_TABLE_SIZE;
 	r = p->vm->allocate_virtual_memory( &gdi_shared, 0, size, MEM_RESERVE, PAGE_NOACCESS );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	/* allocate the PEB */
 	BYTE *peb_addr = 0;
 	r = p->peb_section->mapit( p->vm, peb_addr, 0, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	p->PebBaseAddress = (void*) peb_addr;
@@ -507,7 +507,7 @@ NTSTATUS NTAPI NtCreateProcess(
 			SectionHandle, DebugPort, ExceptionPort );
 
 	r = object_from_handle( section, SectionHandle, SECTION_MAP_EXECUTE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return STATUS_INVALID_HANDLE;
 
 	r = create_process( &p, section );
@@ -527,7 +527,7 @@ NTSTATUS open_process( object_t **process, OBJECT_ATTRIBUTES *oa )
 	NTSTATUS r;
 
 	r = get_named_object( &obj, oa );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	p = dynamic_cast<process_t*>( obj );
@@ -557,13 +557,13 @@ NTSTATUS NTAPI NtOpenProcess(
 	dprintf("%p %08lx %p %p\n", ProcessHandle, DesiredAccess, ObjectAttributes, ClientId );
 
 	r = copy_from_user( &oa, ObjectAttributes, sizeof oa );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (oa.ObjectName)
 	{
 		r = us.copy_from_user( oa.ObjectName );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		oa.ObjectName = &us;
 	}
@@ -573,7 +573,7 @@ NTSTATUS NTAPI NtOpenProcess(
 	if (ClientId)
 	{
 		r = copy_from_user( &id, ClientId, sizeof id );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -683,14 +683,14 @@ NTSTATUS NTAPI NtSetInformationProcess(
 	}
 
 	NTSTATUS r = process_from_handle( Process, &p );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (ProcessInformationLength != sz)
 		return STATUS_INFO_LENGTH_MISMATCH;
 
 	r = copy_from_user( &info, ProcessInformation, sz );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	switch (ProcessInformationClass)
@@ -699,7 +699,7 @@ NTSTATUS NTAPI NtSetInformationProcess(
 		{
 		object_t *port = 0;
 		r = object_from_handle( port, info.port_handle, 0 );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		return set_exception_port( p, port );
 		}
@@ -805,7 +805,7 @@ NTSTATUS NTAPI NtQueryInformationProcess(
 	memset( &info, 0, sizeof info );
 
 	r = process_from_handle( Process, &p );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	switch (ProcessInformationClass)
@@ -867,7 +867,7 @@ NTSTATUS NTAPI NtTerminateProcess(
 	}
 
 	r = process_from_handle( Process, &p );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	sibling_iter_t i(p->threads);

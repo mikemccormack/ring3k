@@ -82,7 +82,7 @@ NTSTATUS NTAPI NtCreateMailslotFile(
 	NTSTATUS r;
 
 	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (!ObjectAttributes)
@@ -90,7 +90,7 @@ NTSTATUS NTAPI NtCreateMailslotFile(
 
 	object_attributes_t oa;
 	r = oa.copy_from_user( ObjectAttributes );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (!oa.ObjectName)

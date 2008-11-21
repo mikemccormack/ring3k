@@ -126,17 +126,17 @@ NTSTATUS token_privileges_t::copy_from_user( PTOKEN_PRIVILEGES tp )
 	ULONG count = 0;
 
 	r = ::copy_from_user( &count, &tp->PrivilegeCount, sizeof count );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	for (ULONG i=0; i<count; i++)
 	{
 		LUID_AND_ATTRIBUTES la;
 		r = ::copy_from_user( &la, &tp->Privileges[i], sizeof la );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		r = add( la );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -153,7 +153,7 @@ NTSTATUS token_privileges_t::copy_to_user( PTOKEN_PRIVILEGES tp )
 	NTSTATUS r;
 
 	r = ::copy_to_user( &tp->PrivilegeCount, &priv_count, sizeof priv_count );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	luid_and_priv_iter_t i(priv_list);
@@ -163,7 +163,7 @@ NTSTATUS token_privileges_t::copy_to_user( PTOKEN_PRIVILEGES tp )
 		luid_and_privileges_t *priv = i;
 		LUID_AND_ATTRIBUTES* la = priv;
 		r = ::copy_to_user( &tp->Privileges[n], la, sizeof *la );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			break;
 		i.next();
 		n++;
@@ -243,7 +243,7 @@ NTSTATUS sid_t::copy_from_user( PSID psid )
 	SID sid;
 
 	r = ::copy_from_user( &sid, psid, sid_len() );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	Revision = sid.Revision;
@@ -266,7 +266,7 @@ NTSTATUS sid_t::copy_to_user( PSID psid )
 	sid.SubAuthorityCount = SubAuthorityCount;
 
 	r = ::copy_to_user( psid, &sid, sid_len() );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	PISID pisid = (PISID) psid;
@@ -315,7 +315,7 @@ NTSTATUS sid_and_attributes_t::copy_to_user( SID_AND_ATTRIBUTES* psida )
 {
 	NTSTATUS r;
 	r = copy_hdr_to_user( psida, sizeof *psida );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	return sid.copy_to_user( (PSID)(psida + 1) );
@@ -383,7 +383,7 @@ NTSTATUS token_groups_t::copy_to_user( TOKEN_GROUPS *tg )
 {
 	NTSTATUS r;
 	r = ::copy_to_user( &tg->GroupCount, &count, sizeof count );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	// Copying multiple SID_AND_ATTRIBUTES structs is a bit complex.
@@ -398,10 +398,10 @@ NTSTATUS token_groups_t::copy_to_user( TOKEN_GROUPS *tg )
 	for (ULONG i=0; i<count; i++)
 	{
 		r = sa[i].copy_hdr_to_user( &tg->Groups[i], ofs );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		r = sa[i].get_sid().copy_to_user( (PSID) ((BYTE*) tg + ofs) );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 		ofs += sa[i].get_sid().get_length();
 	}
@@ -472,7 +472,7 @@ NTSTATUS ace_t::copy_to_user( PVOID pace )
 	ace.sid_start = sizeof ace;
 
 	NTSTATUS r = ::copy_to_user( pace, &ace, sizeof ace );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	return sid.copy_to_user( (PVOID) ((PBYTE) p + sizeof ace) );
@@ -629,7 +629,7 @@ NTSTATUS privilege_set_t::copy_from_user( PPRIVILEGE_SET ps )
 	} x;
 
 	NTSTATUS r = ::copy_from_user( &x, ps, sizeof x );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	set_count( x.count );
@@ -740,12 +740,12 @@ NTSTATUS NTAPI NtOpenProcessToken(
 	dprintf("%p %08lx %p\n", Process, DesiredAccess, Token);
 
 	r = verify_for_write( Token, sizeof *Token );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	process_t *p = 0;
 	r = object_from_handle( p, Process, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	token_t *token = new token_impl_t;
@@ -769,12 +769,12 @@ NTSTATUS NTAPI NtOpenThreadToken(
 	dprintf("%p %08lx %u %p\n", Thread, DesiredAccess, OpenAsSelf, TokenHandle);
 
 	r = verify_for_write( TokenHandle, sizeof *TokenHandle );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	thread_t *t = 0;
 	r = object_from_handle( t, Thread, DesiredAccess );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	token_t *tok = t->get_token();
@@ -802,7 +802,7 @@ NTSTATUS NTAPI NtAdjustPrivilegesToken(
 	if (ReturnLength)
 	{
 		r = verify_for_write( ReturnLength, sizeof *ReturnLength );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
@@ -816,12 +816,12 @@ NTSTATUS NTAPI NtAdjustPrivilegesToken(
 
 	token_t *token = 0;
 	r = object_from_handle( token, TokenHandle, mask );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	token_privileges_t privs;
 	r = privs.copy_from_user( NewState );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	// return previous state information if required
@@ -836,7 +836,7 @@ NTSTATUS NTAPI NtAdjustPrivilegesToken(
 			return STATUS_BUFFER_TOO_SMALL;
 
 		r = prev_state.copy_to_user( PreviousState );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		r = copy_to_user( ReturnLength, &len, sizeof len );
@@ -861,7 +861,7 @@ static NTSTATUS copy_ptr_to_user( user_copy_t& item, PVOID info, ULONG infolen, 
 	// pointer followed by the data blob
 	PVOID ptr = (PVOID) ((PVOID*) info + 1);
 	NTSTATUS r = copy_to_user( info, &ptr, sizeof ptr );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 	return item.copy_to_user( ptr );
 }
@@ -882,7 +882,7 @@ NTSTATUS NTAPI NtQueryInformationToken(
 			TokenInformation, TokenInformationLength, ReturnLength );
 
 	r = object_from_handle( token, TokenHandle, TOKEN_QUERY );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	switch( TokenInformationClass )
@@ -926,7 +926,7 @@ NTSTATUS NTAPI NtQueryInformationToken(
 
 		memset( &stats, 0, sizeof stats );
 		r = copy_to_user( TokenInformation, &stats, sizeof stats );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		break;
@@ -974,7 +974,7 @@ NTSTATUS NTAPI NtDuplicateToken(
 	token_t *existing = 0;
 
 	NTSTATUS r = object_from_handle( existing, ExistingToken, TOKEN_QUERY );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	token_t *token = new token_impl_t;
@@ -1020,12 +1020,12 @@ NTSTATUS NtPrivilegeCheck(
 	token_t *token = 0;
 
 	NTSTATUS r = object_from_handle( token, TokenHandle, TOKEN_QUERY );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	privilege_set_t ps;
 	r = ps.copy_from_user( RequiredPrivileges );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	BOOLEAN ok = TRUE;

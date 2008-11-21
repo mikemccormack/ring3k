@@ -127,13 +127,13 @@ NTSTATUS NTAPI NtReleaseMutant(
 	dprintf("%p %p\n", MutantHandle, PreviousState);
 
 	r = object_from_handle( mutant, MutantHandle, MUTEX_MODIFY_STATE );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (PreviousState)
 	{
 		r = verify_for_write( PreviousState, sizeof PreviousState );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 

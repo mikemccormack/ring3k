@@ -71,7 +71,7 @@ NTSTATUS symlink_t::open( object_t *&out, open_info_t& info )
 		object_t *target_object;
 		NTSTATUS r;
 		r = open_root( target_object, target_info );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 
 		return target_object->open( out, info );
@@ -127,7 +127,7 @@ NTSTATUS NTAPI NtCreateSymbolicLinkObject(
 	NTSTATUS r;
 
 	r = target.copy_from_user( TargetName );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	symlink_factory_t factory( target );
@@ -158,24 +158,24 @@ NTSTATUS NTAPI NtQuerySymbolicLinkObject(
 	NTSTATUS r;
 
 	r = copy_from_user( &name, LinkName, sizeof name );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	// make sure we can write back the length
 	r = verify_for_write( &LinkName->Length, sizeof LinkName->Length );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	if (DataWritten)
 	{
 		r = verify_for_write( DataWritten, sizeof DataWritten );
-		if (r != STATUS_SUCCESS)
+		if (r < STATUS_SUCCESS)
 			return r;
 	}
 
 	symlink_t *symlink = 0;
 	r = object_from_handle( symlink, SymbolicLinkHandle, 0 );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	const unicode_string_t& target = symlink->get_target();
@@ -184,7 +184,7 @@ NTSTATUS NTAPI NtQuerySymbolicLinkObject(
 		return STATUS_BUFFER_TOO_SMALL;
 
 	r = copy_to_user( name.Buffer, target.Buffer, target.Length );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return r;
 
 	copy_to_user( &LinkName->Length, &target.Length, sizeof target.Length );
