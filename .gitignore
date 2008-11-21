@@ -4,7 +4,6 @@
 *.a
 *.lib
 *.dll
-configure
 config.log
 config.status
 autom4te.cache
