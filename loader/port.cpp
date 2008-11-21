@@ -304,8 +304,9 @@ listener_t::listener_t(port_t *p, thread_t *t, BOOLEAN connect, ULONG id) :
 
 listener_t::~listener_t()
 {
-	// should be unlinked by whoever restarts this thread
-	assert( !is_linked() );
+	// maybe still linked if the thread was terminated
+	if (is_linked())
+		port->queue->listeners.unlink( this );
 	release( thread );
 }
 
@@ -534,6 +535,8 @@ void port_t::listen( message_t *&msg )
 		listener_t l( this, current, TRUE, 0 );
 
 		current->wait();
+		if (current->is_terminated())
+			return;
 
 		msg = queue->find_connection_request();
 		assert(msg);
@@ -857,6 +860,8 @@ NTSTATUS NTAPI NtListenPort(
 
 	message_t *msg = 0;
 	port->listen( msg );
+	if (current->is_terminated())
+		return STATUS_THREAD_IS_TERMINATING;
 	r = copy_msg_to_user( ConnectionRequest, msg );
 	delete msg;
 

@@ -29,6 +29,7 @@
 #define WIN32_NO_STATUS
 #include "windef.h"
 #include "winternl.h"
+#include "winioctl.h"
 
 #include "debug.h"
 #include "mem.h"
@@ -45,6 +46,8 @@ class kernel_thread_t :
 	public thread_t
 {
 public:
+	bool terminated;
+public:
 	kernel_thread_t( process_t *p );
 	virtual ~kernel_thread_t();
 	virtual void get_context( CONTEXT& c );
@@ -60,12 +63,13 @@ public:
 	virtual NTSTATUS copy_to_user( void *dest, const void *src, size_t count );
 	virtual NTSTATUS copy_from_user( void *dest, const void *src, size_t count );
 	virtual NTSTATUS verify_for_write( void *dest, size_t count );
-	virtual int run();
+	virtual int run() = 0;
 	virtual BOOLEAN is_signalled( void );
 };
 
 kernel_thread_t::kernel_thread_t( process_t *p ) :
-	thread_t( p )
+	thread_t( p ),
+	terminated( false )
 {
 }
 
@@ -75,7 +79,7 @@ kernel_thread_t::~kernel_thread_t()
 
 BOOLEAN kernel_thread_t::is_signalled()
 {
-	return FALSE;
+	return terminated;
 }
 
 void kernel_thread_t::get_context( CONTEXT& c )
@@ -97,13 +101,16 @@ NTSTATUS kernel_thread_t::do_user_callback( ULONG index, ULONG& length, PVOID& b
 
 NTSTATUS kernel_thread_t::terminate( NTSTATUS Status )
 {
-	assert(0);
+	if (terminated)
+		return 0;
+	terminated = true;
+	start();
 	return 0;
 }
 
 bool kernel_thread_t::is_terminated()
 {
-	return 0;
+	return terminated;
 }
 
 void kernel_thread_t::register_terminate_port( object_t *port )
@@ -157,7 +164,19 @@ NTSTATUS kernel_thread_t::verify_for_write( void *dest, size_t count )
 	return STATUS_SUCCESS;
 }
 
-int kernel_thread_t::run()
+class security_reference_monitor_t : public kernel_thread_t
+{
+public:
+	security_reference_monitor_t( process_t *p );
+	virtual int run();
+};
+
+security_reference_monitor_t::security_reference_monitor_t( process_t *p ) :
+	kernel_thread_t( p )
+{
+}
+
+int security_reference_monitor_t::run()
 {
 	const int maxlen = 0x100;
 	//dprintf("starting kthread %p p = %p\n", this, process);
@@ -166,31 +185,31 @@ int kernel_thread_t::run()
 	object_attributes_t rm_oa( (PCWSTR) L"\\SeRmCommandPort" );
 	HANDLE port = 0, client = 0;
 	NTSTATUS r = NtCreatePort( &port, &rm_oa, 0x100, 0x100, 0 );
+	if (r == STATUS_THREAD_IS_TERMINATING)
+		return 0;
 	if (r != STATUS_SUCCESS)
-	{
 		die("NtCreatePort(SeRmCommandPort) failed r = %08lx\n", r);
-	}
 
 	BYTE buf[maxlen];
 	LPC_MESSAGE *req = (LPC_MESSAGE*) buf;
 	r = NtListenPort( port, req );
+	if (r == STATUS_THREAD_IS_TERMINATING)
+		return 0;
 	if (r != STATUS_SUCCESS)
-	{
 		die("NtListenPort(SeRmCommandPort) failed r = %08lx\n", r);
-	}
 
 	HANDLE conn_port = 0;
 	r = NtAcceptConnectPort( &conn_port, 0, req, TRUE, NULL, NULL );
+	if (r == STATUS_THREAD_IS_TERMINATING)
+		return 0;
 	if (r != STATUS_SUCCESS)
-	{
 		die("NtAcceptConnectPort(SeRmCommandPort) failed r = %08lx\n", r);
-	}
 
 	r = NtCompleteConnectPort( conn_port );
+	if (r == STATUS_THREAD_IS_TERMINATING)
+		return 0;
 	if (r != STATUS_SUCCESS)
-	{
 		die("NtCompleteConnectPort(SeRmCommandPort) failed r = %08lx\n", r);
-	}
 
 	unicode_string_t lsa;
 	lsa.copy( (PCWSTR) L"\\SeLsaCommandPort" );
@@ -202,54 +221,114 @@ int kernel_thread_t::run()
 	qos.EffectiveOnly = TRUE;
 
 	r = NtConnectPort( &client, &lsa, &qos, NULL, NULL, NULL, NULL, NULL );
+	if (r == STATUS_THREAD_IS_TERMINATING)
+		return 0;
 	if (r != STATUS_SUCCESS)
-	{
 		die("NtConnectPort(SeLsaCommandPort) failed r = %08lx\n", r);
-	}
 
-	while (1)
+	while (!terminated)
 	{
 		ULONG client_handle;
 
 		r = NtReplyWaitReceivePort( port, &client_handle, 0, req );
+		if (r == STATUS_THREAD_IS_TERMINATING)
+			return 0;
+
 		if (r != STATUS_SUCCESS)
-		{
 			die("NtReplyWaitReceivePort(SeRmCommandPort) failed r = %08lx\n", r);
-		}
 
 		dprintf("got message %ld\n", req->MessageId );
 
 		// send something back...
 		r = NtReplyPort( port, req );
+		if (r == STATUS_THREAD_IS_TERMINATING)
+			return 0;
+
 		if (r != STATUS_SUCCESS)
-		{
 			die("NtReplyPort(SeRmCommandPort) failed r = %08lx\n", r);
-		}
 	}
 
 	dprintf("done\n");
+	return 0;
+}
+
+class plug_and_play_t : public kernel_thread_t
+{
+public:
+	plug_and_play_t( process_t *p );
+	virtual int run();
+};
+
+plug_and_play_t::plug_and_play_t( process_t *p ) :
+	kernel_thread_t( p )
+{
+}
+
+int plug_and_play_t::run()
+{
+	OBJECT_ATTRIBUTES oa;
+	IO_STATUS_BLOCK iosb;
+	HANDLE pipe = 0;
+	NTSTATUS r;
+	LARGE_INTEGER timeout;
+	current = static_cast<thread_t*>( this );
+
+	unicode_string_t pipename;
+	pipename.copy( "\\Device\\NamedPipe\\ntsvcs" );
+
+	oa.Length = sizeof oa;
+	oa.RootDirectory = 0;
+	oa.ObjectName = &pipename;
+	oa.Attributes = OBJ_CASE_INSENSITIVE;
+	oa.SecurityDescriptor = 0;
+	oa.SecurityQualityOfService = 0;
+
+	timeout.QuadPart = -10000LL;
+	r = NtCreateNamedPipeFile( &pipe, GENERIC_READ|GENERIC_WRITE|SYNCHRONIZE,
+				&oa, &iosb, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN_IF, 0, TRUE,
+				TRUE, FALSE, -1, 0, 0, &timeout );
+	if (r == STATUS_THREAD_IS_TERMINATING)
+		return 0;
+	if (r != STATUS_SUCCESS)
+		dprintf("failed to create ntsvcs %08lx\n", r);
+
+	if (terminated)
+		stop();
+
+	r = NtFsControlFile( pipe, 0, 0, 0, &iosb, FSCTL_PIPE_LISTEN, 0, 0, 0, 0 );
+	if (r == STATUS_THREAD_IS_TERMINATING)
+		return 0;
+	if (r != STATUS_SUCCESS)
+		dprintf("failed to connect ntsvcs %08lx\n", r);
 
 	stop();
 	return 0;
 }
 
-static kernel_thread_t* kernel_thread;
+static process_t *kernel_process;
+static kernel_thread_t* srm;
+static kernel_thread_t* plugnplay;
 
 void create_kthread(void)
 {
 	// process is for the handle table
-	process_t *kernel_process = new process_t;
-	kernel_thread = new kernel_thread_t( kernel_process );
+	kernel_process = new process_t;
+	srm = new security_reference_monitor_t( kernel_process );
+	plugnplay = new plug_and_play_t( kernel_process );
 	//release( kernel_process );
 
-	kernel_thread->start();
+	srm->start();
+	plugnplay->start();
 }
 
 void shutdown_kthread(void)
 {
-	// FIXME: the kernel thread is sleeping at this point
-	// resources won't be correctly freed
-	if (!kernel_thread)
-		return;
-	delete kernel_thread;
+	srm->terminate( 0 );
+	plugnplay->terminate( 0 );
+
+	// run the threads until they complete
+	while (!fiber_t::last_fiber())
+		fiber_t::yield();
+
+	delete kernel_process;
 }
