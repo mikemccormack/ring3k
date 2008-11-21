@@ -42,6 +42,8 @@
 #include "fiber.h"
 #include "platform.h"
 
+#include <valgrind/valgrind.h>
+
 
 #define NORET __attribute__((noreturn))
 
@@ -156,7 +158,10 @@ fiber_t::fiber_t( unsigned sz ) :
 		exit(1);
 	}
 
-	fiber_stack_t *frame = (fiber_stack_t*) ((char*)stack + stack_size - sizeof (fiber_stack_t));
+	char *stack_end = (char*) stack + stack_size;
+	VALGRIND_STACK_REGISTER(stack, stack_end);
+
+	fiber_stack_t *frame = (fiber_stack_t*) (stack_end - sizeof (fiber_stack_t));
 
 	frame->ebp = 0;
 	frame->esi = 0;
