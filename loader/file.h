@@ -52,6 +52,7 @@ public:
 	virtual NTSTATUS set_position( LARGE_INTEGER& ofs );
 	virtual NTSTATUS fs_control( event_t* event, IO_STATUS_BLOCK iosb, ULONG FsControlCode,
 		 PVOID InputBuffer, ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength );
+	virtual NTSTATUS set_pipe_info( FILE_PIPE_INFORMATION& pipe_info );
 };
 
 class file_t : public io_object_t {

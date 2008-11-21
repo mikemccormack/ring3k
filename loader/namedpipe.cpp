@@ -149,6 +149,7 @@ public:
 	pipe_client_t( pipe_container_t *container );
 	virtual NTSTATUS read( PVOID buffer, ULONG length, ULONG *read );
 	virtual NTSTATUS write( PVOID buffer, ULONG length, ULONG *written );
+	NTSTATUS set_pipe_info( FILE_PIPE_INFORMATION& pipe_info );
 };
 
 // server factory, used by NtCreateNamedPipeFile
@@ -620,6 +621,12 @@ NTSTATUS pipe_client_t::write( PVOID buffer, ULONG length, ULONG *written )
 
 	server->queue_message_from_client( msg );
 	*written = length;
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS pipe_client_t::set_pipe_info( FILE_PIPE_INFORMATION& pipe_info )
+{
+	dprintf("%ld %ld\n", pipe_info.ReadModeMessage, pipe_info.WaitModeBlocking);
 	return STATUS_SUCCESS;
 }
 

@@ -84,6 +84,11 @@ NTSTATUS io_object_t::fs_control( event_t* event, IO_STATUS_BLOCK iosb, ULONG Fs
 	return STATUS_NOT_IMPLEMENTED;
 }
 
+NTSTATUS io_object_t::set_pipe_info( FILE_PIPE_INFORMATION& pipe_info )
+{
+	return STATUS_OBJECT_TYPE_MISMATCH;
+}
+
 file_t::~file_t()
 {
 	close( fd );
@@ -1062,6 +1067,7 @@ NTSTATUS NTAPI NtSetInformationFile(
 		FILE_DISPOSITION_INFORMATION dispos;
 		FILE_COMPLETION_INFORMATION completion;
 		FILE_POSITION_INFORMATION position;
+		FILE_PIPE_INFORMATION pipe;
 	} info;
 
 	r = object_from_handle( file, FileHandle, 0 );
@@ -1078,6 +1084,9 @@ NTSTATUS NTAPI NtSetInformationFile(
 		break;
 	case FilePositionInformation:
 		len = sizeof info.position;
+		break;
+	case FilePipeInformation:
+		len = sizeof info.pipe;
 		break;
 	default:
 		dprintf("Unknown information class %d\n", FileInformationClass );
@@ -1103,6 +1112,9 @@ NTSTATUS NTAPI NtSetInformationFile(
 		break;
 	case FilePositionInformation:
 		r = file->set_position( info.position.CurrentByteOffset );
+		break;
+	case FilePipeInformation:
+		r = file->set_pipe_info( info.pipe );
 		break;
 	default:
 		break;
