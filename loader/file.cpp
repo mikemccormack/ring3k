@@ -1025,10 +1025,11 @@ NTSTATUS NTAPI NtDeleteFile(
 		0 > rmdir( name ))
 	{
 		// check errno
-		return STATUS_ACCESS_DENIED;
+		r = STATUS_ACCESS_DENIED;
 	}
+	delete[] name;
 
-	return STATUS_SUCCESS;
+	return r;
 }
 
 NTSTATUS NTAPI NtFlushBuffersFile(
