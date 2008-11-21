@@ -87,6 +87,8 @@ NTSTATUS unicode_string_t::copy_wstr_from_user()
 	if (buf)
 		delete[] buf;
 	buf = 0;
+	if (Length&1)
+		return STATUS_INVALID_PARAMETER;
 	if (Buffer)
 	{
 		buf = new WCHAR[ Length/2 ];
@@ -302,6 +304,8 @@ NTSTATUS object_attributes_t::copy_from_user( POBJECT_ATTRIBUTES oa )
 	if (ObjectName)
 	{
 		r = us.copy_from_user( ObjectName );
+		if (r == STATUS_INVALID_PARAMETER)
+			r = STATUS_OBJECT_NAME_INVALID;
 		if (r != STATUS_SUCCESS)
 			return r;
 		ObjectName = &us;
