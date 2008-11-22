@@ -63,16 +63,6 @@ unsigned int allocate_core_memory(unsigned int size);
 int free_core_memory( unsigned int offset, unsigned int size );
 struct address_space *create_address_space( BYTE *high );
 
-class mempages {
-public:
-	virtual ~mempages() = 0;
-	virtual ULONG get_size() = 0;
-	virtual BYTE* map_local( int prot ) = 0;
-	virtual int map_remote( address_space *vm, BYTE *address, ULONG length, int prot ) = 0;
-	virtual mempages *split(ULONG sz) = 0;
-	// unmapping can be done without knowing what is being unmapped
-};
-
 class block_tracer {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
@@ -87,7 +77,7 @@ class mblock {
 public:
 	mblock_element_t entry[1];
 
-private:
+protected:
 	// windows-ish stuff
 	PBYTE  BaseAddress;
 	DWORD  Protect;
@@ -96,7 +86,6 @@ private:
 	DWORD  Type;
 
 	// linux-ish stuff
-	mempages *pages;
 	BYTE *kernel_address;
 
 	// access tracing
@@ -104,10 +93,16 @@ private:
 	object_t *section;
 
 public:
-	mblock( BYTE *address, size_t size, mempages *pages );
-	~mblock();
-	int map_local( int prot );
-	int map_remote( address_space *vm, int prot );
+	mblock( BYTE *address, size_t size );
+	virtual ~mblock();
+	virtual int map_local( int prot ) = 0;
+	virtual int map_remote( address_space *vm, int prot ) = 0;
+
+protected:
+	virtual mblock *do_split( BYTE *address, size_t size ) = 0;
+
+public:
+	mblock *split( size_t length );
 	int local_unmap();
 	int remote_unmap( address_space *vm );
 	void commit( address_space *vm );
@@ -120,7 +115,6 @@ public:
 	NTSTATUS query( BYTE *address, MEMORY_BASIC_INFORMATION *info );
 	void dump();
 	int is_linked() { return entry[0].is_linked(); }
-	mblock *split( size_t length );
 	BYTE *get_kernel_address() { return kernel_address; };
 	BYTE *get_base_address() { return BaseAddress; };
 	ULONG get_region_size() { return RegionSize; };
@@ -135,9 +129,10 @@ public:
 	void set_prot( ULONG prot );
 };
 
-mempages* alloc_guard_pages(ULONG size);
-mempages* alloc_core_pages(ULONG size);
-mempages* alloc_fd_pages(ULONG length, int fd);
+mblock* alloc_guard_pages(BYTE* address, ULONG size);
+mblock* alloc_core_pages(BYTE* address, ULONG size);
+mblock* alloc_fd_pages(BYTE* address, ULONG size, int fd);
+
 int create_mapping_fd( int sz );
 
 class address_space_impl : public address_space {

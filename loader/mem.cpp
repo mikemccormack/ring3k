@@ -141,8 +141,7 @@ void address_space_impl::destroy()
 
 mblock* address_space_impl::alloc_guard_block(BYTE *address, ULONG size)
 {
-	mempages *pgs = alloc_guard_pages(size);
-	mblock *mb = new mblock( address, size, pgs );
+	mblock *mb = alloc_guard_pages( address, size );
 	if (!mb)
 		return NULL;
 	mb->reserve( this );
@@ -396,8 +395,7 @@ NTSTATUS address_space_impl::allocate_virtual_memory( BYTE **start, int zero_bit
 	mblock *mb = xlate_entry( *start );
 	if (!mb)
 	{
-		mempages *pgs = alloc_core_pages( length );
-		mb = new mblock( *start, length, pgs );
+		mb = alloc_core_pages( *start, length );
 		insert_block( mb );
 		//xlate_entry( start ) = mb;
 	}
@@ -437,8 +435,7 @@ NTSTATUS address_space_impl::map_fd( BYTE **start, int zero_bits, size_t length,
 	if (mb)
 		return STATUS_CONFLICTING_ADDRESSES;
 
-	mempages *pgs = alloc_fd_pages( length, fd );
-	mb = new mblock( *start, length, pgs );
+	mb = alloc_fd_pages( *start, length, fd );
 	insert_block( mb );
 	assert( mb->is_linked() );
 
