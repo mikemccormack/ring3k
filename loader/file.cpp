@@ -584,7 +584,7 @@ int stat_unicode( POBJECT_ATTRIBUTES oa, struct stat *st )
 	{
 		r = ::stat( file, st );
 		dprintf("%s -> %d\n", file, r);
-		delete file;
+		delete[] file;
 	}
 	else
 		dprintf("failed to translate nt path %pus\n", oa->ObjectName );
