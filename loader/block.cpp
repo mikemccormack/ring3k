@@ -394,13 +394,13 @@ void mblock::set_tracer( address_space *vm, block_tracer *bt )
 	remote_remap( vm, Protect, tracer != 0 );
 }
 
-void mblock::reserve( address_space *vm, int prot )
+void mblock::reserve( address_space *vm )
 {
 	assert( State != MEM_COMMIT );
 	if (State == MEM_RESERVE)
 		return;
 	State = MEM_RESERVE;
-	Protect = prot;
+	Protect = 0;
 	Type = MEM_PRIVATE;
 	// FIXME: maybe allocate memory here
 }

@@ -145,7 +145,7 @@ mblock* address_space_impl::alloc_guard_block(BYTE *address, ULONG size)
 	mblock *mb = new mblock( address, size, pgs );
 	if (!mb)
 		return NULL;
-	mb->reserve( this, PROT_NONE );
+	mb->reserve( this );
 	update_page_translation( mb );
 	insert_block( mb );
 	return mb;
@@ -478,7 +478,7 @@ NTSTATUS address_space_impl::set_block_state( mblock *mb, int state, int prot )
 {
 	if (mb->is_free())
 	{
-		mb->reserve( this, prot );
+		mb->reserve( this );
 		update_page_translation( mb );
 	}
 

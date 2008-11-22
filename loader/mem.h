@@ -111,7 +111,7 @@ public:
 	int local_unmap();
 	int remote_unmap( address_space *vm );
 	void commit( address_space *vm, int prot );
-	void reserve( address_space *vm, int prot );
+	void reserve( address_space *vm );
 	void uncommit( address_space *vm );
 	void unreserve( address_space *vm );
 	int is_committed() { return State == MEM_COMMIT; }
