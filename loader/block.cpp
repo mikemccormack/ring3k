@@ -314,17 +314,9 @@ int mblock::map_local( int prot )
 	return 0;
 }
 
-int mblock::map_remote( address_space *vm, BYTE *address, ULONG length, int prot )
+int mblock::map_remote( address_space *vm, int prot )
 {
-	ULONG ofs = address - BaseAddress;
-
-	assert( address >= BaseAddress );
-	assert( address < (BaseAddress + RegionSize) );
-
-	assert( length <= RegionSize );
-	assert( (address + length) <= (BaseAddress + RegionSize) );
-
-	return pages->map_remote( vm, address, length, prot, ofs );
+	return pages->map_remote( vm, BaseAddress, RegionSize, prot, 0 );
 }
 
 int mblock::local_unmap()
@@ -368,7 +360,7 @@ ULONG mblock::mmap_flag_from_page_prot( ULONG prot )
 	return STATUS_INVALID_PAGE_PROTECTION;
 }
 
-void mblock::commit( address_space *vm, BYTE *address, size_t length, int prot )
+void mblock::commit( address_space *vm, int prot )
 {
 	if (State != MEM_COMMIT)
 	{
@@ -382,27 +374,27 @@ void mblock::commit( address_space *vm, BYTE *address, size_t length, int prot )
 			die("couldn't map user memory into kernel %d\n", errno);
 	}
 
-	remote_remap( vm, address, length, prot, tracer != 0 );
+	remote_remap( vm, prot, tracer != 0 );
 }
 
-void mblock::remote_remap( address_space *vm, BYTE *address, size_t length, int prot, bool except )
+void mblock::remote_remap( address_space *vm, int prot, bool except )
 {
 	int mmap_flags = 0;
 
 	if (!except)
 		mmap_flags = mmap_flag_from_page_prot( prot );
 
-	if (0 > map_remote( vm, address, length, mmap_flags ))
+	if (0 > map_remote( vm, mmap_flags ))
 		die("map_remote failed\n");
 }
 
 void mblock::set_tracer( address_space *vm, block_tracer *bt )
 {
 	tracer = bt;
-	remote_remap( vm, BaseAddress, RegionSize, Protect, tracer != 0 );
+	remote_remap( vm, Protect, tracer != 0 );
 }
 
-void mblock::reserve( address_space *vm, size_t length, int prot )
+void mblock::reserve( address_space *vm, int prot )
 {
 	assert( State != MEM_COMMIT );
 	if (State == MEM_RESERVE)
@@ -411,7 +403,6 @@ void mblock::reserve( address_space *vm, size_t length, int prot )
 	Protect = prot;
 	Type = MEM_PRIVATE;
 	// FIXME: maybe allocate memory here
-	assert( length == RegionSize );
 }
 
 void mblock::uncommit( address_space *vm )
@@ -464,7 +455,7 @@ bool mblock::traced_access( BYTE *address, ULONG Eip )
 
 bool mblock::set_traced( address_space *vm, bool traced )
 {
-	remote_remap( vm, BaseAddress, RegionSize, Protect, traced );
+	remote_remap( vm, Protect, traced );
 	return true;
 }
 

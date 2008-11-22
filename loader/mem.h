@@ -107,11 +107,11 @@ public:
 	mblock( BYTE *address, size_t size, mempages *pages );
 	~mblock();
 	int map_local( int prot );
-	int map_remote( address_space *vm, BYTE *address, ULONG length, int prot );
+	int map_remote( address_space *vm, int prot );
 	int local_unmap();
 	int remote_unmap( address_space *vm );
-	void commit( address_space *vm, BYTE *address, size_t length, int prot );
-	void reserve( address_space *vm, size_t length, int prot );
+	void commit( address_space *vm, int prot );
+	void reserve( address_space *vm, int prot );
 	void uncommit( address_space *vm );
 	void unreserve( address_space *vm );
 	int is_committed() { return State == MEM_COMMIT; }
@@ -127,7 +127,7 @@ public:
 	ULONG get_prot() { return Protect; };
 	object_t* get_section() { return section; };
 	static ULONG mmap_flag_from_page_prot( ULONG prot );
-	void remote_remap( address_space *vm, BYTE *address, size_t length, int prot, bool except );
+	void remote_remap( address_space *vm, int prot, bool except );
 	void set_tracer( address_space *vm, block_tracer *tracer);
 	bool traced_access( BYTE *address, ULONG Eip );
 	bool set_traced( address_space *vm, bool traced );
@@ -158,7 +158,7 @@ protected:
 	mblock *get_mblock( BYTE *address );
 	NTSTATUS find_free_area( int zero_bits, size_t length, int top_down, BYTE *&address );
 	NTSTATUS check_params( BYTE *start, int zero_bits, size_t length, int state, int prot );
-	NTSTATUS set_block_state( mblock *mb, BYTE *start, size_t length, int state, int prot );
+	NTSTATUS set_block_state( mblock *mb, int state, int prot );
 	mblock *split_area( mblock *mb, BYTE *address, size_t length );
 	void free_shared( mblock *mb );
 	NTSTATUS get_mem_region( BYTE *start, size_t length, int state );

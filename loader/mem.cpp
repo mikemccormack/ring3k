@@ -145,7 +145,7 @@ mblock* address_space_impl::alloc_guard_block(BYTE *address, ULONG size)
 	mblock *mb = new mblock( address, size, pgs );
 	if (!mb)
 		return NULL;
-	mb->reserve( this, size, PROT_NONE );
+	mb->reserve( this, PROT_NONE );
 	update_page_translation( mb );
 	insert_block( mb );
 	return mb;
@@ -401,10 +401,17 @@ NTSTATUS address_space_impl::allocate_virtual_memory( BYTE **start, int zero_bit
 		insert_block( mb );
 		//xlate_entry( start ) = mb;
 	}
+	else
+	{
+		mb = split_area( mb, *start, length );
+	}
 
 	assert( mb->is_linked() );
 
-	return set_block_state( mb, *start, length, state, prot );
+	assert( *start == mb->get_base_address());
+	assert( length == mb->get_region_size());
+
+	return set_block_state( mb, state, prot );
 }
 
 NTSTATUS address_space_impl::map_fd( BYTE **start, int zero_bits, size_t length, int state, int prot, int fd )
@@ -435,7 +442,10 @@ NTSTATUS address_space_impl::map_fd( BYTE **start, int zero_bits, size_t length,
 	insert_block( mb );
 	assert( mb->is_linked() );
 
-	return set_block_state( mb, *start, length, state, prot );
+	assert( *start == mb->get_base_address());
+	assert( length == mb->get_region_size());
+
+	return set_block_state( mb, state, prot );
 }
 
 
@@ -464,16 +474,16 @@ NTSTATUS address_space_impl::check_params( BYTE *start, int zero_bits, size_t le
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS address_space_impl::set_block_state( mblock *mb, BYTE *start, size_t length, int state, int prot )
+NTSTATUS address_space_impl::set_block_state( mblock *mb, int state, int prot )
 {
 	if (mb->is_free())
 	{
-		mb->reserve( this, length, prot );
+		mb->reserve( this, prot );
 		update_page_translation( mb );
 	}
 
 	if (state & MEM_COMMIT)
-		mb->commit( this, start, length, prot );
+		mb->commit( this, prot );
 
 	assert( !mb->is_free() );
 	verify();
