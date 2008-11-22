@@ -483,7 +483,10 @@ NTSTATUS address_space_impl::set_block_state( mblock *mb, int state, int prot )
 	}
 
 	if (state & MEM_COMMIT)
-		mb->commit( this, prot );
+	{
+		mb->set_prot( prot );
+		mb->commit( this );
+	}
 
 	assert( !mb->is_free() );
 	verify();

@@ -110,7 +110,7 @@ public:
 	int map_remote( address_space *vm, int prot );
 	int local_unmap();
 	int remote_unmap( address_space *vm );
-	void commit( address_space *vm, int prot );
+	void commit( address_space *vm );
 	void reserve( address_space *vm );
 	void uncommit( address_space *vm );
 	void unreserve( address_space *vm );
@@ -127,11 +127,12 @@ public:
 	ULONG get_prot() { return Protect; };
 	object_t* get_section() { return section; };
 	static ULONG mmap_flag_from_page_prot( ULONG prot );
-	void remote_remap( address_space *vm, int prot, bool except );
+	void remote_remap( address_space *vm, bool except );
 	void set_tracer( address_space *vm, block_tracer *tracer);
 	bool traced_access( BYTE *address, ULONG Eip );
 	bool set_traced( address_space *vm, bool traced );
 	void set_section( object_t *section );
+	void set_prot( ULONG prot );
 };
 
 mempages* alloc_guard_pages(ULONG size);

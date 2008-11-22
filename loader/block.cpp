@@ -360,12 +360,16 @@ ULONG mblock::mmap_flag_from_page_prot( ULONG prot )
 	return STATUS_INVALID_PAGE_PROTECTION;
 }
 
-void mblock::commit( address_space *vm, int prot )
+void mblock::set_prot( ULONG prot )
+{
+	Protect = prot;
+}
+
+void mblock::commit( address_space *vm )
 {
 	if (State != MEM_COMMIT)
 	{
 		State = MEM_COMMIT;
-		Protect = prot;
 		Type = MEM_PRIVATE;
 
 		//dprintf("committing %p/%p %08lx\n", kernel_address, BaseAddress, RegionSize);
@@ -374,15 +378,15 @@ void mblock::commit( address_space *vm, int prot )
 			die("couldn't map user memory into kernel %d\n", errno);
 	}
 
-	remote_remap( vm, prot, tracer != 0 );
+	remote_remap( vm, tracer != 0 );
 }
 
-void mblock::remote_remap( address_space *vm, int prot, bool except )
+void mblock::remote_remap( address_space *vm, bool except )
 {
 	int mmap_flags = 0;
 
 	if (!except)
-		mmap_flags = mmap_flag_from_page_prot( prot );
+		mmap_flags = mmap_flag_from_page_prot( Protect );
 
 	if (0 > map_remote( vm, mmap_flags ))
 		die("map_remote failed\n");
@@ -391,7 +395,7 @@ void mblock::remote_remap( address_space *vm, int prot, bool except )
 void mblock::set_tracer( address_space *vm, block_tracer *bt )
 {
 	tracer = bt;
-	remote_remap( vm, Protect, tracer != 0 );
+	remote_remap( vm, tracer != 0 );
 }
 
 void mblock::reserve( address_space *vm )
@@ -455,7 +459,7 @@ bool mblock::traced_access( BYTE *address, ULONG Eip )
 
 bool mblock::set_traced( address_space *vm, bool traced )
 {
-	remote_remap( vm, Protect, traced );
+	remote_remap( vm, traced );
 	return true;
 }
 
