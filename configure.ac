@@ -2,6 +2,7 @@ AC_INIT(ntnative,0.1)
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CHECK_HEADERS([asm/ptrace.h])
+AC_CHECK_HEADERS([valgrind/valgrind.h])
 
 dnl AC_DEFINE([ASM_NAME_PREFIX],,[Symbol prefix])
 AC_MSG_CHECKING([asm symbol prefix])

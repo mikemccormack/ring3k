@@ -42,7 +42,11 @@
 #include "fiber.h"
 #include "platform.h"
 
+#ifdef HAVE_VALGRIND_VALGRIND_H
 #include <valgrind/valgrind.h>
+#else
+#define VALGRIND_STACK_REGISTER(start,end)
+#endif
 
 
 #define NORET __attribute__((noreturn))
