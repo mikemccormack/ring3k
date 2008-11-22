@@ -117,10 +117,12 @@ NTSTATUS unicode_string_t::copy( const UNICODE_STRING* ptr )
 {
 	clear();
 	Length = ptr->Length;
+	if (Length&1)
+		return STATUS_INVALID_PARAMETER;
 	MaximumLength = ptr->MaximumLength;
 	if (ptr->Buffer)
 	{
-		buf = new WCHAR[ Length ];
+		buf = new WCHAR[ Length/2 ];
 		if (!buf)
 			return STATUS_NO_MEMORY;
 		memcpy( buf, ptr->Buffer, Length );
