@@ -62,12 +62,27 @@ section_t::~section_t()
 	close(fd);
 }
 
+int section_t::get_fd()
+{
+	return fd;
+}
+
+void section_t::addref()
+{
+	::addref( this );
+}
+
+void section_t::release()
+{
+	::release( this );
+}
+
 NTSTATUS section_t::mapit( address_space *vm, BYTE *&addr, ULONG ZeroBits, ULONG State, ULONG prot )
 {
 	dprintf("anonymous map\n");
 	if ((prot&0xff) > (Protect&0xff))
 		return STATUS_INVALID_PARAMETER;
-	NTSTATUS r = vm->map_fd( &addr, ZeroBits, len, State, prot, fd );
+	NTSTATUS r = vm->map_fd( &addr, ZeroBits, len, State, prot, this );
 	return r;
 }
 

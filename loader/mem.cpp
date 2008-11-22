@@ -412,7 +412,7 @@ NTSTATUS address_space_impl::allocate_virtual_memory( BYTE **start, int zero_bit
 	return set_block_state( mb, state, prot );
 }
 
-NTSTATUS address_space_impl::map_fd( BYTE **start, int zero_bits, size_t length, int state, int prot, int fd )
+NTSTATUS address_space_impl::map_fd( BYTE **start, int zero_bits, size_t length, int state, int prot, backing_store_t *backing )
 {
 	NTSTATUS r;
 
@@ -435,7 +435,7 @@ NTSTATUS address_space_impl::map_fd( BYTE **start, int zero_bits, size_t length,
 	if (mb)
 		return STATUS_CONFLICTING_ADDRESSES;
 
-	mb = alloc_fd_pages( *start, length, fd );
+	mb = alloc_fd_pages( *start, length, backing );
 	insert_block( mb );
 	assert( mb->is_linked() );
 

@@ -35,6 +35,15 @@ public:
 	virtual ~execution_context_t() {};
 };
 
+class backing_store_t
+{
+public:
+	virtual int get_fd() = 0;
+	virtual void addref() = 0;
+	virtual void release() = 0;
+	virtual ~backing_store_t() {};
+};
+
 class address_space {
 public:
 	virtual ~address_space();
@@ -44,7 +53,7 @@ public:
 	virtual NTSTATUS copy_from_user( void *dest, const void *src, size_t len ) = 0;
 	virtual NTSTATUS verify_for_write( void *dest, size_t len ) = 0;
 	virtual NTSTATUS allocate_virtual_memory( BYTE **start, int zero_bits, size_t length, int state, int prot ) = 0;
-	virtual NTSTATUS map_fd( BYTE **start, int zero_bits, size_t length, int state, int prot, int fd ) = 0;
+	virtual NTSTATUS map_fd( BYTE **start, int zero_bits, size_t length, int state, int prot, backing_store_t *backing ) = 0;
 	virtual NTSTATUS free_virtual_memory( void *start, size_t length, ULONG state ) = 0;
 	virtual NTSTATUS unmap_view( void *start ) = 0;
 	virtual void dump() = 0;
@@ -131,7 +140,7 @@ public:
 
 mblock* alloc_guard_pages(BYTE* address, ULONG size);
 mblock* alloc_core_pages(BYTE* address, ULONG size);
-mblock* alloc_fd_pages(BYTE* address, ULONG size, int fd);
+mblock* alloc_fd_pages(BYTE* address, ULONG size, backing_store_t* backing);
 
 int create_mapping_fd( int sz );
 
@@ -177,7 +186,7 @@ public:
 	virtual NTSTATUS copy_to_user( void *dest, const void *src, size_t len );
 	virtual NTSTATUS verify_for_write( void *dest, size_t len );
 	virtual NTSTATUS allocate_virtual_memory( BYTE **start, int zero_bits, size_t length, int state, int prot );
-	virtual NTSTATUS map_fd( BYTE **start, int zero_bits, size_t length, int state, int prot, int fd );
+	virtual NTSTATUS map_fd( BYTE **start, int zero_bits, size_t length, int state, int prot, backing_store_t *backing );
 	virtual NTSTATUS free_virtual_memory( void *start, size_t length, ULONG state );
 	virtual NTSTATUS unmap_view( void *start );
 	virtual void dump();

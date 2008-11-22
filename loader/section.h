@@ -21,7 +21,7 @@
 #ifndef __SECTION_H__
 #define __SECTION_H__
 
-struct section_t : public object_t {
+struct section_t : public object_t, public backing_store_t {
 	int fd;
 	BYTE *addr;
 	size_t len;
@@ -35,6 +35,9 @@ public:
 	virtual NTSTATUS query( SECTION_BASIC_INFORMATION *basic );
 	virtual NTSTATUS query( SECTION_IMAGE_INFORMATION *image );
 	virtual const char *get_symbol( ULONG address );
+	virtual int get_fd();
+	virtual void addref();
+	virtual void release();
 };
 
 NTSTATUS create_section( object_t **obj, object_t *file, PLARGE_INTEGER psz, ULONG attribs, ULONG protect );

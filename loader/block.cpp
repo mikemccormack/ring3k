@@ -77,56 +77,28 @@ static inline BOOLEAN mem_protection_is_valid(ULONG protect)
 
 class corepages : public mblock {
 public:
-	corepages( BYTE* address, size_t sz, int _fd );
-	corepages( BYTE* address, size_t sz );
+	corepages( BYTE* address, size_t sz, backing_store_t* _backing );
+	//corepages( BYTE* address, size_t sz );
 	virtual int local_map( int prot );
 	virtual int remote_map( address_space *vm, ULONG prot );
 	virtual mblock *do_split( BYTE *address, size_t size );
 	virtual ~corepages();
 private:
-	int fd;
+	backing_store_t* backing;
 	int core_ofs;
 };
 
-corepages::corepages( BYTE* address, size_t sz, int _fd ) :
+corepages::corepages( BYTE* address, size_t sz, backing_store_t* _backing ) :
 	mblock( address, sz ),
+	backing( _backing ),
 	core_ofs(0)
 {
-	fd = dup(_fd);
-}
-
-int create_mapping_fd( int sz )
-{
-	static int core_num = 0;
-
-	char name[0x40];
-	sprintf(name, "/tmp/win2k-%d", ++core_num);
-	int fd = open( name, O_CREAT | O_TRUNC | O_RDWR, 0600 );
-	if (fd < 0)
-		return -1;
-
-	unlink( name );
-
-	int r = ftruncate( fd, sz );
-	if (r < 0)
-	{
-		close(fd);
-		fd = -1;
-	}
-	return fd;
-}
-
-corepages::corepages( BYTE* address, size_t sz ) :
-	mblock( address, sz ),
-	core_ofs(0)
-{
-	fd = create_mapping_fd( sz );
-	if (fd < 0)
-		throw STATUS_NO_MEMORY;
+	backing->addref();
 }
 
 int corepages::local_map( int prot )
 {
+	int fd = backing->get_fd();
 	kernel_address = (BYTE*) mmap( NULL, RegionSize, prot, MAP_SHARED, fd, core_ofs );
 	if (kernel_address == (BYTE*) -1)
 		return -1;
@@ -135,23 +107,22 @@ int corepages::local_map( int prot )
 
 int corepages::remote_map( address_space *vm, ULONG prot )
 {
+	int fd = backing->get_fd();
 	int mmap_flags = mmap_flag_from_page_prot( prot );
 	return vm->mmap( BaseAddress, RegionSize, mmap_flags, MAP_SHARED | MAP_FIXED, fd, core_ofs );
 }
 
 mblock *corepages::do_split( BYTE *address, size_t size )
 {
-	int newfd = dup( fd );
-	if (fd < 0)
-		return NULL;
-	corepages *rest = new corepages( address, size, newfd );
+	backing->addref();
+	corepages *rest = new corepages( address, size, backing );
 	rest->core_ofs = core_ofs + RegionSize - size;
 	return rest;
 }
 
 corepages::~corepages()
 {
-	close(fd);
+	backing->release();
 }
 
 class guardpages : public mblock {
@@ -194,14 +165,52 @@ mblock* alloc_guard_pages(BYTE* address, ULONG size)
 	return new guardpages(address, size);
 }
 
-mblock* alloc_core_pages(BYTE* address, ULONG size)
+int create_mapping_fd( int sz )
 {
-	return new corepages(address, size);
+	static int core_num = 0;
+
+	char name[0x40];
+	sprintf(name, "/tmp/win2k-%d", ++core_num);
+	int fd = open( name, O_CREAT | O_TRUNC | O_RDWR, 0600 );
+	if (fd < 0)
+		return -1;
+
+	unlink( name );
+
+	int r = ftruncate( fd, sz );
+	if (r < 0)
+	{
+		close(fd);
+		fd = -1;
+	}
+	return fd;
 }
 
-mblock* alloc_fd_pages(BYTE* address, ULONG size, int fd)
+class anonymous_pages_t: public backing_store_t
 {
-	return new corepages( address, size, fd );
+	int fd;
+	int refcount;
+public:
+	anonymous_pages_t( int _fd ): fd(_fd), refcount(1) {}
+	virtual int get_fd() { return fd; }
+	virtual void addref() { refcount++; }
+	virtual void release() { if (!--refcount) delete this; }
+};
+
+mblock* alloc_core_pages(BYTE* address, ULONG size)
+{
+	int fd = create_mapping_fd( size );
+	if (fd < 0)
+		return NULL;
+	backing_store_t* backing = new anonymous_pages_t( fd );
+	mblock *ret = new corepages( address, size, backing );
+	backing->release();
+	return ret;
+}
+
+mblock* alloc_fd_pages(BYTE* address, ULONG size, backing_store_t *backing )
+{
+	return new corepages( address, size, backing );
 }
 
 mblock::mblock( BYTE *address, size_t size ) :
