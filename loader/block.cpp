@@ -87,7 +87,7 @@ public:
 	corepages( size_t sz );
 	virtual ULONG get_size();
 	virtual BYTE* map_local( int prot );
-	virtual int map_remote( address_space *vm, BYTE *address, ULONG length, int prot, ULONG ofs );
+	virtual int map_remote( address_space *vm, BYTE *address, ULONG length, int prot );
 	virtual mempages *split(ULONG sz);
 	~corepages();
 private:
@@ -154,10 +154,9 @@ BYTE *corepages::map_local( int prot )
 	return (BYTE*) mmap( NULL, size, prot, MAP_SHARED, fd, core_ofs );
 }
 
-int corepages::map_remote( address_space *vm, BYTE *address, ULONG length, int prot, ULONG ofs )
+int corepages::map_remote( address_space *vm, BYTE *address, ULONG length, int prot )
 {
-	return vm->mmap( address, length, prot,
-					 MAP_SHARED | MAP_FIXED, fd, core_ofs + ofs );
+	return vm->mmap( address, length, prot, MAP_SHARED | MAP_FIXED, fd, core_ofs );
 }
 
 mempages *corepages::split(ULONG sz)
@@ -185,7 +184,7 @@ public:
 	guardpages(size_t sz);
 	virtual ULONG get_size();
 	virtual BYTE* map_local( int prot );
-	virtual int map_remote( address_space *vm, BYTE *address, ULONG length, int prot, ULONG ofs );
+	virtual int map_remote( address_space *vm, BYTE *address, ULONG length, int prot );
 	virtual mempages *split(ULONG sz);
 	~guardpages();
 private:
@@ -211,7 +210,7 @@ BYTE* guardpages::map_local( int prot )
 	return (BYTE*)-1;
 }
 
-int guardpages::map_remote( address_space *vm, BYTE *address, ULONG length, int prot, ULONG ofs )
+int guardpages::map_remote( address_space *vm, BYTE *address, ULONG length, int prot )
 {
 	return 0;
 }
@@ -316,7 +315,8 @@ int mblock::map_local( int prot )
 
 int mblock::map_remote( address_space *vm, int prot )
 {
-	return pages->map_remote( vm, BaseAddress, RegionSize, prot, 0 );
+	dprintf("mapping %p %08lx %04x\n", BaseAddress, RegionSize, prot);
+	return pages->map_remote( vm, BaseAddress, RegionSize, prot );
 }
 
 int mblock::local_unmap()

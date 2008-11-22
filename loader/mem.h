@@ -68,7 +68,7 @@ public:
 	virtual ~mempages() = 0;
 	virtual ULONG get_size() = 0;
 	virtual BYTE* map_local( int prot ) = 0;
-	virtual int map_remote( address_space *vm, BYTE *address, ULONG length, int prot, ULONG ofs ) = 0;
+	virtual int map_remote( address_space *vm, BYTE *address, ULONG length, int prot ) = 0;
 	virtual mempages *split(ULONG sz) = 0;
 	// unmapping can be done without knowing what is being unmapped
 };
