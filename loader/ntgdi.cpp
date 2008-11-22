@@ -130,7 +130,8 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	ppeb->GdiSharedHandleTable = (void*) p;
 
-	if (0) trace_memory( current->process->vm, p, ntgdishm_trace );
+	if (option_trace)
+		trace_memory( current->process->vm, p, ntgdishm_trace );
 
 	return r;
 }

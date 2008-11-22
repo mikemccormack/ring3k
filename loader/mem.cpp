@@ -707,6 +707,26 @@ mblock* address_space_impl::find_block( BYTE *addr )
 	return get_mblock( addr );
 }
 
+bool address_space_impl::traced_access( void* addr, ULONG Eip )
+{
+	BYTE* address = (BYTE*) addr;
+	mblock* mb = get_mblock( address );
+	if (!mb)
+		return false;
+	return mb->traced_access( address, Eip );
+}
+
+bool address_space_impl::set_traced( void* addr, bool traced )
+{
+	BYTE* address = (BYTE*) addr;
+	mblock* mb = get_mblock( address );
+	if (!mb)
+		return false;
+
+	mb->set_traced( this, traced );
+	return true;
+}
+
 static inline ULONG mem_round_size(ULONG size)
 {
 	return (size + 0xfff)&~0xfff;

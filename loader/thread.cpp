@@ -131,11 +131,9 @@ class thread_impl_t :
 	PVOID Win32StartAddress;
 	bool win32k_init_done;
 
-	// memory tracing
-#ifdef MEM_TRACE
-	mblock *accessed;
-	BYTE *accessed_addr;
-#endif
+	// memory access tracing
+	bool trace_step_access;
+	void *trace_accessed_address;
 
 public:
 	thread_impl_t( process_t *p );
@@ -151,6 +149,7 @@ public:
 	NTSTATUS kernel_debugger_call( ULONG func, void *arg1, void *arg2 );
 	BOOLEAN software_interrupt( BYTE number );
 	void handle_user_segv();
+	bool traced_access();
 	void start_exception_handler(exception_stack_frame& frame);
 	NTSTATUS raise_exception( exception_stack_frame& info, BOOLEAN SearchFrames );
 	NTSTATUS do_user_callback( ULONG index, ULONG& length, PVOID& buffer);
@@ -378,6 +377,26 @@ BOOLEAN thread_impl_t::software_interrupt( BYTE number )
 		 ctx.Eax = r;
 
 	return TRUE;
+}
+
+bool thread_impl_t::traced_access()
+{
+	// only trace the first fault
+	if (trace_step_access)
+		return false;
+
+	// get the fault address
+	void* addr = 0;
+	if (0 != current->process->vm->get_fault_info( addr ))
+		return false;
+
+	// confirm the memory is traced
+	if (!current->process->vm->traced_access( addr, ctx.Eip ))
+		return false;
+
+	trace_accessed_address = addr;
+	trace_step_access = true;
+	return true;
 }
 
 void thread_impl_t::handle_user_segv()
@@ -786,7 +805,16 @@ int thread_impl_t::run()
 		LARGE_INTEGER timeout;
 		timeout.QuadPart = 10L; // 10ms
 
-		process->vm->run( TebBaseAddress, &ctx, 0, timeout, this );
+		process->vm->run( TebBaseAddress, &ctx, false, timeout, this );
+
+		if (trace_step_access)
+		{
+			// enable access to the memory, then single step over the access
+			current->process->vm->set_traced( trace_accessed_address, false );
+			process->vm->run( TebBaseAddress, &ctx, true, timeout, this );
+			current->process->vm->set_traced( trace_accessed_address, true );
+			trace_step_access = false;
+		}
 
 		if (callback_frame && callback_frame->is_complete())
 		{
@@ -810,6 +838,8 @@ void thread_impl_t::handle_fault()
 		inst[0] != 0xcd ||
 		!software_interrupt( inst[1] ))
 	{
+		if (traced_access())
+			return;
 		if (option_debug)
 			debugger();
 		handle_user_segv();
@@ -855,18 +885,15 @@ thread_impl_t::thread_impl_t( process_t *p ) :
 	terminate_port(0),
 	token(0),
 	callback_frame(0),
-	win32k_init_done(false)
+	win32k_init_done(false),
+	trace_step_access(false),
+	trace_accessed_address(0)
 {
 
 	times.CreateTime = timeout_t::current_time();
 	times.ExitTime.QuadPart = 0;
 	times.UserTime.QuadPart = 0;
 	times.KernelTime.QuadPart = 0;
-
-#ifdef MEM_TRACE
-	accessed_addr = 0;
-	accessed = false;
-#endif
 }
 
 bool thread_impl_t::win32k_init_complete()

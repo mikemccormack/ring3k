@@ -54,6 +54,9 @@ public:
 	virtual const char *get_symbol( BYTE *address ) = 0;
 	virtual void run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec ) = 0;
 	virtual void init_context( CONTEXT& ctx ) = 0;
+	virtual int get_fault_info( void *& addr ) = 0;
+	virtual bool traced_access( void* address, ULONG Eip ) = 0;
+	virtual bool set_traced( void* address, bool traced ) = 0;
 };
 
 unsigned int allocate_core_memory(unsigned int size);
@@ -126,7 +129,8 @@ public:
 	static ULONG mmap_flag_from_page_prot( ULONG prot );
 	void remote_remap( address_space *vm, BYTE *address, size_t length, int prot, bool except );
 	void set_tracer( address_space *vm, block_tracer *tracer);
-	void on_access( BYTE *address, ULONG Eip );
+	bool traced_access( BYTE *address, ULONG Eip );
+	bool set_traced( address_space *vm, bool traced );
 	void set_section( object_t *section );
 };
 
@@ -188,18 +192,18 @@ public:
 	virtual const char *get_symbol( BYTE *address );
 	virtual void run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec ) = 0;
 	virtual void init_context( CONTEXT& ctx ) = 0;
+	virtual bool traced_access( void* address, ULONG Eip );
+	virtual bool set_traced( void* address, bool traced );
 };
 
 extern struct address_space_impl *(*pcreate_address_space)();
 
 static inline void trace_memory( address_space *vm, BYTE *p, block_tracer& tracer )
 {
-#ifdef MEM_TRACE
 	// trace it
 	mblock* mb = vm->find_block( p );
 	assert(mb != 0);
 	mb->set_tracer( vm, &tracer );
-#endif
 }
 
 #endif // __MEM_H__

@@ -20,7 +20,6 @@
 XML_INCLUDES=-I/usr/include/libxml2
 INCLUDE_DIRS=-I. -I../include $(XML_INCLUDES) -I../libudis86
 CFLAGS_COMMON=-Wall -O2 -D__i386__ -m32 -fshort-wchar -fno-strict-aliasing $(INCLUDE_DIRS)
-CFLAGS_COMMON+=-DMEM_TRACE
 CFLAGS=-Wpointer-arith
 CPPFLAGS=$(CFLAGS_COMMON)
 LIBS=-lxml2 -lstdc++ ../libudis86/libudis86.a

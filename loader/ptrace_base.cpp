@@ -338,6 +338,15 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 	cancel_timer();
 }
 
+int ptrace_address_space_impl::get_fault_info( void *& addr )
+{
+	siginfo_t info;
+	memset( &info, 0, sizeof info );
+	int r = ptrace_get_signal_info( get_child_pid(), &info );
+	addr = info.si_addr;
+	return r;
+}
+
 unsigned short ptrace_address_space_impl::get_userspace_code_seg()
 {
 	unsigned short cs;

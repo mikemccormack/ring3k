@@ -454,10 +454,18 @@ NTSTATUS mblock::query( BYTE *start, MEMORY_BASIC_INFORMATION *info )
 	return STATUS_SUCCESS;
 }
 
-void mblock::on_access( BYTE *address, ULONG Eip )
+bool mblock::traced_access( BYTE *address, ULONG Eip )
 {
-	if (tracer)
-		tracer->on_access( this, address, Eip );
+	if (!tracer)
+		return false;
+	tracer->on_access( this, address, Eip );
+	return true;
+}
+
+bool mblock::set_traced( address_space *vm, bool traced )
+{
+	remote_remap( vm, BaseAddress, RegionSize, Protect, traced );
+	return true;
 }
 
 void mblock::set_section( object_t *s )
