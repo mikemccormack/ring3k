@@ -95,8 +95,8 @@ protected:
 public:
 	mblock( BYTE *address, size_t size );
 	virtual ~mblock();
-	virtual int map_local( int prot ) = 0;
-	virtual int map_remote( address_space *vm, int prot ) = 0;
+	virtual int local_map( int prot ) = 0;
+	virtual int remote_map( address_space *vm, ULONG prot ) = 0;
 
 protected:
 	virtual mblock *do_split( BYTE *address, size_t size ) = 0;

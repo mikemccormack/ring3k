@@ -79,8 +79,8 @@ class corepages : public mblock {
 public:
 	corepages( BYTE* address, size_t sz, int _fd );
 	corepages( BYTE* address, size_t sz );
-	virtual int map_local( int prot );
-	virtual int map_remote( address_space *vm, int prot );
+	virtual int local_map( int prot );
+	virtual int remote_map( address_space *vm, ULONG prot );
 	virtual mblock *do_split( BYTE *address, size_t size );
 	virtual ~corepages();
 private:
@@ -125,7 +125,7 @@ corepages::corepages( BYTE* address, size_t sz ) :
 		throw STATUS_NO_MEMORY;
 }
 
-int corepages::map_local( int prot )
+int corepages::local_map( int prot )
 {
 	kernel_address = (BYTE*) mmap( NULL, RegionSize, prot, MAP_SHARED, fd, core_ofs );
 	if (kernel_address == (BYTE*) -1)
@@ -133,9 +133,10 @@ int corepages::map_local( int prot )
 	return 0;
 }
 
-int corepages::map_remote( address_space *vm, int prot )
+int corepages::remote_map( address_space *vm, ULONG prot )
 {
-	return vm->mmap( BaseAddress, RegionSize, prot, MAP_SHARED | MAP_FIXED, fd, core_ofs );
+	int mmap_flags = mmap_flag_from_page_prot( prot );
+	return vm->mmap( BaseAddress, RegionSize, mmap_flags, MAP_SHARED | MAP_FIXED, fd, core_ofs );
 }
 
 mblock *corepages::do_split( BYTE *address, size_t size )
@@ -158,8 +159,8 @@ protected:
 	guardpages();
 public:
 	guardpages( BYTE* address, size_t sz );
-	virtual int map_local( int prot );
-	virtual int map_remote( address_space *vm, int prot );
+	virtual int local_map( int prot );
+	virtual int remote_map( address_space *vm, ULONG prot );
 	virtual mblock *do_split( BYTE *address, size_t size );
 	virtual ~guardpages();
 };
@@ -173,12 +174,12 @@ guardpages::~guardpages()
 {
 }
 
-int guardpages::map_local( int prot )
+int guardpages::local_map( int prot )
 {
 	return -1;
 }
 
-int guardpages::map_remote( address_space *vm, int prot )
+int guardpages::remote_map( address_space *vm, ULONG prot )
 {
 	return 0;
 }
@@ -317,8 +318,8 @@ void mblock::commit( address_space *vm )
 		Type = MEM_PRIVATE;
 
 		//dprintf("committing %p/%p %08lx\n", kernel_address, BaseAddress, RegionSize);
-		if (0 > map_local( PROT_READ | PROT_WRITE ) &&
-			0 > map_local( PROT_READ ))
+		if (0 > local_map( PROT_READ | PROT_WRITE ) &&
+			0 > local_map( PROT_READ ))
 			die("couldn't map user memory into kernel %d\n", errno);
 	}
 
@@ -327,13 +328,9 @@ void mblock::commit( address_space *vm )
 
 void mblock::remote_remap( address_space *vm, bool except )
 {
-	int mmap_flags = 0;
-
-	if (!except)
-		mmap_flags = mmap_flag_from_page_prot( Protect );
-
-	if (0 > map_remote( vm, mmap_flags ))
-		die("map_remote failed\n");
+	int r = remote_map( vm, except ? PROT_NONE : Protect );
+	if (0 < r )
+		die("remote_map failed\n");
 }
 
 void mblock::set_tracer( address_space *vm, block_tracer *bt )
