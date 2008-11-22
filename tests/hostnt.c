@@ -213,6 +213,7 @@ NTSTATUS create_nt_process( LPCWSTR native_exe, HANDLE *pprocess )
 	CLIENT_ID cid;
 	VOID *peb;
 	WCHAR cwd[MAX_PATH+4], sysdir[MAX_PATH+4];
+	WCHAR dllpath[MAX_PATH];
 
 	/* open the executable */
 	lstrcpyW( cwd, L"\\??\\");
@@ -220,6 +221,10 @@ NTSTATUS create_nt_process( LPCWSTR native_exe, HANDLE *pprocess )
 
 	lstrcpyW( sysdir, L"\\??\\");
 	GetSystemDirectoryW( sysdir+4, MAX_PATH );
+
+	lstrcpyW( dllpath, sysdir+4 );
+	lstrcatW( dllpath, L";");
+	lstrcatW( dllpath, cwd+4);
 
 	if (native_exe[0] && native_exe[1] != ':')
 	{
@@ -277,8 +282,8 @@ NTSTATUS create_nt_process( LPCWSTR native_exe, HANDLE *pprocess )
 	peb = get_process_peb( process );
 
 	/* create the process parameters block */
-	r = create_process_parameters( process, peb, filename+4, sysdir+4, cwd+4,
-								   native_exe, native_exe, L"WinSta0\\Default");
+	r = create_process_parameters( process, peb, filename+4, dllpath, cwd+4,
+					   native_exe, native_exe, L"WinSta0\\Default");
 	if (r != STATUS_SUCCESS)
 		goto end;
 
