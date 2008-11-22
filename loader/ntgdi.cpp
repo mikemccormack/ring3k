@@ -33,12 +33,13 @@
 #include "mem.h"
 #include "section.h"
 #include "debug.h"
-
-HGDIOBJ alloc_dc();
+#include "win32mgr.h"
 
 // shared across all processes (in a window station)
 static section_t *gdi_ht_section;
 static void *gdi_handle_table = 0;
+
+gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle);
 
 class ntgdishm_tracer : public block_tracer
 {
@@ -80,6 +81,24 @@ void ntgdishm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 
 static ntgdishm_tracer ntgdishm_trace;
 
+BOOLEAN delete_handle_table_entry( HANDLE Object )
+{
+	dprintf("%p\n", Object);
+
+	gdi_handle_table_entry *entry = get_handle_table_entry(Object);
+	if (!entry)
+		return FALSE;
+	if (entry->ProcessId != current->process->id)
+	{
+		dprintf("pirate deletion! %p\n", Object);
+		return FALSE;
+	}
+
+	memset( entry, 0, sizeof *entry );
+
+	return TRUE;
+}
+
 BOOLEAN NTAPI NtGdiInit()
 {
 	dprintf("\n");
@@ -92,8 +111,7 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	dprintf("\n");
 
-	win32k_info_t *info = new win32k_info_t;
-	info->gdishm_offset = GDI_SHARED_HANDLE_TABLE_SIZE - 0x1000;
+	win32k_manager_t *info = new win32k_manager_t;
 	process->win32k_info = info;
 
 	PPEB ppeb = (PPEB) current->process->peb_section->get_kernel_address();
@@ -196,14 +214,7 @@ int find_free_gdi_handle(void)
 	return -1;
 }
 
-ULONG alloc_gdi_shared_mem( process_t *p, ULONG size )
-{
-	ULONG r = p->win32k_info->gdishm_offset;
-	p->win32k_info->gdishm_offset += size;
-	return r;
-}
-
-HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type, void *user_info )
+HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type, void *user_info, void *kernel_info )
 {
 	int index = find_free_gdi_handle();
 	if (index < 0)
@@ -220,8 +231,11 @@ HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type, void *user_info )
 }
 
 // shared across all processes
-static section_t *dc_section;
-static void *dc_shared_mem = 0;
+static section_t *g_dc_section;
+static BYTE *g_dc_shared_mem = 0;
+static const ULONG max_device_contexts = 0x10;
+static const ULONG dc_size = 0x1000;
+static bool g_dc_bitmap[max_device_contexts];
 
 class dcshm_tracer : public block_tracer
 {
@@ -238,32 +252,69 @@ void dcshm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 
 static dcshm_tracer dcshm_trace;
 
-HGDIOBJ alloc_dc()
+win32k_manager_t::win32k_manager_t() :
+	dc_shared_mem(0)
+{
+}
+
+HGDIOBJ win32k_manager_t::alloc_dc()
 {
 	NTSTATUS r;
 
-	if (!dc_shared_mem)
+	if (!g_dc_shared_mem)
 	{
 		LARGE_INTEGER sz;
 		sz.QuadPart = 0x10000;
-		r = create_section( &dc_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
+		r = create_section( &g_dc_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
 		if (r < STATUS_SUCCESS)
 			return FALSE;
 
-		dc_shared_mem = (BYTE*) dc_section->get_kernel_address();
+		g_dc_shared_mem = (BYTE*) g_dc_section->get_kernel_address();
 	}
 
-	// FIXME: there are be many DCs per shared section
-	BYTE *p = 0;
-	r = dc_section->mapit( current->process->vm, p, 0, MEM_COMMIT, PAGE_READWRITE );
-	if (r < STATUS_SUCCESS)
+	if (!dc_shared_mem)
+	{
+		r = g_dc_section->mapit( current->process->vm, dc_shared_mem, 0, MEM_COMMIT, PAGE_READWRITE );
+		if (r < STATUS_SUCCESS)
+		{
+			dprintf("failed to map shared memory\n");
+			return FALSE;
+		}
+	}
+
+	// find a free device context area
+	ULONG n;
+	for (n=0; n<max_device_contexts; n++)
+		if (!g_dc_bitmap[n])
+			break;
+	dprintf("dc number %ld\n", n);
+	if (n >= max_device_contexts)
 		return FALSE;
+	g_dc_bitmap[n] = true;
 
-	HGDIOBJ dc = alloc_gdi_object( FALSE, GDI_OBJECT_DC, (BYTE*)p );
+	// calculate pointers to it
+	//BYTE* k_dcu = dc_shared_mem + n * dc_size;
+	BYTE* u_dcu = dc_shared_mem + n * dc_size;
 
-	if (0) trace_memory( current->process->vm, p, dcshm_trace );
+	HGDIOBJ dc = alloc_gdi_object( FALSE, GDI_OBJECT_DC, (BYTE*)u_dcu, (void*) n );
+
+	if (0) trace_memory( current->process->vm, u_dcu, dcshm_trace );
 
 	return dc;
+}
+
+BOOL win32k_manager_t::release_dc( HGDIOBJ dc )
+{
+	gdi_handle_table_entry *entry = get_handle_table_entry( dc );
+	if (!entry)
+		return FALSE;
+	if (entry->Type != GDI_OBJECT_DC)
+		return FALSE;
+	ULONG index = (ULONG) (entry->kernel_info);
+	assert( index <= max_device_contexts );
+	assert( g_dc_bitmap[index] );
+	g_dc_bitmap[index] = false;
+	return delete_handle_table_entry( dc );
 }
 
 HGDIOBJ NTAPI NtGdiGetStockObject(ULONG Index)
@@ -311,7 +362,7 @@ HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPer
 HGDIOBJ NTAPI NtGdiCreateCompatibleDC(HGDIOBJ hdc)
 {
 	dprintf("%p\n", hdc);
-	return alloc_dc();
+	return current->process->win32k_info->alloc_dc();
 }
 
 // has one more parameter than gdi32.CreateSolidBrush
@@ -343,7 +394,7 @@ HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(
 HGDIOBJ NTAPI NtGdiGetDCforBitmap(HGDIOBJ Bitmap)
 {
 	dprintf("%p\n", Bitmap);
-	return alloc_dc();
+	return current->process->win32k_info->alloc_dc();
 }
 
 gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle)
@@ -360,20 +411,7 @@ gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle)
 
 BOOLEAN NTAPI NtGdiDeleteObjectApp(HGDIOBJ Object)
 {
-	dprintf("%p\n", Object);
-
-	gdi_handle_table_entry *entry = get_handle_table_entry(Object);
-	if (!entry)
-		return FALSE;
-	if (entry->ProcessId != current->process->id)
-	{
-		dprintf("pirate deletion! %p\n", Object);
-		return FALSE;
-	}
-
-	memset( entry, 0, sizeof *entry );
-
-	return TRUE;
+	return delete_handle_table_entry( Object );
 }
 
 char *get_object_type_name( HGDIOBJ object )
@@ -439,7 +477,7 @@ BOOLEAN NTAPI NtGdiRestoreDC(HGDIOBJ hdc, int saved_dc)
 HGDIOBJ NTAPI NtGdiGetDCObject(HGDIOBJ hdc, ULONG object_type)
 {
 	dprintf("%p %08lx\n", hdc, object_type);
-	return alloc_gdi_object(FALSE, get_handle_type((HGDIOBJ)object_type), 0);
+	return current->process->win32k_info->alloc_dc();
 }
 
 // fun...
@@ -515,17 +553,7 @@ BOOL NTAPI NtGdiSetFontEnumeration(PVOID Unknown)
 
 HANDLE NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID)
 {
-	struct dc_user_info {
-		ULONG unk[0x80];
-	} *k_dcu, *u_dcu;
-	ULONG ofs = alloc_gdi_shared_mem( current->process, sizeof *k_dcu );
-	k_dcu = (struct dc_user_info*)((BYTE*) (gdi_ht_section->get_kernel_address()) + ofs);
-	PPEB ppeb = (PPEB) current->process->peb_section->get_kernel_address();
-	u_dcu = (struct dc_user_info*)((BYTE*) (ppeb->GdiSharedHandleTable) + ofs);
-
-	dprintf("user dc info %p\n", u_dcu);
-
-	return alloc_gdi_object(FALSE, GDI_OBJECT_DC, (void*) u_dcu);
+	return current->process->win32k_info->alloc_dc();
 }
 
 typedef struct _font_enum_entry {

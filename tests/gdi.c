@@ -563,6 +563,15 @@ void test_create_compat_dc()
 	ok (verify_gdi_handle_deleted(hdc), "handle %p still valid\n", hdc );
 }
 
+void test_get_dc()
+{
+	HANDLE dc = NtUserGetDC(0);
+	ok( check_gdi_handle(dc), "invalid gdi handle %p\n", dc );
+
+	ULONG type = get_handle_type(dc);
+	ok( type == GDI_OBJECT_DC, "wrong handle type %ld\n", type );
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -572,5 +581,6 @@ void NtProcessStartup( void )
 	test_user_init();
 	test_create_compat_dc();
 	test_create_compat_dc();
+	test_get_dc();
 	log_fini();
 }

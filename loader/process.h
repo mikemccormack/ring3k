@@ -22,8 +22,7 @@
 #define __PROCESS_H__
 
 #include "thread.h"
-
-class win32k_info_t;
+#include "win32mgr.h"
 
 struct process_t : public sync_object_t {
 	sibling_list_t threads;
@@ -48,7 +47,7 @@ struct process_t : public sync_object_t {
 	KPRIORITY priority;
 	ULONG hard_error_mode;
 
-	win32k_info_t *win32k_info;
+	win32k_manager_t *win32k_info;
 
 	ULONG execute_flags;
 

@@ -213,6 +213,11 @@ ULONG NTAPI NtUserCallNoParam(ULONG Index)
 	}
 }
 
+BOOLEAN NtReleaseDC( HANDLE hdc )
+{
+	return current->process->win32k_info->release_dc( hdc );
+}
+
 ULONG NTAPI NtUserCallOneParam(ULONG Param, ULONG Index)
 {
 	dprintf("%lu (%08lx)\n", Index, Param);
@@ -257,7 +262,7 @@ ULONG NTAPI NtUserCallOneParam(ULONG Param, ULONG Index)
 	case 0x28: // used by ClientThreadSetup
 		return TRUE;
 	case 0x29: // used by ReleaseDC + DeleteDC (deref DC?)
-		return TRUE;
+		return NtReleaseDC( (HANDLE) Param );
 	case 0x2a: // ReplyMessage
 		return TRUE;
 	case 0x2b: // SetCaretBlinkTime
@@ -347,7 +352,7 @@ HANDLE NTAPI NtUserFindExistingCursorIcon(PUNICODE_STRING Library, PUNICODE_STRI
 HANDLE NTAPI NtUserGetDC(HANDLE Window)
 {
 	dprintf("%p\n", Window);
-	return makeHGDIOBJ(0,1,GDI_OBJECT_DC,__LINE__);
+	return current->process->win32k_info->alloc_dc();
 }
 
 HGDIOBJ NtUserSelectPalette(HGDIOBJ hdc, HPALETTE palette, BOOLEAN force_bg)
