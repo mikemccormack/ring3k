@@ -1,5 +1,6 @@
 Things to do:
 
+- remove dependency of tests on native ntdll.dll
 - figure out ntsvcs (http://www.hsc.fr/ressources/articles/win_net_srv/msrpc_pnp.html)
 - catch exceptions thrown by new
 - figure out how to run cmd.exe
