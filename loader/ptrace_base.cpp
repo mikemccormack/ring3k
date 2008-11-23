@@ -303,7 +303,7 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 
 	while (1)
 	{
-		int status = ptrace_run( ctx, 0 );
+		int status = ptrace_run( ctx, single_step );
 		if (WIFSIGNALED(status))
 			break;
 
@@ -326,6 +326,9 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 		}
 
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGALRM)
+			break;
+
+		if (WIFSTOPPED(status) && single_step)
 			break;
 
 		if (WIFSTOPPED(status))
