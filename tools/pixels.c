@@ -48,11 +48,20 @@ void draw_pixels( void )
 	ReleaseDC( 0, hdc );
 }
 
+void draw_rectangle( void )
+{
+	HDC hdc = GetDC( 0 );
+
+	Rectangle( hdc, 0x10, 0x10, 0x20, 0x20 );
+	ReleaseDC( 0, hdc );
+}
+
 int main( int argc, char **argv )
 {
 	init_window_station();
 
 	draw_pixels();
+	draw_rectangle();
 
 	Sleep(100*1000);
 	return 0;
