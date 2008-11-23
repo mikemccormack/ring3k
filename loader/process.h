@@ -47,7 +47,7 @@ struct process_t : public sync_object_t {
 	KPRIORITY priority;
 	ULONG hard_error_mode;
 
-	win32k_manager_t *win32k_info;
+	win32k_info_t *win32k_info;
 
 	ULONG execute_flags;
 

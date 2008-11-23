@@ -215,7 +215,7 @@ ULONG NTAPI NtUserCallNoParam(ULONG Index)
 
 BOOLEAN NtReleaseDC( HANDLE hdc )
 {
-	return current->process->win32k_info->release_dc( hdc );
+	return win32k_manager->release_dc( hdc );
 }
 
 ULONG NTAPI NtUserCallOneParam(ULONG Param, ULONG Index)
@@ -352,7 +352,7 @@ HANDLE NTAPI NtUserFindExistingCursorIcon(PUNICODE_STRING Library, PUNICODE_STRI
 HANDLE NTAPI NtUserGetDC(HANDLE Window)
 {
 	dprintf("%p\n", Window);
-	return current->process->win32k_info->alloc_dc();
+	return win32k_manager->alloc_dc();
 }
 
 HGDIOBJ NtUserSelectPalette(HGDIOBJ hdc, HPALETTE palette, BOOLEAN force_bg)

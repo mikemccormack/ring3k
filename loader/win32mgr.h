@@ -21,18 +21,29 @@
 #ifndef __WIN32K_MANAGER__
 #define __WIN32K_MANAGER__
 
+class win32k_info_t
+{
+public:
+	win32k_info_t();
+	// address that device context shared memory is mapped to
+	BYTE* dc_shared_mem;
+};
+
 class win32k_manager_t
 {
 public:
-	// address that device context shared memory is mapped to
-	BYTE* dc_shared_mem;
-public:
 	win32k_manager_t();
 	virtual ~win32k_manager_t();
+	virtual BOOL init() = 0;
+	virtual void fini() = 0;
 	HGDIOBJ alloc_dc();
 	BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
+	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
+	win32k_info_t* alloc_win32k_info();
 };
+
+extern win32k_manager_t* win32k_manager;
 
 class gdi_object_t
 {
@@ -66,6 +77,8 @@ public:
 	static BYTE *get_dc_shared_mem_ptr(int n);
 	static BYTE* get_dc_shared_mem();
 	virtual BOOL release();
+	BOOL set_pixel( INT x, INT y, COLORREF color );
+	BOOL rectangle( INT x, INT y, INT width, INT height );
 };
 
 #endif // __WIN32K_MANAGER__

@@ -101,44 +101,43 @@ BOOLEAN NTAPI NtGdiInit()
 
 class win32k_sdl_t : public win32k_manager_t
 {
-	static SDL_Surface *screen;
-	static SDL_cond *initialized;
-	static SDL_mutex *mutex;
-	static SDL_Thread *thread;
+	friend int start_win32k_sdl_t_screen_thread( void *arg );
+protected:
+	SDL_Surface *screen;
+private:
+	SDL_cond *initialized;
+	SDL_mutex *mutex;
+	SDL_Thread *thread;
 public:
-	static BOOL init();
-	static void fini();
+	virtual BOOL init();
+	virtual void fini();
 	win32k_sdl_t();
 	BOOL set_pixel( INT x, INT y, COLORREF color );
-private:
-	void set_pixel_32bpp( INT x, INT y, COLORREF color );
-	void set_pixel_16bpp( INT x, INT y, COLORREF color );
-	static int screen_thread( void* );
+	BOOL rectangle( INT x, INT y, INT width, INT height );
+protected:
+	int screen_thread();
+	Uint16 map_colorref( COLORREF );
+	virtual SDL_Surface* set_mode() = 0;
+	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
+	virtual void rectangle_l( INT x, INT y, INT width, INT height ) = 0;
 };
-
-SDL_Surface *win32k_sdl_t::screen;
-SDL_Thread *win32k_sdl_t::thread;
-SDL_cond *win32k_sdl_t::initialized;
-SDL_mutex *win32k_sdl_t::mutex;
 
 win32k_manager_t::~win32k_manager_t()
 {
 }
 
+win32k_info_t::win32k_info_t() :
+	dc_shared_mem( 0 )
+{
+}
+
+win32k_info_t *win32k_manager_t::alloc_win32k_info()
+{
+	return new win32k_info_t;
+}
+
 win32k_sdl_t::win32k_sdl_t()
 {
-}
-
-void win32k_sdl_t::set_pixel_16bpp( INT x, INT y, COLORREF color )
-{
-	Uint16 *bufp = (Uint16 *)screen->pixels + y*screen->pitch/2 + x;
-	*bufp = SDL_MapRGB(screen->format, GetRValue(color), GetGValue(color), GetBValue(color));
-}
-
-void win32k_sdl_t::set_pixel_32bpp( INT x, INT y, COLORREF color )
-{
-	Uint32 *bufp = (Uint32 *)screen->pixels + y*screen->pitch/4 + x;
-	*bufp = SDL_MapRGB(screen->format, GetRValue(color), GetGValue(color), GetBValue(color));
 }
 
 BOOL win32k_sdl_t::set_pixel( INT x, INT y, COLORREF color )
@@ -146,17 +145,7 @@ BOOL win32k_sdl_t::set_pixel( INT x, INT y, COLORREF color )
 	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
 		return FALSE;
 
-	switch (screen->format->BytesPerPixel)
-	{
-	case 2:
-		set_pixel_16bpp( x, y, color );
-		break;
-	case 4:
-		set_pixel_32bpp( x, y, color );
-		break;
-	default:
-		dprintf("%d bpp not supported\n", screen->format->BytesPerPixel);
-	}
+	set_pixel_l( x, y, color );
 
 	if ( SDL_MUSTLOCK(screen) )
 		SDL_UnlockSurface(screen);
@@ -166,9 +155,24 @@ BOOL win32k_sdl_t::set_pixel( INT x, INT y, COLORREF color )
 	return TRUE;
 }
 
-int win32k_sdl_t::screen_thread( void * )
+BOOL win32k_sdl_t::rectangle( INT x, INT y, INT width, INT height )
 {
-	screen = SDL_SetVideoMode(640, 480, 16, SDL_SWSURFACE);
+	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
+		return FALSE;
+
+	rectangle_l( x, y, width, height );
+
+	if ( SDL_MUSTLOCK(screen) )
+		SDL_UnlockSurface(screen);
+
+	SDL_UpdateRect(screen, x, y, width, height);
+
+	return TRUE;
+}
+
+int win32k_sdl_t::screen_thread()
+{
+	screen = set_mode();
 	SDL_CondSignal( initialized );
 
 	SDL_Event event;
@@ -176,8 +180,15 @@ int win32k_sdl_t::screen_thread( void * )
 	{
 		SDL_PollEvent( &event );
 		if (event.type == SDL_QUIT)
-			exit(1);
+			break;
 	}
+	return 0;
+}
+
+int start_win32k_sdl_t_screen_thread( void *arg )
+{
+	win32k_sdl_t *x = (win32k_sdl_t*) arg;
+	return x->screen_thread();
 }
 
 BOOL win32k_sdl_t::init()
@@ -191,7 +202,7 @@ BOOL win32k_sdl_t::init()
 
 	initialized = SDL_CreateCond();
 	mutex = SDL_CreateMutex();
-	SDL_CreateThread( screen_thread, 0 );
+	thread = SDL_CreateThread( start_win32k_sdl_t_screen_thread, this );
 	SDL_CondWait( initialized, mutex );
 
 	return TRUE;
@@ -207,9 +218,50 @@ void win32k_sdl_t::fini()
 	SDL_WaitThread( thread, NULL );
 }
 
+class win32k_sdl_16bpp_t : public win32k_sdl_t
+{
+public:
+	virtual SDL_Surface* set_mode();
+	virtual void set_pixel_l( INT x, INT y, COLORREF color );
+	virtual void rectangle_l( INT x, INT y, INT width, INT height );
+	Uint16 map_colorref( COLORREF color );
+};
+
+SDL_Surface* win32k_sdl_16bpp_t::set_mode()
+{
+	return SDL_SetVideoMode( 640, 480, 16, SDL_SWSURFACE );
+}
+
+Uint16 win32k_sdl_16bpp_t::map_colorref( COLORREF color )
+{
+	return SDL_MapRGB(screen->format, GetRValue(color), GetGValue(color), GetBValue(color));
+}
+
+void win32k_sdl_16bpp_t::set_pixel_l( INT x, INT y, COLORREF color )
+{
+	Uint16 *bufp = (Uint16 *)screen->pixels + y*screen->pitch/2 + x;
+	*bufp = map_colorref( color );
+}
+
+void win32k_sdl_16bpp_t::rectangle_l( INT x, INT y, INT width, INT height )
+{
+	Uint32 *bufp = (Uint32 *)screen->pixels + y*screen->pitch/4 + x;
+
+	if ( x + width > screen->w )
+		width = screen->w - x;
+	if ( y + height > screen->h )
+		height = screen->h - y;
+
+	bufp[0] = 0;
+}
+
+win32k_sdl_16bpp_t win32k_manager_sdl_16bpp;
+win32k_manager_t *win32k_manager;
+
 void ntgdi_fini()
 {
-	win32k_sdl_t::fini();
+	if (win32k_manager)
+		win32k_manager->fini();
 }
 
 NTSTATUS win32k_process_init(process_t *process)
@@ -218,14 +270,14 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	dprintf("\n");
 
-	if (!win32k_sdl_t::init())
+	// 16bpp by default for now
+	if (!win32k_manager)
+		win32k_manager = &win32k_manager_sdl_16bpp;
+
+	if (!win32k_manager->init())
 		die("unable to allocate screen\n");
 
-	win32k_sdl_t *manager = new win32k_sdl_t;
-	if (!manager)
-		return STATUS_NO_MEMORY;
-
-	process->win32k_info = manager;
+	process->win32k_info = win32k_manager->alloc_win32k_info();
 
 	PPEB ppeb = (PPEB) current->process->peb_section->get_kernel_address();
 
@@ -377,8 +429,7 @@ void dcshm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 
 static dcshm_tracer dcshm_trace;
 
-win32k_manager_t::win32k_manager_t() :
-	dc_shared_mem(0)
+win32k_manager_t::win32k_manager_t()
 {
 }
 
@@ -475,6 +526,16 @@ BOOL device_context_t::release()
 	return TRUE;
 }
 
+BOOL device_context_t::rectangle( INT x, INT y, INT width, INT height )
+{
+	return win32k_manager->rectangle( x, y, width, height );
+}
+
+BOOL device_context_t::set_pixel( INT x, INT y, COLORREF color )
+{
+	return win32k_manager->set_pixel( x, y, color );
+}
+
 device_context_t* dc_from_handle( HGDIOBJ handle )
 {
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
@@ -539,7 +600,7 @@ HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPer
 HGDIOBJ NTAPI NtGdiCreateCompatibleDC(HGDIOBJ hdc)
 {
 	dprintf("%p\n", hdc);
-	return current->process->win32k_info->alloc_dc();
+	return win32k_manager->alloc_dc();
 }
 
 // has one more parameter than gdi32.CreateSolidBrush
@@ -571,7 +632,7 @@ HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(
 HGDIOBJ NTAPI NtGdiGetDCforBitmap(HGDIOBJ Bitmap)
 {
 	dprintf("%p\n", Bitmap);
-	return current->process->win32k_info->alloc_dc();
+	return win32k_manager->alloc_dc();
 }
 
 gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle)
@@ -666,7 +727,7 @@ BOOLEAN NTAPI NtGdiRestoreDC(HGDIOBJ hdc, int saved_dc)
 HGDIOBJ NTAPI NtGdiGetDCObject(HGDIOBJ hdc, ULONG object_type)
 {
 	dprintf("%p %08lx\n", hdc, object_type);
-	return current->process->win32k_info->alloc_dc();
+	return win32k_manager->alloc_dc();
 }
 
 // fun...
@@ -742,7 +803,7 @@ BOOL NTAPI NtGdiSetFontEnumeration(PVOID Unknown)
 
 HANDLE NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID)
 {
-	return current->process->win32k_info->alloc_dc();
+	return win32k_manager->alloc_dc();
 }
 
 typedef struct _font_enum_entry {
@@ -869,12 +930,18 @@ BOOLEAN NTAPI NtGdiComputeXformCoefficients( HANDLE DeviceContext )
 	return TRUE;
 }
 
-BOOLEAN NTAPI NtGdiSetPixel( HANDLE dc, INT x, INT y, COLORREF color )
+BOOLEAN NTAPI NtGdiSetPixel( HANDLE handle, INT x, INT y, COLORREF color )
 {
-	return current->process->win32k_info->set_pixel( x, y, color );
+	device_context_t* dc = dc_from_handle( handle );
+	if (!dc)
+		return FALSE;
+	return dc->set_pixel( x, y, color );
 }
 
-BOOLEAN NTAPI NtGdiRectangle( HANDLE dc, INT x, INT y, INT width, INT height )
+BOOLEAN NTAPI NtGdiRectangle( HANDLE handle, INT x, INT y, INT width, INT height )
 {
-	return TRUE;
+	device_context_t* dc = dc_from_handle( handle );
+	if (!dc)
+		return FALSE;
+	return dc->rectangle( x, y, width, height );
 }
