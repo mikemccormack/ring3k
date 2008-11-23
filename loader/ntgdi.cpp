@@ -166,7 +166,7 @@ BOOL win32k_sdl_t::set_pixel( INT x, INT y, COLORREF color )
 
 win32k_manager_t* alloc_win32k_SDL()
 {
-	if ( SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO) < 0 )
+	if ( SDL_Init(SDL_INIT_VIDEO) < 0 )
 		return NULL;
 	atexit(SDL_Quit);
 
