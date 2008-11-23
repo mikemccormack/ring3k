@@ -327,6 +327,7 @@ int main(int argc, char **argv)
 	// run the main loop
 	schedule();
 
+	ntgdi_fini();
 	r = initial_thread->process->ExitStatus;
 	//fprintf(stderr, "process exited (%08x)\n", r);
 	release( initial_thread );

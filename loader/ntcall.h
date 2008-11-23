@@ -94,6 +94,9 @@ void init_random();
 // from pipe.cpp
 void init_pipe_device();
 
+// from ntgdi.cpp
+void ntgdi_fini();
+
 #define GDI_SHARED_HANDLE_TABLE_ADDRESS ((BYTE*)0x00370000)
 #define GDI_SHARED_HANDLE_TABLE_SIZE 0x60000
 

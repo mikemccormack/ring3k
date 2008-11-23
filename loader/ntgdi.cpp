@@ -101,21 +101,31 @@ BOOLEAN NTAPI NtGdiInit()
 
 class win32k_sdl_t : public win32k_manager_t
 {
-	SDL_Surface *screen;
+	static SDL_Surface *screen;
+	static SDL_cond *initialized;
+	static SDL_mutex *mutex;
+	static SDL_Thread *thread;
 public:
-	win32k_sdl_t( SDL_Surface *_screen );
+	static BOOL init();
+	static void fini();
+	win32k_sdl_t();
 	BOOL set_pixel( INT x, INT y, COLORREF color );
 private:
 	void set_pixel_32bpp( INT x, INT y, COLORREF color );
 	void set_pixel_16bpp( INT x, INT y, COLORREF color );
+	static int screen_thread( void* );
 };
+
+SDL_Surface *win32k_sdl_t::screen;
+SDL_Thread *win32k_sdl_t::thread;
+SDL_cond *win32k_sdl_t::initialized;
+SDL_mutex *win32k_sdl_t::mutex;
 
 win32k_manager_t::~win32k_manager_t()
 {
 }
 
-win32k_sdl_t::win32k_sdl_t( SDL_Surface *_screen ) :
-	screen( _screen )
+win32k_sdl_t::win32k_sdl_t()
 {
 }
 
@@ -156,17 +166,50 @@ BOOL win32k_sdl_t::set_pixel( INT x, INT y, COLORREF color )
 	return TRUE;
 }
 
-win32k_manager_t* alloc_win32k_SDL()
+int win32k_sdl_t::screen_thread( void * )
 {
+	screen = SDL_SetVideoMode(640, 480, 16, SDL_SWSURFACE);
+	SDL_CondSignal( initialized );
+
+	SDL_Event event;
+	while (1)
+	{
+		SDL_PollEvent( &event );
+		if (event.type == SDL_QUIT)
+			exit(1);
+	}
+}
+
+BOOL win32k_sdl_t::init()
+{
+	if ( SDL_WasInit(SDL_INIT_VIDEO) )
+		return TRUE;
+
 	if ( SDL_Init(SDL_INIT_VIDEO) < 0 )
-		return NULL;
-	atexit(SDL_Quit);
+		return FALSE;
+	atexit( SDL_Quit );
 
-	SDL_Surface *screen = SDL_SetVideoMode(640, 480, 16, SDL_SWSURFACE);
-	if ( screen == NULL )
-		return NULL;
+	initialized = SDL_CreateCond();
+	mutex = SDL_CreateMutex();
+	SDL_CreateThread( screen_thread, 0 );
+	SDL_CondWait( initialized, mutex );
 
-	return new win32k_sdl_t( screen );
+	return TRUE;
+}
+
+void win32k_sdl_t::fini()
+{
+	if ( !SDL_WasInit(SDL_INIT_VIDEO) )
+		return;
+	SDL_Event event;
+	event.type = SDL_QUIT;
+	SDL_PushEvent( &event );
+	SDL_WaitThread( thread, NULL );
+}
+
+void ntgdi_fini()
+{
+	win32k_sdl_t::fini();
 }
 
 NTSTATUS win32k_process_init(process_t *process)
@@ -175,10 +218,14 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	dprintf("\n");
 
-	win32k_manager_t *info = alloc_win32k_SDL();
-	if (!info)
+	if (!win32k_sdl_t::init())
 		die("unable to allocate screen\n");
-	process->win32k_info = info;
+
+	win32k_sdl_t *manager = new win32k_sdl_t;
+	if (!manager)
+		return STATUS_NO_MEMORY;
+
+	process->win32k_info = manager;
 
 	PPEB ppeb = (PPEB) current->process->peb_section->get_kernel_address();
 
