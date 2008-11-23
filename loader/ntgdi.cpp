@@ -281,8 +281,8 @@ HGDIOBJ win32k_manager_t::alloc_dc()
 			return FALSE;
 		}
 
-		//if (option_trace)
-		//	current->process->vm->set_tracer( dc_shared_mem, dcshm_trace );
+		if (option_trace)
+			current->process->vm->set_tracer( dc_shared_mem, dcshm_trace );
 	}
 
 	// find a free device context area
