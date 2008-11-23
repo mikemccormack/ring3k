@@ -53,16 +53,16 @@
 #define PACKAGE_BUGREPORT ""
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "ntnative"
+#define PACKAGE_NAME "ring3k"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "ntnative 0.1"
+#define PACKAGE_STRING "ring3k 0.0.12"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "ntnative"
+#define PACKAGE_TARNAME "ring3k"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.1"
+#define PACKAGE_VERSION "0.0.12"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1

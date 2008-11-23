@@ -21,6 +21,12 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* Define if you have the SDL library */
+#undef HAVE_SDL
+
+/* Define to 1 if you have the <SDL/SDL.h> header file. */
+#undef HAVE_SDL_SDL_H
+
 /* Define to 1 if you have the `sigqueue' function. */
 #undef HAVE_SIGQUEUE
 
