@@ -735,10 +735,10 @@ bool address_space_impl::set_traced( void* addr, bool traced )
 	return mb->set_traced( this, traced );
 }
 
-bool address_space_impl::set_tracer( BYTE *p, block_tracer& tracer )
+bool address_space_impl::set_tracer( BYTE *addr, block_tracer& tracer )
 {
 	// trace it
-	mblock* mb = get_mblock( p );
+	mblock* mb = get_mblock( addr );
 	if (!mb)
 		return false;
 	return mb->set_tracer( this, &tracer );
