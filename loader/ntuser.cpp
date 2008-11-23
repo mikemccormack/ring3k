@@ -358,7 +358,7 @@ HANDLE NTAPI NtUserGetDC(HANDLE Window)
 HGDIOBJ NtUserSelectPalette(HGDIOBJ hdc, HPALETTE palette, BOOLEAN force_bg)
 {
 	dprintf("%p %p %d\n", hdc, palette, force_bg);
-	return alloc_gdi_object(FALSE, GDI_OBJECT_PALETTE, 0);
+	return alloc_gdi_object( FALSE, GDI_OBJECT_PALETTE );
 }
 
 BOOLEAN NTAPI NtUserSetCursorIconData(

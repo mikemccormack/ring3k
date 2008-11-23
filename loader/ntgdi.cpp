@@ -83,21 +83,13 @@ void ntgdishm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 
 static ntgdishm_tracer ntgdishm_trace;
 
-BOOLEAN delete_handle_table_entry( HANDLE Object )
+BOOL gdi_object_t::release()
 {
-	dprintf("%p\n", Object);
-
-	gdi_handle_table_entry *entry = get_handle_table_entry(Object);
-	if (!entry)
-		return FALSE;
-	if (entry->ProcessId != current->process->id)
-	{
-		dprintf("pirate deletion! %p\n", Object);
-		return FALSE;
-	}
-
+	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
+	assert( entry );
+	assert( entry->kernel_info == this );
 	memset( entry, 0, sizeof *entry );
-
+	delete this;
 	return TRUE;
 }
 
@@ -288,7 +280,7 @@ int find_free_gdi_handle(void)
 	return -1;
 }
 
-HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type, void *user_info, void *kernel_info )
+HGDIOBJ alloc_gdi_handle( BOOL stock, ULONG type, void *user_info, gdi_object_t* obj )
 {
 	int index = find_free_gdi_handle();
 	if (index < 0)
@@ -300,16 +292,27 @@ HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type, void *user_info, void *kernel_
 	HGDIOBJ handle = makeHGDIOBJ(0,stock,type,index);
 	table[index].Upper = (ULONG)handle >> 16;
 	table[index].user_info = user_info;
+	table[index].kernel_info = (void*) obj;
 
 	return handle;
 }
 
-// shared across all processes
-static section_t *g_dc_section;
-static BYTE *g_dc_shared_mem = 0;
-static const ULONG max_device_contexts = 0x100;
-static const ULONG dc_size = 0x100;
-static bool g_dc_bitmap[max_device_contexts];
+
+HGDIOBJ gdi_object_t::alloc( BOOL stock, ULONG type )
+{
+	gdi_object_t *obj = new gdi_object_t();
+	HGDIOBJ handle = alloc_gdi_handle( stock, type, 0, obj );
+	if (handle)
+		obj->handle = handle;
+	else
+		delete obj;
+	return obj->handle;
+}
+
+HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type )
+{
+	return gdi_object_t::alloc( stock, type );
+}
 
 class dcshm_tracer : public block_tracer
 {
@@ -319,6 +322,7 @@ public:
 
 void dcshm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
+	ULONG dc_size = device_context_t::dc_size;
 	ULONG ofs = address - mb->get_base_address();
 	fprintf(stderr, "%04lx: accessed dcshm[%02lx][%02lx] from %08lx\n",
 				current->trace_id(), ofs/dc_size, ofs%dc_size, eip);
@@ -331,7 +335,17 @@ win32k_manager_t::win32k_manager_t() :
 {
 }
 
+section_t *device_context_t::g_dc_section;
+BYTE *device_context_t::g_dc_shared_mem = 0;
+bool device_context_t::g_dc_bitmap[max_device_contexts];
+
 HGDIOBJ win32k_manager_t::alloc_dc()
+{
+	device_context_t* dc = device_context_t::alloc();
+	return dc->get_handle();
+}
+
+BYTE *device_context_t::get_dc_shared_mem()
 {
 	NTSTATUS r;
 
@@ -341,24 +355,29 @@ HGDIOBJ win32k_manager_t::alloc_dc()
 		sz.QuadPart = 0x10000;
 		r = create_section( &g_dc_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
 		if (r < STATUS_SUCCESS)
-			return FALSE;
+			return NULL;
 
 		g_dc_shared_mem = (BYTE*) g_dc_section->get_kernel_address();
 	}
 
+	BYTE*& dc_shared_mem = current->process->win32k_info->dc_shared_mem;
 	if (!dc_shared_mem)
 	{
 		r = g_dc_section->mapit( current->process->vm, dc_shared_mem, 0, MEM_COMMIT, PAGE_READWRITE );
 		if (r < STATUS_SUCCESS)
 		{
 			dprintf("failed to map shared memory\n");
-			return FALSE;
+			return NULL;
 		}
 
 		if (option_trace)
 			current->process->vm->set_tracer( dc_shared_mem, dcshm_trace );
 	}
+	return dc_shared_mem;
+}
 
+int device_context_t::get_free_index()
+{
 	// find a free device context area
 	ULONG n;
 	for (n=0; n<max_device_contexts; n++)
@@ -367,32 +386,59 @@ HGDIOBJ win32k_manager_t::alloc_dc()
 	if (n >= max_device_contexts)
 	{
 		dprintf("no device contexts left\n");
-		return FALSE;
+		return -1;
 	}
 	g_dc_bitmap[n] = true;
+	return n;
+}
 
-	// calculate pointers to it
-	//BYTE* k_dcu = dc_shared_mem + n * dc_size;
+device_context_t::device_context_t( ULONG n ) :
+	dc_index( n )
+{
+}
+
+device_context_t* device_context_t::alloc()
+{
+	BYTE* dc_shared_mem = get_dc_shared_mem();
+	if (!dc_shared_mem)
+		return NULL;
+
+	int n = get_free_index();
+	if (n < 0)
+		return NULL;
+
+	device_context_t* dc = new device_context_t( n );
+	if (!dc)
+		return NULL;
+
+	// calculate user side pointer to the chunk
 	BYTE* u_dcu = dc_shared_mem + n * dc_size;
-	dprintf("dc number %02lx address %p\n", n, u_dcu);
-
-	HGDIOBJ dc = alloc_gdi_object( FALSE, GDI_OBJECT_DC, (BYTE*)u_dcu, (void*) n );
+	dprintf("dc number %02x address %p\n", n, u_dcu);
+	dc->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, u_dcu, dc );
 
 	return dc;
 }
 
-BOOL win32k_manager_t::release_dc( HGDIOBJ dc )
+BOOL device_context_t::release()
 {
-	gdi_handle_table_entry *entry = get_handle_table_entry( dc );
+	assert( dc_index <= max_device_contexts );
+	assert( g_dc_bitmap[dc_index] );
+	g_dc_bitmap[dc_index] = false;
+	gdi_object_t::release();
+	return TRUE;
+}
+
+BOOL win32k_manager_t::release_dc( HGDIOBJ handle )
+{
+	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
 	if (!entry)
 		return FALSE;
 	if (entry->Type != GDI_OBJECT_DC)
 		return FALSE;
-	ULONG index = (ULONG) (entry->kernel_info);
-	assert( index <= max_device_contexts );
-	assert( g_dc_bitmap[index] );
-	g_dc_bitmap[index] = false;
-	return delete_handle_table_entry( dc );
+	device_context_t* dc = (device_context_t*) entry->kernel_info;
+	if (!dc)
+		return FALSE;
+	return dc->release();
 }
 
 HGDIOBJ NTAPI NtGdiGetStockObject(ULONG Index)
@@ -407,11 +453,11 @@ HGDIOBJ NTAPI NtGdiGetStockObject(ULONG Index)
 	case DKGRAY_BRUSH:
 	case BLACK_BRUSH:
 	case NULL_BRUSH: //case HOLLOW_BRUSH:
-		return alloc_gdi_object(TRUE,GDI_OBJECT_BRUSH, 0);
+		return alloc_gdi_object( TRUE, GDI_OBJECT_BRUSH );
 	case WHITE_PEN:
 	case BLACK_PEN:
 	case NULL_PEN:
-		return alloc_gdi_object(TRUE,GDI_OBJECT_PEN, 0);
+		return alloc_gdi_object( TRUE, GDI_OBJECT_PEN );
 	case OEM_FIXED_FONT:
 	case ANSI_FIXED_FONT:
 	case ANSI_VAR_FONT:
@@ -421,9 +467,9 @@ HGDIOBJ NTAPI NtGdiGetStockObject(ULONG Index)
 	case DEFAULT_GUI_FONT:
 	case 18: // 18 and 19 are used by csrss.exe when starting
 	case 19:
-		return alloc_gdi_object(TRUE,GDI_OBJECT_FONT, 0);
+		return alloc_gdi_object( TRUE, GDI_OBJECT_FONT );
 	case DEFAULT_PALETTE:
-		return alloc_gdi_object(TRUE,GDI_OBJECT_PALETTE, 0);
+		return alloc_gdi_object( TRUE, GDI_OBJECT_PALETTE );
 	default:
 		return 0;
 	}
@@ -433,7 +479,7 @@ HGDIOBJ NTAPI NtGdiGetStockObject(ULONG Index)
 HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPerPixel, VOID**Out)
 {
 	dprintf("(%dx%d) %d %d %p\n", Width, Height, Planes, BitsPerPixel, Out);
-	return alloc_gdi_object(FALSE, GDI_OBJECT_BITMAP, 0);
+	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
 }
 
 // gdi32.CreateComptabibleDC
@@ -447,7 +493,7 @@ HGDIOBJ NTAPI NtGdiCreateCompatibleDC(HGDIOBJ hdc)
 HGDIOBJ NTAPI NtGdiCreateSolidBrush(COLORREF Color, ULONG u_arg2)
 {
 	dprintf("%08lx %08lx\n", Color, u_arg2);
-	return alloc_gdi_object(FALSE, GDI_OBJECT_BRUSH, 0);
+	return alloc_gdi_object( FALSE, GDI_OBJECT_BRUSH );
 }
 
 // looks like CreateDIBitmap, with BITMAPINFO unpacked
@@ -466,7 +512,7 @@ HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(
 {
 	dprintf("%p %08lx %08lx %08lx %08lx %p %08lx %08lx %08lx %08lx %08lx\n",
 			hdc, Width, Height, Bpp, u_arg5, u_arg6, u_arg7, u_arg8, u_arg9, u_arg10, u_arg11 );
-	return alloc_gdi_object(FALSE, GDI_OBJECT_BITMAP, 0);
+	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
 }
 
 HGDIOBJ NTAPI NtGdiGetDCforBitmap(HGDIOBJ Bitmap)
@@ -489,7 +535,19 @@ gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle)
 
 BOOLEAN NTAPI NtGdiDeleteObjectApp(HGDIOBJ Object)
 {
-	return delete_handle_table_entry( Object );
+	gdi_handle_table_entry *entry = get_handle_table_entry(Object);
+	if (!entry)
+		return FALSE;
+	if (entry->ProcessId != current->process->id)
+	{
+		dprintf("pirate deletion! %p\n", Object);
+		return FALSE;
+	}
+
+	gdi_object_t *obj = (gdi_object_t*) entry->kernel_info;
+	assert( obj );
+
+	return obj->release();
 }
 
 char *get_object_type_name( HGDIOBJ object )
@@ -513,7 +571,7 @@ HGDIOBJ NTAPI NtGdiSelectBitmap(HGDIOBJ hdc, HGDIOBJ bitmap)
 	if (get_handle_type(bitmap) != GDI_OBJECT_BITMAP)
 		return 0;
 
-	return alloc_gdi_object(FALSE, GDI_OBJECT_BITMAP, 0);
+	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
 }
 
 // Info
@@ -621,7 +679,7 @@ HANDLE NTAPI NtGdiCreateDIBSection(
 		ULONG_PTR ColorSpace,
 		PVOID Bits)
 {
-	return alloc_gdi_object(FALSE, GDI_OBJECT_BITMAP, 0);
+	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
 }
 
 BOOL NTAPI NtGdiSetFontEnumeration(PVOID Unknown)
@@ -694,7 +752,7 @@ HANDLE NTAPI NtGdiEnumFontOpen(
 	if (r < STATUS_SUCCESS)
 		return 0;
 
-	return alloc_gdi_object(FALSE, 0x3f, 0);
+	return alloc_gdi_object( FALSE, 0x3f );
 }
 
 BOOLEAN NTAPI NtGdiEnumFontChunk(

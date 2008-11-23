@@ -77,7 +77,7 @@ inline ULONG get_handle_type(HGDIOBJ handle)
 	return (((ULONG)handle)>>16)&0x7f;
 }
 
-HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type, void *user_info, void *kernel_info = 0 );
+HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type );
 
 typedef struct {
 	BYTE	rgbBlue;
