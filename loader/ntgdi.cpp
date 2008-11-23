@@ -233,8 +233,8 @@ HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type, void *user_info, void *kernel_
 // shared across all processes
 static section_t *g_dc_section;
 static BYTE *g_dc_shared_mem = 0;
-static const ULONG max_device_contexts = 0x10;
-static const ULONG dc_size = 0x1000;
+static const ULONG max_device_contexts = 0x100;
+static const ULONG dc_size = 0x100;
 static bool g_dc_bitmap[max_device_contexts];
 
 class dcshm_tracer : public block_tracer
@@ -246,8 +246,8 @@ public:
 void dcshm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
 	ULONG ofs = address - mb->get_base_address();
-	fprintf(stderr, "%04lx: accessed dcshm[%04lx] from %08lx\n",
-				current->trace_id(), ofs, eip);
+	fprintf(stderr, "%04lx: accessed dcshm[%02lx][%02lx] from %08lx\n",
+				current->trace_id(), ofs/dc_size, ofs%dc_size, eip);
 }
 
 static dcshm_tracer dcshm_trace;
@@ -291,13 +291,16 @@ HGDIOBJ win32k_manager_t::alloc_dc()
 		if (!g_dc_bitmap[n])
 			break;
 	if (n >= max_device_contexts)
+	{
+		dprintf("no device contexts left\n");
 		return FALSE;
+	}
 	g_dc_bitmap[n] = true;
 
 	// calculate pointers to it
 	//BYTE* k_dcu = dc_shared_mem + n * dc_size;
 	BYTE* u_dcu = dc_shared_mem + n * dc_size;
-	dprintf("dc number %ld address %p\n", n, u_dcu);
+	dprintf("dc number %02lx address %p\n", n, u_dcu);
 
 	HGDIOBJ dc = alloc_gdi_object( FALSE, GDI_OBJECT_DC, (BYTE*)u_dcu, (void*) n );
 
