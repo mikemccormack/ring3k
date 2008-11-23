@@ -8,7 +8,6 @@ Things to do:
 - implement mailslots
 - implement NtQueryInformationToken 0x20 11 (nil) 0 0x6f5fc
 - document registry format
-- use file_t* instead of fds in blocks and sections
 - check memory leaks
 - create a context_t to manage registers
 - default registry values
@@ -35,4 +34,5 @@ Semi Completed:
 - integrate NtCreateFile with the object management code
 - implement named pipes
 - fix cases where non-zero status can be success
+- use file_t* instead of fds in blocks and sections
 
