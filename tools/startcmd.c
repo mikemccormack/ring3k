@@ -365,20 +365,6 @@ void run_cmd_exe(void)
 	do_loop( p1out, p2in );
 }
 
-void draw_pixel( void )
-{
-	HDC hdc = GetDC( 0 );
-	int i, j, ok = TRUE;
-
-	for (i=0; ok && i<0x10; i++)
-		for (j=0; ok && j<0x10; j++)
-			ok = SetPixel( hdc, i, j, RGB(128, 128, 128));
-	if (!ok)
-		dprintf("SetPixel failed (%ld)\n", GetLastError());
-
-	ReleaseDC( 0, hdc );
-}
-
 int main( int argc, char **argv )
 {
 	log_open();
@@ -387,7 +373,7 @@ int main( int argc, char **argv )
 	dprintf("attaching to window station\n");
 	init_window_station();
 
-	draw_pixel();
+	run_cmd_exe();
 
 	dprintf("close & sleeping\n");
 	log_close();
