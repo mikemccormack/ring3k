@@ -12,6 +12,7 @@ RANLIB=@MINGW32RANLIB@
 WINDRES=@MINGW32WINDRES@
 
 SOURCE = \
+	console.c \
 	dumphandles.c \
 	hello.c \
 	qdf.c \
@@ -44,6 +45,9 @@ qdf.exe: qdf.o
 
 winlogon.exe: winlogon.o
 	$(CC) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--image-base,0x10000000 -Wl,--subsystem=windows
+
+console.exe: console.c
+	$(CC) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
 
 clean:
 	rm -f *.o advapi32.dll dumphandles.exe hello.exe qdf.exe winlogon.exe
