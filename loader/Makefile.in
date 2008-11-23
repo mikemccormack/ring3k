@@ -1,5 +1,4 @@
-# nt loader
-#
+# nt loader #
 # Copyright 2006-2008 Mike McCormack
 #
 # This library is free software; you can redistribute it and/or
@@ -19,11 +18,14 @@
 
 XML_INCLUDES=-I/usr/include/libxml2
 INCLUDE_DIRS=-I. -I../include $(XML_INCLUDES) -I../libudis86
+DEPFLAG=-Wp,-MD,.$@.d
 CFLAGS_COMMON=-Wall -O2 -D__i386__ -m32 -fshort-wchar -fno-strict-aliasing $(INCLUDE_DIRS)
 CFLAGS=-Wpointer-arith
-CPPFLAGS=$(CFLAGS_COMMON)
+CPPFLAGS=$(CFLAGS_COMMON) $(DEPFLAG)
 LIBS=-lxml2 -lSDL -lstdc++ ../libudis86/libudis86.a
 LDFLAGS=-m32 -rdynamic
+
+CC = @CC@
 
 HEADERS = \
 	debug.h \
@@ -78,19 +80,11 @@ OBJECTS = $(C_SOURCES:.c=.o) $(CPP_SOURCES:.cpp=.o)
 
 TARGET = ntl
 
-.%.dpp: %.cpp
-	$(CC) $(INCLUDE_DIRS) -MM $< > $@
-
-.%.d: %.c
-	$(CC) $(INCLUDE_DIRS) -MM $< > $@
-
 .PHONY: all clean count stat test
 
 all: $(TARGET) enc fiber ttclient
 
-DEPFILES = $(C_SOURCES:%.c=.%.d) $(CPP_SOURCES:%.cpp=.%.dpp)
-
-include $(DEPFILES)
+include $(wildcard .*.d)
 
 $(TARGET): $(OBJECTS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
@@ -109,7 +103,7 @@ fiber: fiber_test.o fiber.o platform.o
 
 clean:
 	rm -rf drive c:
-	rm -f $(TARGET) *.o core enc fiber ttclient *.orig *.rej $(DEPFILES)
+	rm -f $(TARGET) *.o core enc fiber ttclient *.orig *.rej .*.d
 
 stat:
 	@/usr/bin/perl syscall_stat.pl

@@ -1,11 +1,12 @@
 #
-# Makefile for regression tests
+# Makefile for testing tools
 # Copyright 2008 Mike McCormack
 #
 
+DEPFLAG = -Wp,-MD,.$@.d
 CC=@MINGW32CC@
 STRIP=@MINGW32STRIP@
-CFLAGS=-Wall -O2
+CFLAGS=-Wall -O2 $(DEPFLAG)
 AS=@MINGW32AS@
 AR=@MINGW32AR@
 RANLIB=@MINGW32RANLIB@
@@ -19,39 +20,34 @@ SOURCE = \
 	qdf.c \
 	startcmd.c
 
-.%.d: %.c
-	$(CC) -MM $< > $@
-
 .PHONY: all clean
 
 NTWIN32LIB=../tests/win2k/ntwin32.dll
 
 all: $(SOURCE:.c=.exe) advapi32.dll
 
-DEPFILES = $(SOURCE:%.c=.%.d)
+include $(wildcard .*.d)
 
-include $(DEPFILES)
-
-advapi32.dll: advapi32.o
+advapi32.dll: advapi32.c
 	$(CC) -o $@ -shared $< -e _DllMain@12 -Wl,--kill-at
 
-dumphandles.exe: dumphandles.o $(NTWIN32LIB)
-	$(CC) -o $@ $< $(NTWIN32LIB) -lntdll -lkernel32 -luser32
+dumphandles.exe: dumphandles.c $(NTWIN32LIB)
+	$(CC) $(CFLAGS) -o $@ $< $(NTWIN32LIB) -lntdll -lkernel32 -luser32
 
-hello.exe: hello.o
-	$(CC) -o $@ $< -lntdll -lkernel32 -mconsole
+hello.exe: hello.c
+	$(CC) $(CFLAGS) -o $@ $< -lntdll -lkernel32 -mconsole
 
-qdf.exe: qdf.o
-	$(CC) -o $@ $< -luser32 -lkernel32 -lntdll -lgdi32
+qdf.exe: qdf.c
+	$(CC) $(CFLAGS) -o $@ $< -luser32 -lkernel32 -lntdll -lgdi32
 
-startcmd.exe: startcmd.o
-	$(CC) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--image-base,0x10000000 -Wl,--subsystem=windows
+startcmd.exe: startcmd.c
+	$(CC) $(CFLAGS) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
 
 console.exe: console.c
-	$(CC) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
+	$(CC) $(CFLAGS) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
 
 pixels.exe: pixels.c
-	$(CC) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
+	$(CC) $(CFLAGS) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
 
 clean:
-	rm -f *.o advapi32.dll dumphandles.exe hello.exe qdf.exe winlogon.exe
+	rm -f *.o advapi32.dll dumphandles.exe hello.exe qdf.exe winlogon.exe .*.d

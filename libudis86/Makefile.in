@@ -1,12 +1,14 @@
 # adapted from libudis86 Makefile
 
-CC      = gcc
-CFLAGS  = -Wall -O2
+CC      = @CC@
+DEPFLAG = -Wp,-MD,.$@.d
+CFLAGS  = -Wall -O2 $(DEPFLAG)
 AR      = ar
 RM      = rm
 PERL    = perl
 
 .SUFFIXES: .c .o
+
 .c.o:
 	$(CC) -m32 -c $(CFLAGS) -o $@ $<
 
@@ -23,15 +25,7 @@ OBJS = mnemonics.o \
 
 all: libudis86.a
 
-.%.dpp: %.cpp
-	$(CC) $(INCLUDE_DIRS) -MM $< > $@
-
-.%.d: %.c
-	$(CC) $(INCLUDE_DIRS) -MM $< > $@
-
-DEPFILES = $(C_SOURCES:%.c=.%.d) $(CPP_SOURCES:%.cpp=.%.dpp)
-
-include $(DEPFILES)
+include $(wildcard .*.d)
 
 libudis86.a: $(OBJS)
 	$(AR) -r libudis86.a $(OBJS)
@@ -40,5 +34,5 @@ mnemonics.c mnemonsic.h: mnemonics.dat
 	$(PERL) mnemonics.pl < mnemonics.dat
 
 clean:
-	$(RM) -f core *.o *.a mnemonics.c mnemonics.h
+	$(RM) -f core *.o *.a mnemonics.c mnemonics.h .*.d
 
