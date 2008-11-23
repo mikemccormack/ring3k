@@ -762,3 +762,8 @@ BOOLEAN NTAPI NtGdiSetPixel( HANDLE dc, INT x, INT y, COLORREF color )
 {
 	return current->process->win32k_info->set_pixel( x, y, color );
 }
+
+BOOLEAN NTAPI NtGdiRectangle( HANDLE dc, INT x, INT y, INT width, INT height )
+{
+	return TRUE;
+}
