@@ -428,14 +428,20 @@ BOOL device_context_t::release()
 	return TRUE;
 }
 
-BOOL win32k_manager_t::release_dc( HGDIOBJ handle )
+device_context_t* dc_from_handle( HGDIOBJ handle )
 {
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
 	if (!entry)
 		return FALSE;
 	if (entry->Type != GDI_OBJECT_DC)
 		return FALSE;
-	device_context_t* dc = (device_context_t*) entry->kernel_info;
+	assert( entry->kernel_info );
+	return (device_context_t*) entry->kernel_info;
+}
+
+BOOL win32k_manager_t::release_dc( HGDIOBJ handle )
+{
+	device_context_t* dc = dc_from_handle( handle );
 	if (!dc)
 		return FALSE;
 	return dc->release();
