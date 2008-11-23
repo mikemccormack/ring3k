@@ -337,15 +337,17 @@ void mblock::commit( address_space *vm )
 
 void mblock::remote_remap( address_space *vm, bool except )
 {
-	int r = remote_map( vm, except ? PROT_NONE : Protect );
+	int r = remote_map( vm, except ? PAGE_NOACCESS : Protect );
 	if (0 < r )
 		die("remote_map failed\n");
 }
 
-void mblock::set_tracer( address_space *vm, block_tracer *bt )
+bool mblock::set_tracer( address_space *vm, block_tracer *bt )
 {
+	assert( (tracer == 0) ^ (bt == 0) );
 	tracer = bt;
 	remote_remap( vm, tracer != 0 );
+	return true;
 }
 
 void mblock::reserve( address_space *vm )
@@ -409,6 +411,8 @@ bool mblock::traced_access( BYTE *address, ULONG Eip )
 
 bool mblock::set_traced( address_space *vm, bool traced )
 {
+	if (!tracer)
+		return false;
 	remote_remap( vm, traced );
 	return true;
 }

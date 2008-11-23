@@ -732,9 +732,16 @@ bool address_space_impl::set_traced( void* addr, bool traced )
 	mblock* mb = get_mblock( address );
 	if (!mb)
 		return false;
+	return mb->set_traced( this, traced );
+}
 
-	mb->set_traced( this, traced );
-	return true;
+bool address_space_impl::set_tracer( BYTE *p, block_tracer& tracer )
+{
+	// trace it
+	mblock* mb = get_mblock( p );
+	if (!mb)
+		return false;
+	return mb->set_tracer( this, &tracer );
 }
 
 static inline ULONG mem_round_size(ULONG size)

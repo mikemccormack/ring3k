@@ -149,7 +149,7 @@ NTSTATUS win32k_process_init(process_t *process)
 	ppeb->GdiSharedHandleTable = (void*) p;
 
 	if (option_trace)
-		trace_memory( current->process->vm, p, ntgdishm_trace );
+		current->process->vm->set_tracer( p, ntgdishm_trace );
 
 	return r;
 }
@@ -280,6 +280,9 @@ HGDIOBJ win32k_manager_t::alloc_dc()
 			dprintf("failed to map shared memory\n");
 			return FALSE;
 		}
+
+		//if (option_trace)
+		//	current->process->vm->set_tracer( dc_shared_mem, dcshm_trace );
 	}
 
 	// find a free device context area
@@ -287,7 +290,6 @@ HGDIOBJ win32k_manager_t::alloc_dc()
 	for (n=0; n<max_device_contexts; n++)
 		if (!g_dc_bitmap[n])
 			break;
-	dprintf("dc number %ld\n", n);
 	if (n >= max_device_contexts)
 		return FALSE;
 	g_dc_bitmap[n] = true;
@@ -295,10 +297,9 @@ HGDIOBJ win32k_manager_t::alloc_dc()
 	// calculate pointers to it
 	//BYTE* k_dcu = dc_shared_mem + n * dc_size;
 	BYTE* u_dcu = dc_shared_mem + n * dc_size;
+	dprintf("dc number %ld address %p\n", n, u_dcu);
 
 	HGDIOBJ dc = alloc_gdi_object( FALSE, GDI_OBJECT_DC, (BYTE*)u_dcu, (void*) n );
-
-	if (0) trace_memory( current->process->vm, u_dcu, dcshm_trace );
 
 	return dc;
 }

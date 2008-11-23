@@ -44,6 +44,12 @@ public:
 	virtual ~backing_store_t() {};
 };
 
+class block_tracer {
+public:
+	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+	virtual ~block_tracer();
+};
+
 class address_space {
 public:
 	virtual ~address_space();
@@ -66,17 +72,12 @@ public:
 	virtual int get_fault_info( void *& addr ) = 0;
 	virtual bool traced_access( void* address, ULONG Eip ) = 0;
 	virtual bool set_traced( void* address, bool traced ) = 0;
+	virtual bool set_tracer( BYTE* address, block_tracer& tracer) = 0;
 };
 
 unsigned int allocate_core_memory(unsigned int size);
 int free_core_memory( unsigned int offset, unsigned int size );
 struct address_space *create_address_space( BYTE *high );
-
-class block_tracer {
-public:
-	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
-	virtual ~block_tracer();
-};
 
 typedef list_anchor<mblock,0> mblock_list_t;
 typedef list_iter<mblock,0> mblock_iter_t;
@@ -131,7 +132,7 @@ public:
 	object_t* get_section() { return section; };
 	static ULONG mmap_flag_from_page_prot( ULONG prot );
 	void remote_remap( address_space *vm, bool except );
-	void set_tracer( address_space *vm, block_tracer *tracer);
+	bool set_tracer( address_space *vm, block_tracer *tracer);
 	bool traced_access( BYTE *address, ULONG Eip );
 	bool set_traced( address_space *vm, bool traced );
 	void set_section( object_t *section );
@@ -199,16 +200,9 @@ public:
 	virtual void init_context( CONTEXT& ctx ) = 0;
 	virtual bool traced_access( void* address, ULONG Eip );
 	virtual bool set_traced( void* address, bool traced );
+	virtual bool set_tracer( BYTE* address, block_tracer& tracer);
 };
 
 extern struct address_space_impl *(*pcreate_address_space)();
-
-static inline void trace_memory( address_space *vm, BYTE *p, block_tracer& tracer )
-{
-	// trace it
-	mblock* mb = vm->find_block( p );
-	assert(mb != 0);
-	mb->set_tracer( vm, &tracer );
-}
 
 #endif // __MEM_H__

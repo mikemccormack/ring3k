@@ -235,7 +235,7 @@ NTSTATUS get_shared_memory_block( process_t *p )
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	if (0) trace_memory( p->vm, shm, kshm_trace );
+	if (0) p->vm->set_tracer( shm, kshm_trace );
 
 	assert( shm == (BYTE*) 0x7ffe0000 );
 
@@ -483,7 +483,7 @@ NTSTATUS create_process( process_t **pprocess, object_t *section )
 
 	*pprocess = p;
 
-	if (0) trace_memory( p->vm, peb_addr, peb_trace );
+	if (0) p->vm->set_tracer( peb_addr, peb_trace );
 
 	return r;
 }
