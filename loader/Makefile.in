@@ -22,7 +22,7 @@ INCLUDE_DIRS=-I. -I../include $(XML_INCLUDES) -I../libudis86
 CFLAGS_COMMON=-Wall -O2 -D__i386__ -m32 -fshort-wchar -fno-strict-aliasing $(INCLUDE_DIRS)
 CFLAGS=-Wpointer-arith
 CPPFLAGS=$(CFLAGS_COMMON)
-LIBS=-lxml2 -lstdc++ ../libudis86/libudis86.a
+LIBS=-lxml2 -lSDL -lstdc++ ../libudis86/libudis86.a
 LDFLAGS=-m32 -rdynamic
 
 HEADERS = \

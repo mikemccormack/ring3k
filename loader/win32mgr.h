@@ -26,8 +26,10 @@ class win32k_manager_t
 	BYTE* dc_shared_mem;
 public:
 	win32k_manager_t();
+	virtual ~win32k_manager_t();
 	HGDIOBJ alloc_dc();
 	BOOL release_dc( HGDIOBJ dc );
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 };
 
 #endif // __WIN32K_MANAGER__

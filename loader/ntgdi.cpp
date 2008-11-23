@@ -35,6 +35,8 @@
 #include "debug.h"
 #include "win32mgr.h"
 
+#include <SDL/SDL.h>
+
 // shared across all processes (in a window station)
 static section_t *gdi_ht_section;
 static void *gdi_handle_table = 0;
@@ -105,13 +107,85 @@ BOOLEAN NTAPI NtGdiInit()
 	return TRUE;
 }
 
+class win32k_sdl_t : public win32k_manager_t
+{
+	SDL_Surface *screen;
+public:
+	win32k_sdl_t( SDL_Surface *_screen );
+	BOOL set_pixel( INT x, INT y, COLORREF color );
+private:
+	void set_pixel_32bpp( INT x, INT y, COLORREF color );
+	void set_pixel_16bpp( INT x, INT y, COLORREF color );
+};
+
+win32k_manager_t::~win32k_manager_t()
+{
+}
+
+win32k_sdl_t::win32k_sdl_t( SDL_Surface *_screen ) :
+	screen( _screen )
+{
+}
+
+void win32k_sdl_t::set_pixel_16bpp( INT x, INT y, COLORREF color )
+{
+	Uint16 *bufp = (Uint16 *)screen->pixels + y*screen->pitch/2 + x;
+	*bufp = SDL_MapRGB(screen->format, GetRValue(color), GetGValue(color), GetBValue(color));
+}
+
+void win32k_sdl_t::set_pixel_32bpp( INT x, INT y, COLORREF color )
+{
+	Uint32 *bufp = (Uint32 *)screen->pixels + y*screen->pitch/4 + x;
+	*bufp = SDL_MapRGB(screen->format, GetRValue(color), GetGValue(color), GetBValue(color));
+}
+
+BOOL win32k_sdl_t::set_pixel( INT x, INT y, COLORREF color )
+{
+	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
+		return FALSE;
+
+	switch (screen->format->BytesPerPixel)
+	{
+	case 2:
+		set_pixel_16bpp( x, y, color );
+		break;
+	case 4:
+		set_pixel_32bpp( x, y, color );
+		break;
+	default:
+		dprintf("%d bpp not supported\n", screen->format->BytesPerPixel);
+	}
+
+	if ( SDL_MUSTLOCK(screen) )
+		SDL_UnlockSurface(screen);
+
+	SDL_UpdateRect(screen, x, y, 1, 1);
+
+	return TRUE;
+}
+
+win32k_manager_t* alloc_win32k_SDL()
+{
+	if ( SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO) < 0 )
+		return NULL;
+	atexit(SDL_Quit);
+
+	SDL_Surface *screen = SDL_SetVideoMode(640, 480, 16, SDL_SWSURFACE);
+	if ( screen == NULL )
+		return NULL;
+
+	return new win32k_sdl_t( screen );
+}
+
 NTSTATUS win32k_process_init(process_t *process)
 {
 	NTSTATUS r;
 
 	dprintf("\n");
 
-	win32k_manager_t *info = new win32k_manager_t;
+	win32k_manager_t *info = alloc_win32k_SDL();
+	if (!info)
+		die("unable to allocate screen\n");
 	process->win32k_info = info;
 
 	PPEB ppeb = (PPEB) current->process->peb_section->get_kernel_address();
@@ -686,5 +760,5 @@ BOOLEAN NTAPI NtGdiComputeXformCoefficients( HANDLE DeviceContext )
 
 BOOLEAN NTAPI NtGdiSetPixel( HANDLE dc, INT x, INT y, COLORREF color )
 {
-	return TRUE;
+	return current->process->win32k_info->set_pixel( x, y, color );
 }

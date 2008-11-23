@@ -239,6 +239,21 @@ typedef struct tagTEXTMETRICW
     BYTE      tmCharSet;
 } TEXTMETRICW, *LPTEXTMETRICW, *PTEXTMETRICW;
 
+static inline BYTE GetRValue(COLORREF rgb)
+{
+	return rgb&0xff;
+}
+
+static inline BYTE GetGValue(COLORREF rgb)
+{
+	return (rgb>>8)&0xff;
+}
+
+static inline BYTE GetBValue(COLORREF rgb)
+{
+	return (rgb>>16)&0xff;
+}
+
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);
 BOOLEAN NTAPI NtGdiComputeXformCoefficients(HANDLE);
