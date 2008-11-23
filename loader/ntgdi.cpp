@@ -683,3 +683,8 @@ BOOLEAN NTAPI NtGdiComputeXformCoefficients( HANDLE DeviceContext )
 		return FALSE;
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtGdiSetPixel( HANDLE dc, INT x, INT y, COLORREF color )
+{
+	return TRUE;
+}
