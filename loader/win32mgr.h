@@ -39,7 +39,7 @@ public:
 	HGDIOBJ alloc_dc();
 	BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
-	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
+	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom ) = 0;
 	win32k_info_t* alloc_win32k_info();
 };
 

@@ -113,13 +113,13 @@ public:
 	virtual void fini();
 	win32k_sdl_t();
 	BOOL set_pixel( INT x, INT y, COLORREF color );
-	BOOL rectangle( INT x, INT y, INT width, INT height );
+	BOOL rectangle( INT left, INT top, INT right, INT bottom );
 protected:
 	int screen_thread();
 	Uint16 map_colorref( COLORREF );
 	virtual SDL_Surface* set_mode() = 0;
 	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
-	virtual void rectangle_l( INT x, INT y, INT width, INT height ) = 0;
+	virtual void rectangle_l( INT left, INT top, INT right, INT bottom ) = 0;
 };
 
 win32k_manager_t::~win32k_manager_t()
@@ -155,17 +155,34 @@ BOOL win32k_sdl_t::set_pixel( INT x, INT y, COLORREF color )
 	return TRUE;
 }
 
-BOOL win32k_sdl_t::rectangle( INT x, INT y, INT width, INT height )
+template<typename T> void swap( T& A, T& B )
+{
+	T x = A;
+	A = B;
+	B = x;
+}
+
+BOOL win32k_sdl_t::rectangle(INT left, INT top, INT right, INT bottom )
 {
 	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
 		return FALSE;
 
-	rectangle_l( x, y, width, height );
+	if (left > right)
+		swap( left, right );
+	if (top > bottom)
+		swap( top, bottom );
+
+	top = max( 0, top );
+	left = max( 0, left );
+	right = min( screen->w - 1, right );
+	bottom = min( screen->h - 1, bottom );
+
+	rectangle_l( left, top, right, bottom );
 
 	if ( SDL_MUSTLOCK(screen) )
 		SDL_UnlockSurface(screen);
 
-	SDL_UpdateRect(screen, x, y, width, height);
+	SDL_UpdateRect( screen, left, top, right - left, bottom - top );
 
 	return TRUE;
 }
@@ -223,7 +240,7 @@ class win32k_sdl_16bpp_t : public win32k_sdl_t
 public:
 	virtual SDL_Surface* set_mode();
 	virtual void set_pixel_l( INT x, INT y, COLORREF color );
-	virtual void rectangle_l( INT x, INT y, INT width, INT height );
+	virtual void rectangle_l( INT left, INT top, INT right, INT bottom );
 	Uint16 map_colorref( COLORREF color );
 };
 
@@ -243,16 +260,22 @@ void win32k_sdl_16bpp_t::set_pixel_l( INT x, INT y, COLORREF color )
 	*bufp = map_colorref( color );
 }
 
-void win32k_sdl_16bpp_t::rectangle_l( INT x, INT y, INT width, INT height )
+void win32k_sdl_16bpp_t::rectangle_l(INT left, INT top, INT right, INT bottom )
 {
-	Uint32 *bufp = (Uint32 *)screen->pixels + y*screen->pitch/4 + x;
+	// FIXME: use brush + pen
+	COLORREF color = RGB( 255, 255, 255 );
+	Uint16 val = map_colorref( color );
 
-	if ( x + width > screen->w )
-		width = screen->w - x;
-	if ( y + height > screen->h )
-		height = screen->h - y;
+	Uint16 *ptr = (Uint16 *)screen->pixels + top*screen->pitch/2;
+	while (top <= bottom)
+	{
+		for (INT count = left; count <= right; count++)
+			ptr[count] = val;
 
-	bufp[0] = 0;
+		//next line
+		top++;
+		ptr += screen->pitch/2;
+	}
 }
 
 win32k_sdl_16bpp_t win32k_manager_sdl_16bpp;
@@ -526,9 +549,9 @@ BOOL device_context_t::release()
 	return TRUE;
 }
 
-BOOL device_context_t::rectangle( INT x, INT y, INT width, INT height )
+BOOL device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
 {
-	return win32k_manager->rectangle( x, y, width, height );
+	return win32k_manager->rectangle( left, top, right, bottom );
 }
 
 BOOL device_context_t::set_pixel( INT x, INT y, COLORREF color )
@@ -938,10 +961,10 @@ BOOLEAN NTAPI NtGdiSetPixel( HANDLE handle, INT x, INT y, COLORREF color )
 	return dc->set_pixel( x, y, color );
 }
 
-BOOLEAN NTAPI NtGdiRectangle( HANDLE handle, INT x, INT y, INT width, INT height )
+BOOLEAN NTAPI NtGdiRectangle( HANDLE handle, INT left, INT top, INT right, INT bottom )
 {
 	device_context_t* dc = dc_from_handle( handle );
 	if (!dc)
 		return FALSE;
-	return dc->rectangle( x, y, width, height );
+	return dc->rectangle( left, top, right, bottom );
 }

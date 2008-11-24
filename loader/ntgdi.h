@@ -254,6 +254,11 @@ static inline BYTE GetBValue(COLORREF rgb)
 	return (rgb>>16)&0xff;
 }
 
+static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
+{
+	return red | (green << 8) | (blue << 16);
+}
+
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);
 BOOLEAN NTAPI NtGdiComputeXformCoefficients(HANDLE);
