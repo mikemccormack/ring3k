@@ -109,6 +109,8 @@ public:
 	win32k_sdl_t();
 	BOOL set_pixel( INT x, INT y, COLORREF color );
 	BOOL rectangle( INT left, INT top, INT right, INT bottom );
+	virtual BOOL exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text );
 protected:
 	Uint16 map_colorref( COLORREF );
 	virtual SDL_Surface* set_mode() = 0;
@@ -179,6 +181,22 @@ BOOL win32k_sdl_t::rectangle(INT left, INT top, INT right, INT bottom )
 		SDL_UnlockSurface(screen);
 
 	SDL_UpdateRect( screen, left, top, right - left, bottom - top );
+
+	return TRUE;
+}
+
+BOOL win32k_sdl_t::exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text )
+{
+	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
+		return FALSE;
+
+	dprintf("text: %pus\n", &text );
+
+	if ( SDL_MUSTLOCK(screen) )
+		SDL_UnlockSurface(screen);
+
+	//SDL_UpdateRect( screen, left, top, right - left, bottom - top );
 
 	return TRUE;
 }
@@ -566,6 +584,12 @@ BOOL device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
 BOOL device_context_t::set_pixel( INT x, INT y, COLORREF color )
 {
 	return win32k_manager->set_pixel( x, y, color );
+}
+
+BOOL device_context_t::exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text )
+{
+	return win32k_manager->exttextout( x, y, options, rect, text );
 }
 
 device_context_t* dc_from_handle( HGDIOBJ handle )
@@ -976,4 +1000,31 @@ BOOLEAN NTAPI NtGdiRectangle( HANDLE handle, INT left, INT top, INT right, INT b
 	if (!dc)
 		return FALSE;
 	return dc->rectangle( left, top, right, bottom );
+}
+
+BOOLEAN NTAPI NtGdiExtTextOutW( HANDLE handle, INT x, INT y, UINT options,
+		 LPRECT rect, WCHAR* string, UINT length, INT *dx, UINT )
+{
+	device_context_t* dc = dc_from_handle( handle );
+	if (!dc)
+		return FALSE;
+	RECT rectangle;
+	NTSTATUS r;
+	if (rect)
+	{
+		r = copy_from_user( &rectangle, rect, sizeof *rect );
+		if (r < STATUS_SUCCESS)
+			return FALSE;
+		rect = &rectangle;
+	}
+
+	unicode_string_t text;
+	r = text.copy_wstr_from_user( string, length*2 );
+	if (r < STATUS_SUCCESS)
+		return FALSE;
+
+	if (dx)
+		dprintf("character spacing provided but ignored\n");
+
+	return dc->exttextout( x, y, options, rect, text );
 }

@@ -40,6 +40,7 @@ public:
 	BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom ) = 0;
+	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
 	win32k_info_t* alloc_win32k_info();
 };
 
@@ -79,6 +80,8 @@ public:
 	virtual BOOL release();
 	BOOL set_pixel( INT x, INT y, COLORREF color );
 	BOOL rectangle( INT x, INT y, INT width, INT height );
+	BOOL exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text );
 };
 
 #endif // __WIN32K_MANAGER__

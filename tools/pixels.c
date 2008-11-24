@@ -56,12 +56,21 @@ void draw_rectangle( void )
 	ReleaseDC( 0, hdc );
 }
 
+void draw_text( void )
+{
+	HDC hdc = GetDC( 0 );
+
+	TextOutW(hdc, 100, 100, L"Hello world", 11);
+	ReleaseDC( 0, hdc );
+}
+
 int main( int argc, char **argv )
 {
 	init_window_station();
 
 	draw_pixels();
 	draw_rectangle();
+	draw_text();
 
 	Sleep(100*1000);
 	return 0;
