@@ -99,15 +99,10 @@ BOOLEAN NTAPI NtGdiInit()
 	return TRUE;
 }
 
-class win32k_sdl_t : public win32k_manager_t
+class win32k_sdl_t : public win32k_manager_t, public sleeper_t
 {
-	friend int start_win32k_sdl_t_screen_thread( void *arg );
 protected:
 	SDL_Surface *screen;
-private:
-	SDL_cond *initialized;
-	SDL_mutex *mutex;
-	SDL_Thread *thread;
 public:
 	virtual BOOL init();
 	virtual void fini();
@@ -115,11 +110,12 @@ public:
 	BOOL set_pixel( INT x, INT y, COLORREF color );
 	BOOL rectangle( INT left, INT top, INT right, INT bottom );
 protected:
-	int screen_thread();
 	Uint16 map_colorref( COLORREF );
 	virtual SDL_Surface* set_mode() = 0;
 	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
 	virtual void rectangle_l( INT left, INT top, INT right, INT bottom ) = 0;
+	virtual bool sleep_timeout( LARGE_INTEGER& timeout );
+	static Uint32 timeout_callback( Uint32 interval, void *arg );
 };
 
 win32k_manager_t::~win32k_manager_t()
@@ -187,25 +183,43 @@ BOOL win32k_sdl_t::rectangle(INT left, INT top, INT right, INT bottom )
 	return TRUE;
 }
 
-int win32k_sdl_t::screen_thread()
+Uint32 win32k_sdl_t::timeout_callback( Uint32 interval, void *arg )
 {
-	screen = set_mode();
-	SDL_CondSignal( initialized );
-
 	SDL_Event event;
-	while (1)
-	{
-		SDL_PollEvent( &event );
-		if (event.type == SDL_QUIT)
-			break;
-	}
+	event.type = SDL_USEREVENT;
+	event.user.code = 0;
+	event.user.data1 = 0;
+	event.user.data2 = 0;
+	SDL_PushEvent( &event );
 	return 0;
 }
 
-int start_win32k_sdl_t_screen_thread( void *arg )
+bool win32k_sdl_t::sleep_timeout( LARGE_INTEGER& timeout )
 {
-	win32k_sdl_t *x = (win32k_sdl_t*) arg;
-	return x->screen_thread();
+	Uint32 interval = get_int_timeout( timeout );
+	SDL_TimerID id = SDL_AddTimer( interval, win32k_sdl_t::timeout_callback, 0 );
+
+	SDL_Event event;
+	bool quit = false;
+	while (SDL_WaitEvent( &event ))
+	{
+		if (event.type == SDL_QUIT)
+		{
+			quit = true;
+			break;
+		}
+
+		if (event.type == SDL_USEREVENT && event.user.code == 0)
+		{
+			// timer has expired, no need to cancel it
+			id = NULL;
+			break;
+		}
+	}
+
+	if (id != NULL)
+		SDL_RemoveTimer( id );
+	return quit;
 }
 
 BOOL win32k_sdl_t::init()
@@ -213,14 +227,12 @@ BOOL win32k_sdl_t::init()
 	if ( SDL_WasInit(SDL_INIT_VIDEO) )
 		return TRUE;
 
-	if ( SDL_Init(SDL_INIT_VIDEO) < 0 )
+	if ( SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0 )
 		return FALSE;
-	atexit( SDL_Quit );
 
-	initialized = SDL_CreateCond();
-	mutex = SDL_CreateMutex();
-	thread = SDL_CreateThread( start_win32k_sdl_t_screen_thread, this );
-	SDL_CondWait( initialized, mutex );
+	screen = set_mode();
+
+	sleeper = this;
 
 	return TRUE;
 }
@@ -229,10 +241,7 @@ void win32k_sdl_t::fini()
 {
 	if ( !SDL_WasInit(SDL_INIT_VIDEO) )
 		return;
-	SDL_Event event;
-	event.type = SDL_QUIT;
-	SDL_PushEvent( &event );
-	SDL_WaitThread( thread, NULL );
+	SDL_Quit();
 }
 
 class win32k_sdl_16bpp_t : public win32k_sdl_t

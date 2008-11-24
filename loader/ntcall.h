@@ -85,6 +85,17 @@ void free_registry( void );
 extern int option_trace;
 extern ULONG KiIntSystemCall;
 
+class sleeper_t
+{
+public:
+	virtual ~sleeper_t() {};
+	virtual bool sleep_timeout( LARGE_INTEGER& timeout ) = 0;
+protected:
+	int get_int_timeout( LARGE_INTEGER& timeout );
+};
+
+extern sleeper_t* sleeper;
+
 // from section.cpp
 const char *get_section_symbol( object_t *section, ULONG address );
 

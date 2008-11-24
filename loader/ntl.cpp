@@ -54,17 +54,37 @@ thread_t *current;
 object_t *ntdll_section;
 int option_debug = 0;
 ULONG KiIntSystemCall = 0;
+bool forced_quit;
 
-void sleep_timeout(LARGE_INTEGER timeout)
+class default_sleeper_t : public sleeper_t
+{
+public:
+	virtual bool sleep_timeout( LARGE_INTEGER& timeout );
+	virtual ~default_sleeper_t() {}
+};
+
+int sleeper_t::get_int_timeout( LARGE_INTEGER& timeout )
 {
 	timeout.QuadPart = (timeout.QuadPart+9999)/10000;
 	int t = INT_MAX;
-	if (timeout.QuadPart < INT_MAX)
+	if (timeout.QuadPart < t)
 		t = timeout.QuadPart;
-	int r = poll(0, 0, t);
-	if (r < 0 && errno != EINTR)
-		die("poll failed\n");
+	return t;
 }
+
+bool default_sleeper_t::sleep_timeout( LARGE_INTEGER& timeout )
+{
+	int t = get_int_timeout( timeout );
+	int r = poll( 0, 0, t );
+	if (r >= 0)
+		return false;
+	if (errno != EINTR)
+		die("poll failed %d\n", errno);
+	return false;
+}
+
+default_sleeper_t default_sleeper;
+sleeper_t* sleeper = &default_sleeper;
 
 int schedule(void)
 {
@@ -84,7 +104,10 @@ int schedule(void)
 
 		// there's still processes but no active threads ... sleep
 		if (timeout_t::check_timers(timeout))
-			sleep_timeout(timeout);
+		{
+			if (sleeper->sleep_timeout(timeout))
+				break;
+		}
 		else if (fiber_t::last_fiber())
 			break;
 	}
