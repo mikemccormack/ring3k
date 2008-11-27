@@ -58,6 +58,11 @@ unicode_string_t::unicode_string_t() :
 	MaximumLength = 0;
 }
 
+unicode_string_t::unicode_string_t( const unicode_string_t& source )
+{
+	copy( &source );
+}
+
 void unicode_string_t::set( UNICODE_STRING& us )
 {
 	clear();

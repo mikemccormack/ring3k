@@ -31,6 +31,7 @@ protected:
 	ULONG utf8_to_wchar( const unsigned char *str, ULONG len, WCHAR *buf );
 public:
 	explicit unicode_string_t();
+	unicode_string_t( const unicode_string_t& source );
 	void set( PCWSTR str );
 	void set( const wchar_t* str ) { set( (PCWSTR) str ); }
 	void set( UNICODE_STRING& us );
