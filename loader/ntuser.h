@@ -115,6 +115,7 @@ BOOLEAN NTAPI  NtUserSetLogonNotifyWindow(HANDLE);
 BOOLEAN NTAPI  NtUserSetProcessWindowStation(HANDLE);
 BOOLEAN NTAPI  NtUserSetThreadDesktop(HANDLE);
 BOOLEAN NTAPI  NtUserSetWindowStationUser(HANDLE,PVOID,ULONG,ULONG);
+BOOLEAN NTAPI  NtUserShowWindow(HANDLE,INT);
 BOOLEAN NTAPI  NtUserSystemParametersInfo(ULONG,ULONG,ULONG,ULONG);
 BOOLEAN NTAPI  NtUserUpdatePerUserSystemParameters(ULONG,ULONG);
 

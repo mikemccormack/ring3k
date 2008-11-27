@@ -652,3 +652,8 @@ BOOLEAN NTAPI NtUserResolveDesktop(HANDLE Process, PVOID, PVOID, PHANDLE Desktop
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtUserShowWindow( HANDLE Window, INT Show )
+{
+	return TRUE;
+}
