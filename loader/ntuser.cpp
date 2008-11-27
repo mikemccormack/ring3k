@@ -568,10 +568,70 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 	NTSTATUS r = ::copy_from_user( &str, String, sizeof str );
 	if (r < STATUS_SUCCESS)
 		return r;
-	Length = str.Length;
-	MaximumLength = str.MaximumLength;
-	Buffer = str.Buffer;
-	return copy_wstr_from_user();
+	return copy_wstr_from_user( str.Buffer, str.Length );
+}
+
+class class_tt
+{
+	unicode_string_t name;
+public:
+};
+
+class window_tt
+{
+	unicode_string_t name;
+	ULONG style;
+	ULONG exstyle;
+	LONG x;
+	LONG y;
+	LONG width;
+	LONG height;
+	window_tt* parent;
+public:
+	window_tt( unicode_string_t& name, ULONG _style, ULONG _exstyle,
+		 LONG x, LONG y, LONG width, LONG height );
+};
+
+window_tt::window_tt( unicode_string_t& _name, ULONG _style, ULONG _exstyle,
+		 LONG _x, LONG _y, LONG _width, LONG _height ) :
+	style( _style ),
+	exstyle( _exstyle ),
+	x( _x ),
+	y( _y ),
+	width( _width ),
+	height( _height ),
+	parent( 0 )
+{
+	name.copy( &_name );
+}
+
+static const ULONG num_win_handles = 0x10;
+static const ULONG handle_offset = 0x10000;
+window_tt *winhandles[num_win_handles];
+
+HANDLE alloc_win_handle( window_tt *win )
+{
+	for (ULONG n=0; n<num_win_handles; n++)
+	{
+		if (!winhandles[n])
+		{
+			winhandles[n] = win;
+			return (HANDLE)(n+handle_offset);
+		}
+	}
+	return 0;
+}
+
+window_tt *window_from_handle( HANDLE handle )
+{
+	UINT n = (UINT) handle;
+
+	if (n < handle_offset)
+		return NULL;
+	n -= handle_offset;
+	if (n >= num_win_handles)
+		return NULL;
+	return winhandles[n];
 }
 
 HANDLE NTAPI NtUserCreateWindowEx(
@@ -608,8 +668,14 @@ HANDLE NTAPI NtUserCreateWindowEx(
 
 	dprintf("ClassName = %pus\n", &class_name );
 
-	static ULONG window = 0x0001bb01;
-	return (HANDLE) window++;
+	// send WM_NCCREATE
+
+	window_tt *win = new window_tt( window_name, Style, ExStyle, x, y, Width, Height );
+	HANDLE ret = alloc_win_handle( win );
+
+	// send WM_CREATE
+
+	return ret;
 }
 
 BOOLEAN NTAPI NtUserSetLogonNotifyWindow( HANDLE Window )
