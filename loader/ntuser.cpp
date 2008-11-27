@@ -657,3 +657,9 @@ BOOLEAN NTAPI NtUserShowWindow( HANDLE Window, INT Show )
 {
 	return TRUE;
 }
+
+UINT NTAPI NtUserSetTimer( HANDLE Window, UINT Identifier, UINT Elapse, PVOID TimerProc )
+{
+	static UINT timer = 1;
+	return timer++;
+}
