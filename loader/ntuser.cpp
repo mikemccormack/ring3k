@@ -663,3 +663,9 @@ UINT NTAPI NtUserSetTimer( HANDLE Window, UINT Identifier, UINT Elapse, PVOID Ti
 	static UINT timer = 1;
 	return timer++;
 }
+
+HANDLE NTAPI NtUserCreateAcceleratorTable( PVOID Accelerators, UINT Count )
+{
+	static UINT accelerator = 1;
+	return (HANDLE) accelerator++;
+}
