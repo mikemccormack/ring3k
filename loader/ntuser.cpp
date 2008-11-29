@@ -36,6 +36,48 @@
 #include "mem.h"
 #include "debug.h"
 
+class wndcls_tt;
+
+typedef list_anchor<wndcls_tt, 0> wndcls_list_tt;
+typedef list_element<wndcls_tt> wndcls_entry_tt;
+typedef list_iter<wndcls_tt, 0> wndcls_iter_tt;
+
+wndcls_list_tt wndcls_list;
+
+class wndcls_tt
+{
+	friend class list_anchor<wndcls_tt, 0>;
+	friend class list_iter<wndcls_tt, 0>;
+	wndcls_entry_tt entry[1];
+	unicode_string_t name;
+	NTWNDCLASSEX info;
+	ATOM atom;
+	ULONG refcount;
+public:
+	wndcls_tt( NTWNDCLASSEX& ClassInfo, const UNICODE_STRING& ClassName, ATOM a );
+	static wndcls_tt* from_name( const UNICODE_STRING& wndcls_name );
+	ATOM get_atom() {return atom;}
+	const unicode_string_t& get_name() {return name;}
+	void addref() {refcount++;}
+	void release() {refcount--;}
+};
+
+class window_tt
+{
+	wndcls_tt *cls;
+	unicode_string_t name;
+	ULONG style;
+	ULONG exstyle;
+	LONG x;
+	LONG y;
+	LONG width;
+	LONG height;
+	window_tt* parent;
+public:
+	window_tt( wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
+		 LONG x, LONG y, LONG width, LONG height );
+};
+
 ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
 {
 	switch (InfoClass)
@@ -383,6 +425,25 @@ BOOLEAN NTAPI NtUserGetIconInfo(
 	return TRUE;
 }
 
+wndcls_tt::wndcls_tt( NTWNDCLASSEX& ClassInfo, const UNICODE_STRING& ClassName, ATOM a ) :
+	name( ClassName ),
+	info( ClassInfo ),
+	atom( a ),
+	refcount( 0 )
+{
+}
+
+wndcls_tt* wndcls_tt::from_name( const UNICODE_STRING& wndcls_name )
+{
+	for (wndcls_iter_tt i(wndcls_list); i; i.next())
+	{
+		wndcls_tt *cls = i;
+		if (cls->get_name().is_equal( wndcls_name ))
+			return cls;
+	}
+	return NULL;
+}
+
 ATOM NTAPI NtUserRegisterClassExWOW(PNTWNDCLASSEX ClassInfo, PUNICODE_STRING ClassName, PVOID, USHORT, ULONG, ULONG)
 {
 	NTWNDCLASSEX clsinfo;
@@ -403,7 +464,13 @@ ATOM NTAPI NtUserRegisterClassExWOW(PNTWNDCLASSEX ClassInfo, PUNICODE_STRING Cla
 	dprintf("Name  = %pus\n", &us);
 
 	static ATOM atom = 0xc001;
-	return atom++;
+	wndcls_tt* cls = new wndcls_tt( clsinfo, us, atom );
+	if (!cls)
+		return 0;
+
+	wndcls_list.append( cls );
+
+	return cls->get_atom();
 }
 
 NTSTATUS NTAPI NtUserSetInformationThread(
@@ -571,29 +638,9 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 	return copy_wstr_from_user( str.Buffer, str.Length );
 }
 
-class class_tt
-{
-	unicode_string_t name;
-public:
-};
-
-class window_tt
-{
-	unicode_string_t name;
-	ULONG style;
-	ULONG exstyle;
-	LONG x;
-	LONG y;
-	LONG width;
-	LONG height;
-	window_tt* parent;
-public:
-	window_tt( unicode_string_t& name, ULONG _style, ULONG _exstyle,
-		 LONG x, LONG y, LONG width, LONG height );
-};
-
-window_tt::window_tt( unicode_string_t& _name, ULONG _style, ULONG _exstyle,
+window_tt::window_tt( wndcls_tt *wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
 		 LONG _x, LONG _y, LONG _width, LONG _height ) :
+	cls( wndcls ),
 	style( _style ),
 	exstyle( _exstyle ),
 	x( _x ),
@@ -661,16 +708,18 @@ HANDLE NTAPI NtUserCreateWindowEx(
 
 	dprintf("WindowName = %pus\n", &window_name );
 
-	user32_unicode_string_t class_name;
-	r = class_name.copy_from_user( ClassName );
+	user32_unicode_string_t wndcls_name;
+	r = wndcls_name.copy_from_user( ClassName );
 	if (r < STATUS_SUCCESS)
 		return 0;
 
-	dprintf("ClassName = %pus\n", &class_name );
+	dprintf("ClassName = %pus\n", &wndcls_name );
+
+	wndcls_tt* wndcls = wndcls_tt::from_name( wndcls_name );
 
 	// send WM_NCCREATE
 
-	window_tt *win = new window_tt( window_name, Style, ExStyle, x, y, Width, Height );
+	window_tt *win = new window_tt( wndcls, window_name, Style, ExStyle, x, y, Width, Height );
 	HANDLE ret = alloc_win_handle( win );
 
 	// send WM_CREATE

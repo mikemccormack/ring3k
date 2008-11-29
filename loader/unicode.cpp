@@ -58,7 +58,14 @@ unicode_string_t::unicode_string_t() :
 	MaximumLength = 0;
 }
 
-unicode_string_t::unicode_string_t( const unicode_string_t& source )
+unicode_string_t::unicode_string_t( const UNICODE_STRING& source ) :
+	buf(0)
+{
+	copy( &source );
+}
+
+unicode_string_t::unicode_string_t( const unicode_string_t& source ) :
+	buf(0)
 {
 	copy( &source );
 }
@@ -233,12 +240,12 @@ NTSTATUS unicode_string_t::copy( PCWSTR str )
 	return STATUS_SUCCESS;
 }
 
-bool unicode_string_t::is_equal( PUNICODE_STRING ptr )
+bool unicode_string_t::is_equal( const UNICODE_STRING& ptr ) const
 {
-	if (Length != ptr->Length)
+	if (Length != ptr.Length)
 		return false;
 
-	return !memcmp(ptr->Buffer, Buffer, Length);
+	return !memcmp(ptr.Buffer, Buffer, Length);
 }
 
 unicode_string_t::~unicode_string_t()
@@ -267,7 +274,7 @@ unicode_string_t& unicode_string_t::operator=(const unicode_string_t& in)
 }
 
 // returns TRUE if strings are the same
-bool unicode_string_t::compare( PUNICODE_STRING b, BOOLEAN case_insensitive )
+bool unicode_string_t::compare( PUNICODE_STRING b, BOOLEAN case_insensitive ) const
 {
 	if (Length != b->Length)
 		return FALSE;

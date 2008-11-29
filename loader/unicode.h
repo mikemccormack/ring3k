@@ -31,7 +31,8 @@ protected:
 	ULONG utf8_to_wchar( const unsigned char *str, ULONG len, WCHAR *buf );
 public:
 	explicit unicode_string_t();
-	unicode_string_t( const unicode_string_t& source );
+	explicit unicode_string_t( const unicode_string_t& source );
+	explicit unicode_string_t( const UNICODE_STRING& source );
 	void set( PCWSTR str );
 	void set( const wchar_t* str ) { set( (PCWSTR) str ); }
 	void set( UNICODE_STRING& us );
@@ -41,8 +42,8 @@ public:
 	NTSTATUS copy( const unsigned char *ptr );
 	NTSTATUS copy( PCWSTR str );
 	NTSTATUS copy( const wchar_t* str ) {return copy( (PCWSTR) str );}
-	bool is_equal( PUNICODE_STRING ptr );
-	bool compare( PUNICODE_STRING b, BOOLEAN case_insensitive );
+	bool is_equal( const UNICODE_STRING& ptr ) const;
+	bool compare( PUNICODE_STRING b, BOOLEAN case_insensitive ) const;
 	~unicode_string_t();
 	unicode_string_t& operator=(const unicode_string_t& in);
 	void clear();
