@@ -17,6 +17,10 @@ do
 		tt=1
 		shift
 		;;
+	-d)
+		debug=1
+		shift
+		;;
 	-t)
 		trace=1
 		shift
@@ -56,4 +60,4 @@ fi
 # copy the test into the NT directory
 cp ../tests/$t drive/tests
 ntexepath="\\??\\c:\\tests\\$t"
-exec ${valgrind:+"valgrind"} "$loader" ${tt:+"-s"} ${quiet:+"-q"} ${trace:+"-t"} "$ntexepath"
+exec ${valgrind:+"valgrind"} "$loader" ${debug:+"-d"} ${tt:+"-s"} ${quiet:+"-q"} ${trace:+"-t"} "$ntexepath"

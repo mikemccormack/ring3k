@@ -36,6 +36,7 @@
 #include "mem.h"
 #include "debug.h"
 
+class window_tt;
 class wndcls_tt;
 
 typedef list_anchor<wndcls_tt, 0> wndcls_list_tt;
@@ -70,11 +71,13 @@ public:
 	virtual ULONG get_size() const = 0;
 	virtual NTSTATUS copy_to_user( void *ptr ) const = 0;
 	virtual ULONG get_callback_num() const = 0;
+	virtual void set_window_info( window_tt *win ) = 0;
 	virtual ~message_tt() {}
 };
 
 class window_tt
 {
+	void *shared_mem;
 	thread_t *thread;
 	wndcls_tt *cls;
 	unicode_string_t name;
@@ -86,9 +89,12 @@ class window_tt
 	LONG height;
 	window_tt* parent;
 public:
-	window_tt( thread_t* t, wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
+	window_tt( void *winshm, thread_t* t, wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
 		 LONG x, LONG y, LONG width, LONG height );
-	NTSTATUS send( const message_tt& msg );
+	NTSTATUS send( message_tt& msg );
+	void *get_shared_address() {return shared_mem;}
+	void *get_wndproc() { return cls->get_wndproc(); }
+	void *get_wininfo();
 };
 
 ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
@@ -117,7 +123,26 @@ ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
 }
 
 static section_t *user_shared_section = 0;
+static const ULONG user_shared_mem_size = 0x20000;
 static void *user_shared_mem = 0;
+
+// quick hack for the moment
+void **find_free_user_shared()
+{
+	ULONG i;
+
+	//use top half of shared memory
+	ULONG sz = user_shared_mem_size - 0x10000;
+	void** x = (void**)user_shared_mem + 0x10000/sizeof (void**);
+
+	// use blocks of 0x100 bytes
+	for (i=0; i<sz; i += 0x40)
+	{
+		if (x[i] == NULL)
+			return &x[i];
+	}
+	return NULL;
+}
 
 void *init_user_shared_memory()
 {
@@ -127,7 +152,7 @@ void *init_user_shared_memory()
 		LARGE_INTEGER sz;
 		NTSTATUS r;
 
-		sz.QuadPart = 0x10000;
+		sz.QuadPart = user_shared_mem_size;
 		r = create_section( &user_shared_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
 		if (r < STATUS_SUCCESS)
 			return 0;
@@ -171,6 +196,11 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	if (r < STATUS_SUCCESS)
 		return r;
 
+	// check if we're already connected
+	BYTE*& user_shared_mem = proc->win32k_info->user_shared_mem;
+	if (user_shared_mem)
+		return STATUS_SUCCESS;
+
 	dprintf("%p %p %lu\n", Process, Buffer, BufferSize);
 	if (BufferSize != sizeof info.winxp && BufferSize != sizeof info.win2k)
 	{
@@ -192,20 +222,19 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	if (!init_user_shared_memory())
 		return STATUS_UNSUCCESSFUL;
 
-	BYTE *p = 0;
-	r = user_shared_section->mapit( proc->vm, p, 0,
+	r = user_shared_section->mapit( proc->vm, user_shared_mem, 0,
 					MEM_COMMIT, PAGE_READONLY );
 	if (r < STATUS_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
-	if (0) proc->vm->set_tracer( p, ntusershm_trace );
+	if (0) proc->vm->set_tracer( user_shared_mem, ntusershm_trace );
 
-	info.win2k.Ptr[0] = (void*)p;
+	info.win2k.Ptr[0] = (void*)user_shared_mem;
 	info.win2k.Ptr[1] = (void*)0xbee20000;
 	info.win2k.Ptr[2] = (void*)0xbee30000;
 	info.win2k.Ptr[3] = (void*)0xbee40000;
 
-	dprintf("user shared at %p\n", p);
+	dprintf("user shared at %p\n", user_shared_mem);
 
 	r = copy_to_user( Buffer, &info, BufferSize );
 	if (r < STATUS_SUCCESS)
@@ -683,8 +712,9 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 	return copy_wstr_from_user( str.Buffer, str.Length );
 }
 
-window_tt::window_tt( thread_t* t, wndcls_tt *wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
+window_tt::window_tt( void *winshm, thread_t* t, wndcls_tt *wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
 		 LONG _x, LONG _y, LONG _width, LONG _height ) :
+	shared_mem( winshm ),
 	thread( t ),
 	cls( wndcls ),
 	style( _style ),
@@ -696,6 +726,12 @@ window_tt::window_tt( thread_t* t, wndcls_tt *wndcls, unicode_string_t& _name, U
 	parent( 0 )
 {
 	name.copy( &_name );
+}
+
+void *window_tt::get_wininfo()
+{
+	ULONG ofs = (BYTE*)shared_mem - (BYTE*)user_shared_mem;
+	return (void*) (thread->process->win32k_info->user_shared_mem + ofs);
 }
 
 static const ULONG num_win_handles = 0x10;
@@ -745,6 +781,7 @@ public:
 	virtual ULONG get_size() const = 0;
 	virtual NTSTATUS copy_to_user( void *ptr ) const = 0;
 	virtual ULONG get_callback_num() const = 0;
+	virtual void set_window_info( window_tt *win ) = 0;
 };
 
 wmessage_ptr_tt::wmessage_ptr_tt( pointer_info_tt& pointer_info ) :
@@ -775,26 +812,27 @@ protected:
 	const UNICODE_STRING& cls;
 	const UNICODE_STRING& name;
 public:
-	create_message_tt( NTCREATESTRUCT& cs, PVOID wndproc, const UNICODE_STRING& cls, const UNICODE_STRING& name );
+	create_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name );
 	virtual ULONG get_size() const;
 	virtual NTSTATUS copy_to_user( void *ptr ) const;
 	virtual ULONG get_callback_num() const;
+	virtual void set_window_info( window_tt *win );
 };
 
 class nccreate_message_tt : public create_message_tt
 {
 	static const ULONG WM_NCCREATE = 0x0081;
 public:
-	nccreate_message_tt( NTCREATESTRUCT& cs, PVOID wndproc, const UNICODE_STRING& cls, const UNICODE_STRING& name );
+	nccreate_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name );
 };
 
-nccreate_message_tt::nccreate_message_tt( NTCREATESTRUCT& cs, PVOID wndproc, const UNICODE_STRING& cls, const UNICODE_STRING& name ) :
-	create_message_tt( cs, wndproc, cls, name )
+nccreate_message_tt::nccreate_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name ) :
+	create_message_tt( cs, cls, name )
 {
 	info.msg = WM_NCCREATE;
 }
 
-create_message_tt::create_message_tt( NTCREATESTRUCT& cs, PVOID wndproc,
+create_message_tt::create_message_tt( NTCREATESTRUCT& cs,
 			const UNICODE_STRING& _cls, const UNICODE_STRING& _name ) :
 	wmessage_ptr_tt( info ),
 	cls( _cls ),
@@ -806,7 +844,6 @@ create_message_tt::create_message_tt( NTCREATESTRUCT& cs, PVOID wndproc,
 	info.wparam = 0;
 	info.cs_nonnull = TRUE;
 	info.cs = cs;
-	info.wndproc = wndproc;
 }
 
 ULONG create_message_tt::get_callback_num() const
@@ -825,6 +862,12 @@ NTSTATUS create_message_tt::copy_to_user( void *ptr ) const
 ULONG create_message_tt::get_size() const
 {
 	return sizeof info;
+}
+
+void create_message_tt::set_window_info( window_tt *win )
+{
+	info.wininfo = win->get_wininfo();
+	info.wndproc = win->get_wndproc();
 }
 
 typedef struct tagMINMAXINFO {
@@ -850,17 +893,17 @@ class getminmaxinfo_tt : public message_tt
 	static const ULONG WM_GETMINMAXINFO = 0x24;
 	NTMINMAXPACKEDINFO info;
 public:
-	getminmaxinfo_tt( PVOID winproc );
+	getminmaxinfo_tt();
 	virtual ULONG get_size() const;
 	virtual NTSTATUS copy_to_user( void *ptr ) const;
 	virtual ULONG get_callback_num() const;
+	virtual void set_window_info( window_tt *win );
 };
 
-getminmaxinfo_tt::getminmaxinfo_tt( PVOID winproc )
+getminmaxinfo_tt::getminmaxinfo_tt()
 {
 	memset( &info, 0, sizeof info );
 	info.msg = WM_GETMINMAXINFO;
-	info.wndproc = winproc;
 }
 
 ULONG getminmaxinfo_tt::get_size() const
@@ -876,6 +919,12 @@ NTSTATUS getminmaxinfo_tt::copy_to_user( void *ptr ) const
 ULONG getminmaxinfo_tt::get_callback_num() const
 {
 	return NTWIN32_MINMAX_CALLBACK;
+}
+
+void getminmaxinfo_tt::set_window_info( window_tt *win )
+{
+	info.wininfo = win->get_wininfo();
+	info.wndproc = win->get_wndproc();
 }
 
 typedef struct _WINDOWPOS {
@@ -909,16 +958,16 @@ class nccalcsize_message_tt : public message_tt
 	static const ULONG WM_NCCALCSIZE = 0x0083;
 	NTNCCALCSIZEPACKEDINFO info;
 public:
-	nccalcsize_message_tt( PVOID winproc );
+	nccalcsize_message_tt();
 	virtual ULONG get_size() const;
 	virtual NTSTATUS copy_to_user( void *ptr ) const;
 	virtual ULONG get_callback_num() const;
+	virtual void set_window_info( window_tt *win );
 };
 
-nccalcsize_message_tt::nccalcsize_message_tt( PVOID winproc )
+nccalcsize_message_tt::nccalcsize_message_tt()
 {
 	memset( &info, 0, sizeof info );
-	info.wndproc = winproc;
 	info.msg = WM_NCCALCSIZE;
 }
 
@@ -937,10 +986,18 @@ ULONG nccalcsize_message_tt::get_callback_num() const
 	return NTWIN32_NCCALC_CALLBACK;
 }
 
-NTSTATUS window_tt::send( const message_tt& msg )
+void nccalcsize_message_tt::set_window_info( window_tt *win )
+{
+	info.wininfo = win->get_wininfo();
+	info.wndproc = win->get_wndproc();
+}
+
+NTSTATUS window_tt::send( message_tt& msg )
 {
 	if (thread->is_terminated())
 		return STATUS_THREAD_IS_TERMINATING;
+
+	msg.set_window_info( this );
 
 	void *address = thread->push( msg.get_size() );
 
@@ -1010,26 +1067,34 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	cs.lpszClass = NULL;
 	cs.dwExStyle = ExStyle;
 
-	window_tt *win = new window_tt( current, wndcls, window_name, Style, ExStyle, x, y, Width, Height );
+	void **winshm = find_free_user_shared();
+	if (!winshm)
+		return 0;
+
+	window_tt *win = new window_tt( winshm, current, wndcls, window_name, Style, ExStyle, x, y, Width, Height );
 	if (!win)
 		return 0;
 
 	HANDLE ret = alloc_win_handle( win );
+	if (!ret)
+		return 0;
+
+	*winshm = ret;
 
 	// send WM_GETMINMAXINFO
-	getminmaxinfo_tt minmax( wndcls->get_wndproc() );
+	getminmaxinfo_tt minmax;
 	win->send( minmax );
 
 	// send WM_NCCREATE
-	nccreate_message_tt nccreate( cs, wndcls->get_wndproc(), wndcls_name, window_name );
+	nccreate_message_tt nccreate( cs, wndcls_name, window_name );
 	win->send( nccreate );
 
 	// send WM_NCCALCSIZE
-	nccalcsize_message_tt nccalcsize( wndcls->get_wndproc() );
+	nccalcsize_message_tt nccalcsize;
 	win->send( nccalcsize );
 
 	// send WM_CREATE
-	create_message_tt create( cs, wndcls->get_wndproc(), wndcls_name, window_name );
+	create_message_tt create( cs, wndcls_name, window_name );
 	win->send( create );
 
 	return ret;

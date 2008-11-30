@@ -237,7 +237,7 @@ typedef struct tagMINMAXINFO {
 } MINMAXINFO, *PMINMAXINFO, *LPMINMAXINFO;
 
 typedef struct _NTMINMAXPACKEDINFO {
-	PVOID	wininfo;
+	PVOID*	wininfo;
 	ULONG	msg;
 	WPARAM	wparam;
 	MINMAXINFO minmax;
@@ -271,7 +271,7 @@ typedef struct _NTCREATESTRUCT {
 
 typedef struct _NTCREATEPACKEDINFO {
 	NTPACKEDPOINTERINFO pi;
-	PVOID	wininfo;
+	PVOID*	wininfo;
 	ULONG	msg;
 	WPARAM	wparam;
 	BOOL	cs_nonnull;
@@ -296,7 +296,7 @@ typedef struct _NCCALCSIZE_PARAMS {
 } NCCALCSIZE_PARAMS;
 
 typedef struct _NTNCCALCSIZEPACKEDINFO {
-	PVOID	wininfo;
+	PVOID*	wininfo;
 	ULONG	msg;
 	BOOL	wparam;
 	PVOID	wndproc;
@@ -306,7 +306,7 @@ typedef struct _NTNCCALCSIZEPACKEDINFO {
 } NTNCCALCSIZEPACKEDINFO;
 
 typedef struct _NTMOVINGPACKEDINFO {
-	PVOID	wininfo;
+	PVOID*	wininfo;
 	ULONG	msg;
 	WPARAM	wparam;
 	RECT	rect;

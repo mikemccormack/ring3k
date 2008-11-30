@@ -125,7 +125,8 @@ win32k_manager_t::~win32k_manager_t()
 }
 
 win32k_info_t::win32k_info_t() :
-	dc_shared_mem( 0 )
+	dc_shared_mem( 0 ),
+	user_shared_mem( 0 )
 {
 }
 
