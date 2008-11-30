@@ -132,6 +132,7 @@ TESTLIST = \
 	thread \
 	timer \
 	token \
+	user \
 	virtual \
 	wine-port
 

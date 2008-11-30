@@ -193,6 +193,9 @@ public:
 	virtual NTSTATUS copy_to_user( void *dest, const void *src, size_t count );
 	virtual NTSTATUS copy_from_user( void *dest, const void *src, size_t count );
 	virtual NTSTATUS verify_for_write( void *dest, size_t count );
+
+	virtual void* push( ULONG count );
+	virtual void pop( ULONG count );
 };
 
 list_anchor<runlist_entry_t,0> runlist_entry_t::running_threads;
@@ -522,6 +525,18 @@ void callback_frame_t::get_return(NTSTATUS& s, ULONG& l, PVOID& b)
 	l = length;
 	b = buffer;
 }
+
+void* thread_impl_t::push( ULONG count )
+{
+	ctx.Esp -= count;
+	return (void*) ctx.Esp;
+}
+
+void thread_impl_t::pop( ULONG count )
+{
+	ctx.Esp += count;
+}
+
 
 NTSTATUS thread_impl_t::do_user_callback( ULONG index, ULONG &length, PVOID &buffer)
 {

@@ -119,6 +119,8 @@ public:
 	virtual NTSTATUS copy_to_user( void *dest, const void *src, size_t count ) = 0;
 	virtual NTSTATUS copy_from_user( void *dest, const void *src, size_t count ) = 0;
 	virtual NTSTATUS verify_for_write( void *dest, size_t count ) = 0;
+	virtual void* push( ULONG count ) = 0;
+	virtual void pop( ULONG count ) = 0;
 };
 
 NTSTATUS create_thread( thread_t **pthread, process_t *p, PCLIENT_ID id, CONTEXT *ctx, INITIAL_TEB *init_teb, BOOLEAN suspended );

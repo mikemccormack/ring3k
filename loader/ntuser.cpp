@@ -50,20 +50,32 @@ class wndcls_tt
 	friend class list_iter<wndcls_tt, 0>;
 	wndcls_entry_tt entry[1];
 	unicode_string_t name;
+	unicode_string_t menu;
 	NTWNDCLASSEX info;
 	ATOM atom;
 	ULONG refcount;
 public:
-	wndcls_tt( NTWNDCLASSEX& ClassInfo, const UNICODE_STRING& ClassName, ATOM a );
+	wndcls_tt( NTWNDCLASSEX& ClassInfo, const UNICODE_STRING& ClassName, const UNICODE_STRING& MenuName, ATOM a );
 	static wndcls_tt* from_name( const UNICODE_STRING& wndcls_name );
-	ATOM get_atom() {return atom;}
-	const unicode_string_t& get_name() {return name;}
+	ATOM get_atom() const {return atom;}
+	const unicode_string_t& get_name() const {return name;}
 	void addref() {refcount++;}
 	void release() {refcount--;}
+	PVOID get_wndproc() const { return info.WndProc; }
+};
+
+class message_tt
+{
+public:
+	virtual ULONG get_size() const = 0;
+	virtual NTSTATUS copy_to_user( void *ptr ) const = 0;
+	virtual ULONG get_callback_num() const = 0;
+	virtual ~message_tt() {}
 };
 
 class window_tt
 {
+	thread_t *thread;
 	wndcls_tt *cls;
 	unicode_string_t name;
 	ULONG style;
@@ -74,8 +86,9 @@ class window_tt
 	LONG height;
 	window_tt* parent;
 public:
-	window_tt( wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
+	window_tt( thread_t* t, wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
 		 LONG x, LONG y, LONG width, LONG height );
+	NTSTATUS send( const message_tt& msg );
 };
 
 ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
@@ -201,6 +214,10 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	return STATUS_SUCCESS;
 }
 
+PVOID g_funcs[9];
+PVOID g_funcsW[20];
+PVOID g_funcsA[20];
+
 // Funcs array has 9 function pointers
 // FuncsW array has 20 function pointers
 // FuncsA array has 20 function pointers
@@ -211,7 +228,17 @@ BOOLEAN NTAPI NtUserInitializeClientPfnArrays(
 	PVOID FuncsA,
 	PVOID Base)
 {
-	dprintf("%p %p %p %p\n", Funcs, FuncsW, FuncsA, Base);
+	NTSTATUS r;
+
+	r = copy_from_user( &g_funcs, Funcs, sizeof g_funcs );
+	if (r < 0)
+		return r;
+	r = copy_from_user( &g_funcsW, FuncsW, sizeof g_funcsW );
+	if (r < 0)
+		return r;
+	r = copy_from_user( &g_funcsA, FuncsA, sizeof g_funcsA );
+	if (r < 0)
+		return r;
 	return 0;
 }
 
@@ -425,8 +452,9 @@ BOOLEAN NTAPI NtUserGetIconInfo(
 	return TRUE;
 }
 
-wndcls_tt::wndcls_tt( NTWNDCLASSEX& ClassInfo, const UNICODE_STRING& ClassName, ATOM a ) :
+wndcls_tt::wndcls_tt( NTWNDCLASSEX& ClassInfo, const UNICODE_STRING& ClassName, const UNICODE_STRING& MenuName, ATOM a ) :
 	name( ClassName ),
+	menu( MenuName ),
 	info( ClassInfo ),
 	atom( a ),
 	refcount( 0 )
@@ -444,7 +472,13 @@ wndcls_tt* wndcls_tt::from_name( const UNICODE_STRING& wndcls_name )
 	return NULL;
 }
 
-ATOM NTAPI NtUserRegisterClassExWOW(PNTWNDCLASSEX ClassInfo, PUNICODE_STRING ClassName, PVOID, USHORT, ULONG, ULONG)
+ATOM NTAPI NtUserRegisterClassExWOW(
+	PNTWNDCLASSEX ClassInfo,
+	PUNICODE_STRING ClassName,
+	PNTCLASSMENUNAMES MenuNames,
+	USHORT,
+	ULONG Flags,
+	ULONG)
 {
 	NTWNDCLASSEX clsinfo;
 
@@ -456,15 +490,26 @@ ATOM NTAPI NtUserRegisterClassExWOW(PNTWNDCLASSEX ClassInfo, PUNICODE_STRING Cla
 	if (clsinfo.Size != sizeof clsinfo)
 		return 0;
 
-	unicode_string_t us;
-	r = us.copy_from_user( ClassName );
+	unicode_string_t clsstr;
+	r = clsstr.copy_from_user( ClassName );
 	if (r < STATUS_SUCCESS)
 		return 0;
 
-	dprintf("Name  = %pus\n", &us);
+	// for some reason, a structure with three of the same name is passed...
+	NTCLASSMENUNAMES menu_strings;
+	r = copy_from_user( &menu_strings, MenuNames, sizeof menu_strings );
+	if (r < STATUS_SUCCESS)
+		return 0;
+
+	unicode_string_t menuname;
+	r = menuname.copy_from_user( menu_strings.name_us );
+	if (r < STATUS_SUCCESS)
+		return 0;
+
+	dprintf("window class = %pus  menu = %pus\n", &clsstr, &menuname);
 
 	static ATOM atom = 0xc001;
-	wndcls_tt* cls = new wndcls_tt( clsinfo, us, atom );
+	wndcls_tt* cls = new wndcls_tt( clsinfo, clsstr, menuname, atom );
 	if (!cls)
 		return 0;
 
@@ -638,8 +683,9 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 	return copy_wstr_from_user( str.Buffer, str.Length );
 }
 
-window_tt::window_tt( wndcls_tt *wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
+window_tt::window_tt( thread_t* t, wndcls_tt *wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
 		 LONG _x, LONG _y, LONG _width, LONG _height ) :
+	thread( t ),
 	cls( wndcls ),
 	style( _style ),
 	exstyle( _exstyle ),
@@ -681,6 +727,237 @@ window_tt *window_from_handle( HANDLE handle )
 	return winhandles[n];
 }
 
+class wmessage_ptr_tt : public message_tt
+{
+protected:
+	struct pointer_info_tt
+	{
+		ULONG sz;
+		ULONG x;
+		ULONG count;
+		PVOID kernel_address;
+		ULONG adjust_info_ofs;
+		BOOL  no_adjust;
+	};
+	pointer_info_tt &pi;
+public:
+	wmessage_ptr_tt( pointer_info_tt& pointer_info );
+	virtual ULONG get_size() const = 0;
+	virtual NTSTATUS copy_to_user( void *ptr ) const = 0;
+	virtual ULONG get_callback_num() const = 0;
+};
+
+wmessage_ptr_tt::wmessage_ptr_tt( pointer_info_tt& pointer_info ) :
+	pi( pointer_info )
+{
+	pi.x = 0;
+	pi.count = 0;
+	pi.kernel_address = 0;
+	pi.adjust_info_ofs = 0;
+	pi.no_adjust = 0;
+}
+
+class create_message_tt : public wmessage_ptr_tt
+{
+	static const ULONG NTWIN32_CREATE_CALLBACK = 9;
+	static const ULONG WM_CREATE = 0x0001;
+protected:
+	struct create_client_data : public pointer_info_tt
+	{
+		PVOID wininfo;
+		ULONG msg;
+		WPARAM wparam;
+		BOOL cs_nonnull;
+		NTCREATESTRUCT cs;
+		PVOID wndproc;
+		ULONG (CALLBACK *func)(PVOID/*PWININFO*/,ULONG,WPARAM,PVOID/*LPCREATESTRUCT*/,PVOID);
+	} info;
+	const UNICODE_STRING& cls;
+	const UNICODE_STRING& name;
+public:
+	create_message_tt( NTCREATESTRUCT& cs, PVOID wndproc, const UNICODE_STRING& cls, const UNICODE_STRING& name );
+	virtual ULONG get_size() const;
+	virtual NTSTATUS copy_to_user( void *ptr ) const;
+	virtual ULONG get_callback_num() const;
+};
+
+class nccreate_message_tt : public create_message_tt
+{
+	static const ULONG WM_NCCREATE = 0x0081;
+public:
+	nccreate_message_tt( NTCREATESTRUCT& cs, PVOID wndproc, const UNICODE_STRING& cls, const UNICODE_STRING& name );
+};
+
+nccreate_message_tt::nccreate_message_tt( NTCREATESTRUCT& cs, PVOID wndproc, const UNICODE_STRING& cls, const UNICODE_STRING& name ) :
+	create_message_tt( cs, wndproc, cls, name )
+{
+	info.msg = WM_NCCREATE;
+}
+
+create_message_tt::create_message_tt( NTCREATESTRUCT& cs, PVOID wndproc,
+			const UNICODE_STRING& _cls, const UNICODE_STRING& _name ) :
+	wmessage_ptr_tt( info ),
+	cls( _cls ),
+	name( _name )
+{
+	info.sz = sizeof info;
+	info.wininfo = NULL;
+	info.msg = WM_CREATE;
+	info.wparam = 0;
+	info.cs_nonnull = TRUE;
+	info.cs = cs;
+	info.wndproc = wndproc;
+}
+
+ULONG create_message_tt::get_callback_num() const
+{
+	return NTWIN32_CREATE_CALLBACK;
+}
+
+NTSTATUS create_message_tt::copy_to_user( void *ptr ) const
+{
+	BYTE *p = (BYTE*) ptr;
+	NTSTATUS r;
+	r = ::copy_to_user( p, &info, sizeof info );
+	return r;
+}
+
+ULONG create_message_tt::get_size() const
+{
+	return sizeof info;
+}
+
+typedef struct tagMINMAXINFO {
+	POINT	ptReserved;
+	POINT	ptMaxSize;
+	POINT	ptMaxPosition;
+	POINT	ptMinTrackSize;
+	POINT	ptMaxTrackSize;
+} MINMAXINFO, *PMINMAXINFO, *LPMINMAXINFO;
+
+typedef struct _NTMINMAXPACKEDINFO {
+	PVOID	wininfo;
+	ULONG	msg;
+	WPARAM	wparam;
+	MINMAXINFO minmax;
+	PVOID	wndproc;
+	ULONG	(CALLBACK *func)(PVOID,ULONG,WPARAM,MINMAXINFO*,PVOID);
+} NTMINMAXPACKEDINFO;
+
+class getminmaxinfo_tt : public message_tt
+{
+	static const ULONG NTWIN32_MINMAX_CALLBACK = 17;
+	static const ULONG WM_GETMINMAXINFO = 0x24;
+	NTMINMAXPACKEDINFO info;
+public:
+	getminmaxinfo_tt( PVOID winproc );
+	virtual ULONG get_size() const;
+	virtual NTSTATUS copy_to_user( void *ptr ) const;
+	virtual ULONG get_callback_num() const;
+};
+
+getminmaxinfo_tt::getminmaxinfo_tt( PVOID winproc )
+{
+	memset( &info, 0, sizeof info );
+	info.msg = WM_GETMINMAXINFO;
+	info.wndproc = winproc;
+}
+
+ULONG getminmaxinfo_tt::get_size() const
+{
+	return sizeof info;
+}
+
+NTSTATUS getminmaxinfo_tt::copy_to_user( void *ptr ) const
+{
+	return ::copy_to_user( ptr, &info, sizeof info );
+}
+
+ULONG getminmaxinfo_tt::get_callback_num() const
+{
+	return NTWIN32_MINMAX_CALLBACK;
+}
+
+typedef struct _WINDOWPOS {
+	HANDLE	hwnd;
+	HANDLE	hwndInsertAfter;
+	INT	x;
+	INT	y;
+	INT	cx;
+	INT	cy;
+	UINT	flags;
+} WINDOWPOS;
+
+typedef struct _NCCALCSIZE_PARAMS {
+	RECT	rgrc[3];
+	WINDOWPOS *lppos;
+} NCCALCSIZE_PARAMS;
+
+typedef struct _NTNCCALCSIZEPACKEDINFO {
+	PVOID	wininfo;
+	ULONG	msg;
+	BOOL	wparam;
+	PVOID	wndproc;
+	ULONG	(CALLBACK *func)(PVOID,ULONG,WPARAM,NCCALCSIZE_PARAMS*,PVOID);
+	NCCALCSIZE_PARAMS params;
+	WINDOWPOS winpos;
+} NTNCCALCSIZEPACKEDINFO;
+
+class nccalcsize_message_tt : public message_tt
+{
+	static const ULONG NTWIN32_NCCALC_CALLBACK = 20;
+	static const ULONG WM_NCCALCSIZE = 0x0083;
+	NTNCCALCSIZEPACKEDINFO info;
+public:
+	nccalcsize_message_tt( PVOID winproc );
+	virtual ULONG get_size() const;
+	virtual NTSTATUS copy_to_user( void *ptr ) const;
+	virtual ULONG get_callback_num() const;
+};
+
+nccalcsize_message_tt::nccalcsize_message_tt( PVOID winproc )
+{
+	memset( &info, 0, sizeof info );
+	info.wndproc = winproc;
+	info.msg = WM_NCCALCSIZE;
+}
+
+ULONG nccalcsize_message_tt::get_size() const
+{
+	return sizeof info;
+}
+
+NTSTATUS nccalcsize_message_tt::copy_to_user( void *ptr ) const
+{
+	return ::copy_to_user( ptr, &info, sizeof info );
+}
+
+ULONG nccalcsize_message_tt::get_callback_num() const
+{
+	return NTWIN32_NCCALC_CALLBACK;
+}
+
+NTSTATUS window_tt::send( const message_tt& msg )
+{
+	if (thread->is_terminated())
+		return STATUS_THREAD_IS_TERMINATING;
+
+	void *address = thread->push( msg.get_size() );
+
+	NTSTATUS r = msg.copy_to_user( address );
+	if (r >= STATUS_SUCCESS)
+	{
+		ULONG ret_len = 0;
+		PVOID ret_buf = 0;
+
+		r = thread->do_user_callback( msg.get_callback_num(), ret_len, ret_buf );
+	}
+
+	thread->pop( msg.get_size() );
+
+	return r;
+}
+
 HANDLE NTAPI NtUserCreateWindowEx(
 	ULONG ExStyle,
 	PUSER32_UNICODE_STRING ClassName,
@@ -716,13 +993,44 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	dprintf("ClassName = %pus\n", &wndcls_name );
 
 	wndcls_tt* wndcls = wndcls_tt::from_name( wndcls_name );
+	if (!wndcls)
+		return 0;
 
-	// send WM_NCCREATE
+	NTCREATESTRUCT cs;
 
-	window_tt *win = new window_tt( wndcls, window_name, Style, ExStyle, x, y, Width, Height );
+	cs.lpCreateParams = Param;
+	cs.hInstance = Instance;
+	cs.hMenu = Menu;
+	cs.cy = Width;
+	cs.cx = Height;
+	cs.x = x;
+	cs.y = y;
+	cs.style = Style;
+	cs.lpszName = NULL;
+	cs.lpszClass = NULL;
+	cs.dwExStyle = ExStyle;
+
+	window_tt *win = new window_tt( current, wndcls, window_name, Style, ExStyle, x, y, Width, Height );
+	if (!win)
+		return 0;
+
 	HANDLE ret = alloc_win_handle( win );
 
+	// send WM_GETMINMAXINFO
+	getminmaxinfo_tt minmax( wndcls->get_wndproc() );
+	win->send( minmax );
+
+	// send WM_NCCREATE
+	nccreate_message_tt nccreate( cs, wndcls->get_wndproc(), wndcls_name, window_name );
+	win->send( nccreate );
+
+	// send WM_NCCALCSIZE
+	nccalcsize_message_tt nccalcsize( wndcls->get_wndproc() );
+	win->send( nccalcsize );
+
 	// send WM_CREATE
+	create_message_tt create( cs, wndcls->get_wndproc(), wndcls_name, window_name );
+	win->send( create );
 
 	return ret;
 }

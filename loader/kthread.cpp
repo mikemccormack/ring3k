@@ -65,6 +65,8 @@ public:
 	virtual NTSTATUS verify_for_write( void *dest, size_t count );
 	virtual int run() = 0;
 	virtual BOOLEAN is_signalled( void );
+	virtual void* push( ULONG count );
+	virtual void pop( ULONG count );
 };
 
 kernel_thread_t::kernel_thread_t( process_t *p ) :
@@ -162,6 +164,17 @@ NTSTATUS kernel_thread_t::verify_for_write( void *dest, size_t count )
 	if (!dest)
 		return STATUS_ACCESS_VIOLATION;
 	return STATUS_SUCCESS;
+}
+
+void* kernel_thread_t::push( ULONG count )
+{
+	assert(0);
+	return 0;
+}
+
+void kernel_thread_t::pop( ULONG count )
+{
+	assert(0);
 }
 
 class security_reference_monitor_t : public kernel_thread_t

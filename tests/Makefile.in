@@ -37,6 +37,7 @@ TESTS = \
 	thread.c \
 	timer.c \
 	token.c \
+	user.c \
 	virtual.c \
 	wine-atom.c \
 	wine-port.c
@@ -94,6 +95,9 @@ res.o: res.rc
 	$(WINDRES) -o $@ $<
 
 gdi.exe: gdi.o log.o $(NTWIN32LIB)
+	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+
+user.exe: user.o log.o $(NTWIN32LIB)
 	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
 
 font.exe: font.o log.o $(NTWIN32LIB)

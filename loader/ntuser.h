@@ -68,19 +68,41 @@ typedef struct tagUSER32_UNICODE_STRING {
 } USER32_UNICODE_STRING, *PUSER32_UNICODE_STRING;
 
 typedef struct tagNTWNDCLASSEX {
-    UINT        Size;
-    UINT        Style;
-    PVOID       WndProc;
-    INT         ClsExtra;
-    INT         WndExtra;
-    PVOID       Instance;
-    HANDLE      Icon;
-    HANDLE      Cursor;
-    HANDLE      Background;
-    PWSTR       MenuName;
-    PWSTR       ClassName;
-    HANDLE      IconSm;
+	UINT	Size;
+	UINT	Style;
+	PVOID	WndProc;
+	INT	ClsExtra;
+	INT	WndExtra;
+	PVOID	Instance;
+	HANDLE	Icon;
+	HANDLE	Cursor;
+	HANDLE	Background;
+	PWSTR	MenuName;
+	PWSTR	ClassName;
+	HANDLE	IconSm;
 } NTWNDCLASSEX, *PNTWNDCLASSEX;
+
+typedef struct tagNTCREATESTRUCT {
+	PVOID	lpCreateParams;
+	PVOID	hInstance;
+	PVOID	hMenu;
+	HWND	hwndParent;
+	INT	cy;
+	INT	cx;
+	INT	y;
+	INT	x;
+	LONG	style;
+	PVOID	lpszName;
+	PVOID	lpszClass;
+	DWORD	dwExStyle;
+} NTCREATESTRUCT, *PNTCREATESTRUCT;
+
+typedef struct tagNTCLASSMENUNAMES
+{
+	PSTR name_a;
+	PWSTR name_w;
+	PUNICODE_STRING name_us;
+} NTCLASSMENUNAMES, *PNTCLASSMENUNAMES;
 
 ULONG NTAPI    NtUserCallNoParam(ULONG);
 ULONG NTAPI    NtUserCallOneParam(ULONG,ULONG);
@@ -105,7 +127,7 @@ BOOLEAN NTAPI  NtUserInitializeClientPfnArrays(PVOID,PVOID,PVOID,PVOID);
 BOOLEAN NTAPI  NtUserLoadKeyboardLayoutEx(HANDLE,ULONG,ULONG,PVOID,ULONG,ULONG);
 BOOLEAN NTAPI  NtUserNotifyProcessCreate(ULONG,ULONG,ULONG,ULONG);
 NTSTATUS NTAPI NtUserProcessConnect(HANDLE,PVOID,ULONG);
-ATOM NTAPI     NtUserRegisterClassExWOW(PNTWNDCLASSEX,PUNICODE_STRING,PVOID,USHORT,ULONG,ULONG);
+ATOM NTAPI     NtUserRegisterClassExWOW(PNTWNDCLASSEX,PUNICODE_STRING,PNTCLASSMENUNAMES,USHORT,ULONG,ULONG);
 ULONG NTAPI    NtUserRegisterWindowMessage(PUNICODE_STRING);
 BOOLEAN NTAPI  NtUserResolveDesktop(HANDLE,PVOID,PVOID,PHANDLE);
 HGDIOBJ NTAPI  NtUserSelectPalette(HGDIOBJ,HPALETTE,BOOLEAN);
