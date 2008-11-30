@@ -94,16 +94,16 @@ res.o: res.rc
 	$(WINDRES) -o $@ $<
 
 gdi.exe: gdi.o log.o $(NTWIN32LIB)
-	$(CC) -o $@ log.o $< -lntdll $(NTWIN32LIB) -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
 
 font.exe: font.o log.o $(NTWIN32LIB)
 	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
 
 atom.exe: atom.o log.o $(NTWIN32LIB)
-	$(CC) -o $@ log.o $< -lntdll $(NTWIN32LIB) -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
 
 wine-atom.exe: wine-atom.o log.o $(NTWIN32LIB)
-	$(CC) -o $@ log.o $< -lntdll $(NTWIN32LIB) -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
 
 %.exe: %.c log.o
 	$(CC) $(CFLAGS) -o $@ log.o $< -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
