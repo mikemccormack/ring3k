@@ -530,7 +530,7 @@ NUL(NtUserRealChildWindowFromPoint),
 NUL(NtUserRealInternalGetMessage), // 6
 NUL(NtUserRealWaitMessageEx), // 2
 #endif
-NUL(NtUserRedrawWindow),
+IMP(NtUserRedrawWindow, 4),
 IMP(NtUserRegisterClassExWOW, 6),
 #ifdef SYSCALL_WINXP
 NUL(NtUserRegisterUserApiHook), // 2

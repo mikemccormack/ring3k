@@ -1173,3 +1173,8 @@ BOOLEAN NTAPI NtUserMoveWindow( HANDLE Window, int x, int y, int width, int heig
 {
 	return TRUE;
 }
+
+BOOLEAN NtUserRedrawWindow( HANDLE Window, RECT *Update, HANDLE Region, UINT Flags )
+{
+	return TRUE;
+}
