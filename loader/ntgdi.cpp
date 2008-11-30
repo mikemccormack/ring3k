@@ -1030,3 +1030,8 @@ BOOLEAN NTAPI NtGdiExtTextOutW( HANDLE handle, INT x, INT y, UINT options,
 
 	return dc->exttextout( x, y, options, rect, text );
 }
+
+HANDLE NTAPI NtGdiCreateCompatibleBitmap(HANDLE DeviceContext, int width, int height)
+{
+	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
+}
