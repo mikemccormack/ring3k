@@ -369,6 +369,8 @@ NTSTATUS win32k_process_init(process_t *process)
 	return r;
 }
 
+static const ULONG NTWIN32_THREAD_INIT_CALLBACK = 74;
+
 NTSTATUS win32k_thread_init(thread_t *thread)
 {
 	NTSTATUS r;
@@ -385,7 +387,7 @@ NTSTATUS win32k_thread_init(thread_t *thread)
 
 	ULONG size = 0;
 	PVOID buffer = 0;
-	r = current->do_user_callback( 75, size, buffer );
+	r = current->do_user_callback( NTWIN32_THREAD_INIT_CALLBACK, size, buffer );
 
 	return r;
 }

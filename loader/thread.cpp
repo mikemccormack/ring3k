@@ -532,7 +532,7 @@ NTSTATUS thread_impl_t::do_user_callback( ULONG index, ULONG &length, PVOID &buf
 	if (index == 0)
 		die("zero index in win32 callback\n");
 	frame.x[0] = 0;
-	frame.x[1] = index - 1;
+	frame.x[1] = index;
 	frame.x[2] = ctx.Esp;
 	frame.x[3] = 0;
 
