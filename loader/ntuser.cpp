@@ -192,11 +192,16 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	NTSTATUS r;
 
 	process_t *proc = 0;
-	r = process_from_handle( Process, &proc );
+	r = object_from_handle( proc, Process, 0 );
 	if (r < STATUS_SUCCESS)
 		return r;
 
 	// check if we're already connected
+	r = win32k_process_init( proc );
+	if (r < STATUS_SUCCESS)
+		return r;
+
+	assert( proc->win32k_info );
 	BYTE*& user_shared_mem = proc->win32k_info->user_shared_mem;
 	if (user_shared_mem)
 		return STATUS_SUCCESS;

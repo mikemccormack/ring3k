@@ -319,6 +319,9 @@ NTSTATUS win32k_process_init(process_t *process)
 {
 	NTSTATUS r;
 
+	if (process->win32k_info)
+		return STATUS_SUCCESS;
+
 	dprintf("\n");
 
 	// 16bpp by default for now
@@ -330,7 +333,7 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	process->win32k_info = win32k_manager->alloc_win32k_info();
 
-	PPEB ppeb = (PPEB) current->process->peb_section->get_kernel_address();
+	PPEB ppeb = (PPEB) process->peb_section->get_kernel_address();
 
 	// only do this once per process
 	if (ppeb->GdiSharedHandleTable)
@@ -351,10 +354,9 @@ NTSTATUS win32k_process_init(process_t *process)
 	BYTE *p = GDI_SHARED_HANDLE_TABLE_ADDRESS;
 
 	// unreserve memory so mapit doesn't get a conflicting address
-	current->process->vm->free_virtual_memory( p, GDI_SHARED_HANDLE_TABLE_SIZE, MEM_FREE );
+	process->vm->free_virtual_memory( p, GDI_SHARED_HANDLE_TABLE_SIZE, MEM_FREE );
 
-	r = gdi_ht_section->mapit( current->process->vm, p, 0,
-				   MEM_COMMIT, PAGE_READWRITE );
+	r = gdi_ht_section->mapit( process->vm, p, 0, MEM_COMMIT, PAGE_READWRITE );
 	if (r < STATUS_SUCCESS)
 	{
 		dprintf("r = %08lx\n", r);
@@ -365,7 +367,7 @@ NTSTATUS win32k_process_init(process_t *process)
 	ppeb->GdiSharedHandleTable = (void*) p;
 
 	if (option_trace)
-		current->process->vm->set_tracer( p, ntgdishm_trace );
+		process->vm->set_tracer( p, ntgdishm_trace );
 
 	return r;
 }
@@ -379,16 +381,13 @@ NTSTATUS win32k_thread_init(thread_t *thread)
 	if (thread->win32k_init_complete())
 		return STATUS_SUCCESS;
 
-	if (!thread->process->win32k_info)
-	{
-		r = win32k_process_init( thread->process );
-		if (r < STATUS_SUCCESS)
-			return r;
-	}
+	r = win32k_process_init( thread->process );
+	if (r < STATUS_SUCCESS)
+		return r;
 
 	ULONG size = 0;
 	PVOID buffer = 0;
-	r = current->do_user_callback( NTWIN32_THREAD_INIT_CALLBACK, size, buffer );
+	r = thread->do_user_callback( NTWIN32_THREAD_INIT_CALLBACK, size, buffer );
 
 	return r;
 }
