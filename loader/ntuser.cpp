@@ -1168,3 +1168,8 @@ HANDLE NTAPI NtUserCreateAcceleratorTable( PVOID Accelerators, UINT Count )
 	static UINT accelerator = 1;
 	return (HANDLE) accelerator++;
 }
+
+BOOLEAN NTAPI NtUserMoveWindow( HANDLE Window, int x, int y, int width, int height, BOOLEAN repaint )
+{
+	return TRUE;
+}
