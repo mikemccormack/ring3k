@@ -149,28 +149,6 @@ void test_query_directory_object(void)
 	ok( r == STATUS_ACCESS_DENIED, "return wrong %08lx\n", r);
 }
 
-char hex(BYTE x)
-{
-	if (x<10)
-		return x+'0';
-	return x+'A'-10;
-}
-
-void dump_bin(BYTE *buf, ULONG sz)
-{
-	char str[0x33];
-	int i;
-	for (i=0; i<sz; i++)
-	{
-		str[(i%16)*3] = hex(buf[i]>>4);
-		str[(i%16)*3+1] = hex(buf[i]&0x0f);
-		str[(i%16)*3+2] = ' ';
-		str[(i%16)*3+3] = 0;
-		if ((i+1)%16 == 0 || (i+1) == sz)
-			dprintf("%s\n", str);
-	}
-}
-
 void test_query_object_security(void)
 {
 	NTSTATUS r;

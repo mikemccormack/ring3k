@@ -44,28 +44,6 @@ HANDLE get_process_heap( void )
 	return p[0x18/sizeof (*p)];
 }
 
-char hex(BYTE x)
-{
-	if (x<10)
-		return x+'0';
-	return x+'A'-10;
-}
-
-void dump_bin(BYTE *buf, ULONG sz)
-{
-	char str[0x33];
-	int i;
-	for (i=0; i<sz; i++)
-	{
-		str[(i%16)*3] = hex(buf[i]>>4);
-		str[(i%16)*3+1] = hex(buf[i]&0x0f);
-		str[(i%16)*3+2] = ' ';
-		str[(i%16)*3+3] = 0;
-		if ((i+1)%16 == 0 || (i+1) == sz)
-			dprintf("%s\n", str);
-	}
-}
-
 typedef struct _font_enum_entry {
 	ULONG size;
 	ULONG elf_size;
