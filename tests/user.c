@@ -124,6 +124,7 @@ void getminmax_callback(NTMINMAXPACKEDINFO *pack)
 	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
 	ok( pack->msg == WM_GETMINMAXINFO, "message wrong %08lx\n", pack->msg );
 	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
+	ok( pack->func != NULL, "func NULL\n" );
 
 	minmax_called = ++sequence;
 
@@ -135,6 +136,7 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 	NTWINCALLBACKRETINFO ret;
 
 	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
+	ok( pack->func != NULL, "func NULL\n" );
 
 	switch (pack->msg)
 	{
@@ -160,6 +162,7 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 {
 	nccalc_called = ++sequence;
+	ok( pack->func != NULL, "func NULL\n" );
 	ok( pack->msg == WM_NCCALCSIZE, "message wrong %08lx\n", pack->msg );
 	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
 	NtCallbackReturn( 0, 0, 0 );

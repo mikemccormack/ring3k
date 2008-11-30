@@ -843,6 +843,8 @@ create_message_tt::create_message_tt( NTCREATESTRUCT& cs,
 	cls( _cls ),
 	name( _name )
 {
+	memset( &info, 0, sizeof info );
+
 	info.sz = sizeof info;
 	info.wininfo = NULL;
 	info.msg = WM_CREATE;
@@ -873,6 +875,7 @@ void create_message_tt::set_window_info( window_tt *win )
 {
 	info.wininfo = win->get_wininfo();
 	info.wndproc = win->get_wndproc();
+	info.func = (typeof(info.func)) g_funcsW[17];
 }
 
 typedef struct tagMINMAXINFO {
@@ -930,6 +933,7 @@ void getminmaxinfo_tt::set_window_info( window_tt *win )
 {
 	info.wininfo = win->get_wininfo();
 	info.wndproc = win->get_wndproc();
+	info.func = (typeof(info.func)) g_funcsW[17];
 }
 
 typedef struct _WINDOWPOS {
@@ -995,6 +999,8 @@ void nccalcsize_message_tt::set_window_info( window_tt *win )
 {
 	info.wininfo = win->get_wininfo();
 	info.wndproc = win->get_wndproc();
+	info.func = (typeof(info.func)) g_funcsW[17];
+	assert( info.func != NULL );
 }
 
 NTSTATUS window_tt::send( message_tt& msg )
