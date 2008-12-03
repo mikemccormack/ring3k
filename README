@@ -18,12 +18,14 @@ There are several aims for this project:
 * provide an alternate method of virtualization
 * reduce the scope of reimplementation as compared to Wine
 * make application's address space indistinguishable from native Windows
+* move closed and non-free code out of ring 0
 
 Requirements
 ------------
 
 * A Linux (tm) 2.6.x kernel patches applied.
 * A Windows 2000 (tm) CD
+* libSDL 1.2
 * the mingw cross compiler (for tests)
 * glibc with the NPTL version of pthreads
 * gcc 4.2.1 or so
@@ -38,10 +40,9 @@ To run smss.exe, from the top level directory, do:
 
 ./configure
 make
-cd loader
 ln -s /path/to/your/win2k.iso
 make test
-./runit
+./ring3k
 
 To run a test (for example the semaphore test):
 
