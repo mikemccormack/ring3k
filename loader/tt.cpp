@@ -175,7 +175,7 @@ unsigned short tt_address_space_impl::get_userspace_fs()
 
 bool init_tt()
 {
-	dprintf("using tt\n");
+	dprintf("using thread tracing\n");
 	ptrace_address_space_impl::set_signals();
 	pcreate_address_space = &create_tt_address_space;
 	return true;
