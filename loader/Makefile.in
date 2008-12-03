@@ -102,47 +102,10 @@ fiber: fiber_test.o fiber.o platform.o
 	$(CXX) -m32 -o $@ $^ -lstdc++
 
 clean:
-	rm -rf drive c:
 	rm -f $(TARGET) *.o core enc fiber ttclient *.orig *.rej .*.d
 
 stat:
 	@/usr/bin/perl syscall_stat.pl
 	@echo -n "Total LOC:     "
 	@cat $(HEADERS) $(C_SOURCE) $(CPP_SOURCES) | wc --lines
-
-TESTLIST = \
-	completion \
-	device \
-	event \
-	file \
-	font \
-	gdi \
-	heap \
-	job \
-	mailslot \
-	mutant \
-	object \
-	port \
-	process \
-	reg \
-	section \
-	seh \
-	sema \
-	syscall \
-	thread \
-	timer \
-	token \
-	user \
-	virtual \
-	wine-port
-
-test.skas:
-	@echo "Skas3 tests"
-	for tc in $(TESTLIST) ; do echo $$tc ; ./runtest -q $$tc || exit 1 ; done
-
-test.tt:
-	@echo "Thread tracing tests"
-	for tc in $(TESTLIST) ; do echo $$tc ; ./runtest -q -s $$tc || exit 1 ; done
-
-test: test.tt
 

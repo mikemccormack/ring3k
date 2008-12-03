@@ -251,4 +251,4 @@ cat > "$root/winnt/win.ini" <<EOF
 
 EOF
 
-cp "../tests/$win32dlldir/ntwin32.dll" "$root"
+cp "tests/$win32dlldir/ntwin32.dll" "$root"

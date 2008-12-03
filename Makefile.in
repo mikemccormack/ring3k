@@ -21,9 +21,6 @@
 
 all: libudis86_dir loader_dir tests_dir tools_dir
 
-test: all
-	cd loader && make test
-
 loader_dir:
 	cd loader && make
 
@@ -43,5 +40,36 @@ clean:
 	cd tools && make clean
 
 distclean: clean
+	rm -rf drive
 	rm -rf config.status config.log autom4te.cache
+
+TESTLIST = \
+	completion \
+	device \
+	event \
+	file \
+	font \
+	gdi \
+	heap \
+	job \
+	mailslot \
+	mutant \
+	object \
+	port \
+	process \
+	reg \
+	section \
+	seh \
+	sema \
+	syscall \
+	thread \
+	timer \
+	token \
+	user \
+	virtual \
+	wine-port
+
+test: all
+	@echo "Thread tracing tests"
+	for tc in $(TESTLIST) ; do echo $$tc ; ./runtest -q $$tc || exit 1 ; done
 

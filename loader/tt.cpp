@@ -51,6 +51,9 @@
 #include "client.h"
 #include "ptrace_base.h"
 
+const char stub_name[] = "ttclient";
+char stub_path[MAX_PATH];
+
 class tt_address_space_impl: public ptrace_address_space_impl
 {
 	long stub_regs[FRAME_SIZE];
@@ -83,7 +86,7 @@ tt_address_space_impl::tt_address_space_impl()
 	if (pid == 0)
 	{
 		::ptrace( PTRACE_TRACEME, 0, 0, 0 );
-		r = ::execl("./ttclient", "./ttclient", NULL );
+		r = ::execl( stub_path, stub_name, NULL );
 		// the next line should not be reached
 		die("exec failed %d\n", r);
 	}
@@ -173,9 +176,33 @@ unsigned short tt_address_space_impl::get_userspace_fs()
 	return stub_regs[FS];
 }
 
-bool init_tt()
+void get_stub_path( const char *loader_path )
 {
-	dprintf("using thread tracing\n");
+	// FIXME: handle loader in path too
+	const char *p = strrchr( loader_path, '/' );
+	int len;
+	if (p)
+	{
+		len = p - loader_path + 1;
+	}
+	else
+	{
+		static const char current_dir[] = "./";
+		p = current_dir;
+		len = sizeof current_dir - 1;
+	}
+
+	memcpy( stub_path, loader_path, len );
+	stub_path[len] = 0;
+	if ((len + sizeof stub_name) > sizeof stub_path)
+		die("path too long\n");
+	strcat( stub_path, stub_name );
+}
+
+bool init_tt( const char *loader_path )
+{
+	get_stub_path( loader_path );
+	dprintf("using thread tracing, loader %s, client %s\n", loader_path, stub_path );
 	ptrace_address_space_impl::set_signals();
 	pcreate_address_space = &create_tt_address_space;
 	return true;

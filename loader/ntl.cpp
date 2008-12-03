@@ -261,7 +261,7 @@ static void segv_handler(int)
 }
 
 bool init_skas();
-bool init_tt();
+bool init_tt( const char *loader_path );
 
 void usage( void )
 {
@@ -348,7 +348,8 @@ int main(int argc, char **argv)
 	// the skas3 patch is deprecated...
 	if (0) init_skas();
 
-	init_tt();
+	// pass our path so thread tracing can find the client stub
+	init_tt( argv[0] );
 	if (!pcreate_address_space)
 		die("no way to manage address spaces found\n");
 

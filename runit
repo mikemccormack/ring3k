@@ -1,5 +1,5 @@
 #!/bin/sh
-loader="./ntl"
+loader="./loader/ntl"
 if test \! -x "$loader"
 then
 	echo "loader binary (ntl) not present"
