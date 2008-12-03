@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#include "config.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -30,6 +31,7 @@
 #include <poll.h>
 #include <signal.h>
 #include <execinfo.h>
+#include <getopt.h>
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -236,16 +238,6 @@ void do_cleanup( void )
 		fprintf(stderr, "%d threads %d processes left\n", num_threads, num_processes);
 }
 
-int usage( const char *prog )
-{
-	fprintf(stderr, "%s [-d] [-t] [-m] [-q] native.exe\n", prog );
-	fprintf(stderr, "   [-d] break into debugger on exceptions\n");
-	fprintf(stderr, "   [-m] memory reference counting\n");
-	fprintf(stderr, "   [-t] trace syscall entry and exit\n");
-	fprintf(stderr, "   [-q] quiet, suppress debug messages\n");
-	return 0;
-}
-
 static void segv_handler(int)
 {
 	const int max_frames = 20;
@@ -271,46 +263,97 @@ static void segv_handler(int)
 bool init_skas();
 bool init_tt();
 
-bool option_skas = 1;
+void usage( void )
+{
+	const char usage[] =
+		"Usage: %s [options] [native.exe]\n"
+		"Options:\n"
+		"  -d,--debug    break into debugger on exceptions\n"
+		"  -h,--help     print this message\n"
+		"  -q,--quiet    quiet, suppress debug messages\n"
+		"  -t,--trace    trace syscall entry and exit\n"
+		"  -v,--version  print version\n\n"
+		"  smss.exe is started by default\n\n";
+	printf( usage, PACKAGE_NAME );
+	exit(0);
+}
+
+void version( void )
+{
+	const char version[] = "%s\n"
+		"Copyright (C) 2008 Mike McCormack\n"
+		"Licence LGPL\n"
+		"This is free software: you are free to change and redistribute it.\n"
+		"There is NO WARRANTY, to the extent permitted by law.\n\n";
+	printf( version, PACKAGE_STRING );
+	exit(0);
+}
+
+void parse_options(int argc, char **argv)
+{
+	while (1)
+	{
+		int option_index;
+		static struct option long_options[] = {
+			{"debug", 0, &option_debug, 1 },
+			{"help", 0, 0, 'h' },
+			{"quiet", 0, &option_quiet, 1 },
+			{"trace", 0, &option_trace, 1 },
+			{"version", 0, 0, 'v' },
+			{NULL, 0, 0, 0 },
+		};
+
+		int ch = getopt_long(argc, argv, "dhtqv", long_options, &option_index );
+		if (ch == -1)
+			break;
+
+		switch (ch)
+		{
+		case 'd':
+			option_debug = 1;
+			break;
+		case 'h':
+			usage();
+			break;
+		case 'q':
+			option_quiet = 1;
+			break;
+		case 't':
+			option_trace = 1;
+			break;
+		case 'v':
+			version();
+		}
+	}
+}
 
 int main(int argc, char **argv)
 {
 	unicode_string_t us;
 	thread_t *initial_thread = NULL;
-	int r, n;
+	const char *exename;
+
+	parse_options( argc, argv );
+
+	if (optind == argc)
+	{
+		// default to starting smss.exe
+		exename = "\\??\\c:\\winnt\\system32\\smss.exe";
+	}
+	else
+	{
+		exename = argv[optind];
+	}
+
+	// the skas3 patch is deprecated...
+	if (0) init_skas();
+
+	init_tt();
+	if (!pcreate_address_space)
+		die("no way to manage address spaces found\n");
 
 	// enable backtraces
 	signal(SIGSEGV, segv_handler);
-
-	for (n=1; n<argc; n++)
-	{
-		if (argv[n][0] != '-')
-			break;
-		switch (argv[n][1])
-		{
-		case 'd':
-			option_debug = 1;
-			break;
-		case 't':
-			option_trace = 1;
-			break;
-		case 'q':
-			option_quiet = 1;
-			break;
-		case 's':
-			option_skas = 0;
-			break;
-		default:
-			return usage( argv[0] );
-		}
-	}
-
-	if (n == argc)
-		return usage( argv[0] );
-
-	(option_skas && init_skas()) || init_tt();
-	if (!pcreate_address_space)
-		die("no way to manage address spaces found\n");
 
 	// initialize boottime
 	SYSTEM_TIME_OF_DAY_INFORMATION dummy;
@@ -341,9 +384,9 @@ int main(int argc, char **argv)
 	init_ntdll();
 	create_kthread();
 
-	us.copy( argv[n] );
+	us.copy( exename );
 
-	r = create_initial_process( &initial_thread, us );
+	int r = create_initial_process( &initial_thread, us );
 	if (r < STATUS_SUCCESS)
 		die("create_initial_process() failed (%08x)\n", r);
 
