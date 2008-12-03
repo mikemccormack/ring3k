@@ -1,5 +1,5 @@
 
-AC_INIT(ring3k,0.0.12)
+AC_INIT(ring3k,0.0.13)
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CHECK_HEADERS([asm/ptrace.h])
