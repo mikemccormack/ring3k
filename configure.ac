@@ -41,6 +41,7 @@ AC_CONFIG_FILES(
 	tests/Makefile
 	tools/Makefile
 	libudis86/Makefile
+	libmspack/Makefile
 )
 
 AC_OUTPUT

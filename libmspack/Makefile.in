@@ -1,0 +1,51 @@
+
+DEPFLAG=-Wp,-MD,.$@.d
+CFLAGS = -O2 -Wall -I. $(DEPFLAG)
+CC = @CC@
+
+SOURCE = \
+	cabc.c \
+	cabd.c \
+	cab.h \
+	chmc.c \
+	chmd.c \
+	chm.h \
+	des.h \
+	hlpc.c \
+	hlpd.c \
+	hlp.h \
+	kwajc.c \
+	kwajd.c \
+	kwaj.h \
+	litc.c \
+	litd.c \
+	lit.h \
+	lzss.h \
+	lzxc.c \
+	lzxd.c \
+	lzx.h \
+	mspack.h \
+	mszipc.c \
+	mszipd.c \
+	mszip.h \
+	qtmd.c \
+	qtm.h \
+	sha.h \
+	system.c \
+	system.h \
+	szddc.c \
+	szddd.c \
+	szdd.h
+
+OBJECTS = $(SOURCE:%.c=%.o)
+
+TARGET = libmspack.a
+all: $(TARGET)
+
+include $(wildcard .*.d)
+$(TARGET): $(OBJECTS)
+	$(AR) -r $@ $^
+
+clean:
+	rm -rf $(TARGET) .*.d *.o
+
