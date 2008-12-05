@@ -17,9 +17,22 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 #
 
-.PHONY: all loader_dir libudis86_dir libmspack_dir tests_dir clean distclean test
+DIRS = \
+	libudis86_dir \
+	libmspack_dir \
+	loader_dir \
+	tests_dir \
+	tools_dir \
+	unpack_dir
 
-all: libudis86_dir libmspack_dir loader_dir tests_dir tools_dir
+all: $(DIRS)
+
+.PHONY: \
+	$(DIRS)
+	all \
+	clean \
+	distclean \
+	test
 
 loader_dir:
 	cd loader && make
@@ -36,12 +49,16 @@ libudis86_dir:
 libmspack_dir:
 	cd libmspack && make
 
+unpack_dir:
+	cd unpack && make
+
 clean:
 	cd libudis86 && make clean
 	cd libmspack && make clean
 	cd loader && make clean
 	cd tests && make clean
 	cd tools && make clean
+	cd unpack && make clean
 
 distclean: clean
 	rm -rf drive

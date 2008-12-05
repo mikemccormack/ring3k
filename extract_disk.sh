@@ -221,7 +221,7 @@ do
 	if test "x$compressed" = "x$file"
 	then
 		echo "Extracting $file"
-		cabextract -L -d "$target" "$tmp"
+		unpack/unpack -d "$target" "$tmp"
 	else
 		lower=`echo "$file" | tr A-Z a-z`
 		echo "Copying    $lower"

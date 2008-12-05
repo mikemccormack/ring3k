@@ -42,6 +42,7 @@ AC_CONFIG_FILES(
 	tools/Makefile
 	libudis86/Makefile
 	libmspack/Makefile
+	unpack/Makefile
 )
 
 AC_OUTPUT
