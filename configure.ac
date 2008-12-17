@@ -1,6 +1,8 @@
 
 AC_INIT(ring3k,0.0.14)
 
+AC_PROG_CC
+AC_PROG_CXX
 AC_CONFIG_HEADERS([include/config.h])
 AC_CHECK_HEADERS([asm/ptrace.h])
 AC_CHECK_HEADERS([valgrind/valgrind.h])

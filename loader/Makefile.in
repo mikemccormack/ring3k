@@ -26,6 +26,7 @@ LIBS=-lxml2 -lSDL -lstdc++ ../libudis86/libudis86.a
 LDFLAGS=-m32 -rdynamic
 
 CC = @CC@
+CXX = @CXX@
 
 HEADERS = \
 	debug.h \
