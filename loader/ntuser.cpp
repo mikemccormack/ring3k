@@ -35,6 +35,7 @@
 #include "ntgdi.h"
 #include "mem.h"
 #include "debug.h"
+#include "object.inl"
 
 class window_tt;
 class wndcls_tt;
