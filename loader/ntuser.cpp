@@ -1004,6 +1004,64 @@ void nccalcsize_message_tt::set_window_info( window_tt *win )
 	assert( info.func != NULL );
 }
 
+typedef struct _NTSIMPLEMESSAGEPACKEDINFO {
+	PVOID	wininfo;
+	ULONG	msg;
+	WPARAM	wparam;
+	LPARAM	lparam;
+	PVOID	wndproc;
+	ULONG	(CALLBACK *func)(PVOID,ULONG,WPARAM,LPARAM,PVOID);
+} NTSIMPLEMESSAGEPACKEDINFO;
+
+class basicmsg_tt : public message_tt
+{
+	static const ULONG NTWIN32_BASICMSG_CALLBACK = 2;
+protected:
+	NTSIMPLEMESSAGEPACKEDINFO info;
+public:
+	virtual ULONG get_size() const;
+	virtual NTSTATUS copy_to_user( void *ptr ) const;
+	virtual ULONG get_callback_num() const;
+	virtual void set_window_info( window_tt *win );
+};
+
+ULONG basicmsg_tt::get_size() const
+{
+	return sizeof info;
+}
+
+NTSTATUS basicmsg_tt::copy_to_user( void *ptr ) const
+{
+	return ::copy_to_user( ptr, &info, sizeof info );
+}
+
+ULONG basicmsg_tt::get_callback_num() const
+{
+	return NTWIN32_BASICMSG_CALLBACK;
+}
+
+void basicmsg_tt::set_window_info( window_tt *win )
+{
+	info.wininfo = win->get_wininfo();
+	info.wndproc = win->get_wndproc();
+	info.func = (typeof(info.func)) g_funcsW[17];
+	assert( info.func != NULL );
+}
+
+class showwindowmsg_tt : public basicmsg_tt
+{
+	static const ULONG WM_SHOWWINDOW = 0x0018;
+public:
+	showwindowmsg_tt( bool show );
+};
+
+showwindowmsg_tt::showwindowmsg_tt( bool show )
+{
+	info.msg = WM_SHOWWINDOW;
+	info.wparam = show;
+	info.lparam = 0;
+}
+
 NTSTATUS window_tt::send( message_tt& msg )
 {
 	if (thread->is_terminated())
@@ -1155,6 +1213,14 @@ BOOLEAN NTAPI NtUserResolveDesktop(HANDLE Process, PVOID, PVOID, PHANDLE Desktop
 
 BOOLEAN NTAPI NtUserShowWindow( HANDLE Window, INT Show )
 {
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return FALSE;
+
+	// send a WM_SHOWWINDOW message
+	showwindowmsg_tt sw( TRUE );
+	win->send( sw );
+
 	return TRUE;
 }
 
