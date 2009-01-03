@@ -184,7 +184,10 @@ void ptrace_address_space_impl::wait_for_signal( pid_t pid, int signal )
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == signal)
 			return;
 
-		dprintf("stray signal %d\n", WEXITSTATUS(status));
+		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGALRM)
+			dprintf("stray SIGALRM\n");
+		else
+			dprintf("stray signal %d\n", WEXITSTATUS(status));
 
 		// start the child again so we can get the next signal
 		r = ptrace( PTRACE_CONT, pid, 0, 0 );
@@ -193,11 +196,14 @@ void ptrace_address_space_impl::wait_for_signal( pid_t pid, int signal )
 	}
 }
 
-int ptrace_address_space_impl::ptrace_run( PCONTEXT ctx, int single_step )
+int ptrace_address_space_impl::ptrace_run( PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout )
 {
 	int r, status = 0;
 
+	// set itimer (SIGALRM)
+	alarm_timeout( timeout );
 	sig_target = this;
+
 	/* set the current thread's context */
 	r = set_context( ctx );
 	if (r<0)
@@ -224,6 +230,9 @@ int ptrace_address_space_impl::ptrace_run( PCONTEXT ctx, int single_step )
 	r = get_context( ctx );
 	if (r < 0)
 		die("failed to get registers\n");
+
+	// cancel itimer (SIGALRM)
+	cancel_timer();
 	sig_target = 0;
 
 	return status;
@@ -234,7 +243,7 @@ void ptrace_address_space_impl::alarm_timeout(LARGE_INTEGER &timeout)
 	/* set the timeout */
 	struct itimerval val;
 	val.it_value.tv_sec = timeout.QuadPart/1000LL;
-	val.it_value.tv_usec = timeout.QuadPart%1000LL;
+	val.it_value.tv_usec = (timeout.QuadPart%1000LL)*1000LL;
 	val.it_interval.tv_sec = 0;
 	val.it_interval.tv_usec = 0;
 	int r = setitimer(ITIMER_REAL, &val, NULL);
@@ -244,12 +253,7 @@ void ptrace_address_space_impl::alarm_timeout(LARGE_INTEGER &timeout)
 
 void ptrace_address_space_impl::cancel_timer()
 {
-	struct itimerval val;
-	val.it_value.tv_sec = 0;
-	val.it_value.tv_usec = 0;
-	val.it_interval.tv_sec = 0;
-	val.it_interval.tv_usec = 0;
-	int r = setitimer(ITIMER_REAL, &val, NULL);
+	int r = setitimer(ITIMER_REAL, NULL, NULL);
 	if (r < 0)
 		die("couldn't cancel itimer\n");
 }
@@ -299,11 +303,10 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 {
 	set_userspace_fs(TebBaseAddress, ctx->SegFs);
 
-	alarm_timeout( timeout );
 
 	while (1)
 	{
-		int status = ptrace_run( ctx, single_step );
+		int status = ptrace_run( ctx, single_step, timeout );
 		if (WIFSIGNALED(status))
 			break;
 
@@ -329,7 +332,7 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 			break;
 
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGWINCH)
-		break;
+			break;
 
 		if (WIFSTOPPED(status) && single_step)
 			break;
@@ -341,7 +344,6 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 		}
 	}
 
-	cancel_timer();
 }
 
 int ptrace_address_space_impl::get_fault_info( void *& addr )

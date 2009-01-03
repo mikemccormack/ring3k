@@ -31,7 +31,7 @@ protected:
 	static void sigitimer_handler(int signal);
 	int get_context( PCONTEXT ctx );
 	int set_context( PCONTEXT ctx );
-	int ptrace_run( PCONTEXT ctx, int single_step );
+	int ptrace_run( PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout );
 	virtual pid_t get_child_pid() = 0;
 	virtual void handle( int signal );
 	virtual void run( void *TebBaseAddress, PCONTEXT ctx, int single_step, LARGE_INTEGER& timeout, execution_context_t *exec );
