@@ -17,4 +17,4 @@ then
 	fi
 fi
 
-exec "$loader" $* "\\??\\c:\\winnt\\system32\\smss.exe"
+exec "$loader" $*
