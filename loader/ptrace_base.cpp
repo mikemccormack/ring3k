@@ -201,8 +201,8 @@ int ptrace_address_space_impl::ptrace_run( PCONTEXT ctx, int single_step, LARGE_
 	int r, status = 0;
 
 	// set itimer (SIGALRM)
-	alarm_timeout( timeout );
 	sig_target = this;
+	alarm_timeout( timeout );
 
 	/* set the current thread's context */
 	r = set_context( ctx );
