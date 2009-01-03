@@ -6,6 +6,7 @@
 #ifndef WINXP
 
 // Windows 2000
+#define NTWIN32_BASICMSG_CALLBACK 2
 #define NTWIN32_CREATE_CALLBACK 9
 #define NTWIN32_MINMAX_CALLBACK 17
 #define NTWIN32_NCCALC_CALLBACK 20
@@ -201,17 +202,23 @@ NTSTATUS NTAPI NtGdiQueryFontAssocInfo(HANDLE);
 ULONG NTAPI NtGdiSetFontEnumeration(ULONG);
 
 typedef struct USER_SHARED_MEMORY_INFO {
-    ULONG Flags;
-    PVOID Address;
+	ULONG Flags;
+	PVOID Address;
 } USER_SHARED_MEMORY_INFO, *PUSER_SHARED_MEMORY_INFO;
 
 typedef struct _USER_PROCESS_CONNECT_INFO {
-    ULONG Version;
-    ULONG Unknown;
-    ULONG MinorVersion;
-    PVOID Ptr[4];
-    USER_SHARED_MEMORY_INFO SharedSection[NUMBER_OF_USER_SHARED_SECTIONS];
+	ULONG Version;
+	ULONG Unknown;
+	ULONG MinorVersion;
+	PVOID Ptr[4];
+	USER_SHARED_MEMORY_INFO SharedSection[NUMBER_OF_USER_SHARED_SECTIONS];
 } USER_PROCESS_CONNECT_INFO, *PUSER_PROCESS_CONNECT_INFO;
+
+typedef struct _NTWINCALLBACKRETINFO {
+	LRESULT	val;
+	ULONG	size;
+	PVOID	buf;
+} NTWINCALLBACKRETINFO;
 
 typedef struct tagNTWNDCLASSEX {
 	UINT	Size;
@@ -227,6 +234,15 @@ typedef struct tagNTWNDCLASSEX {
 	PWSTR	ClassName;
 	HANDLE	IconSm;
 } NTWNDCLASSEX, *PNTWNDCLASSEX;
+
+typedef struct _NTSIMPLEMESSAGEPACKEDINFO {
+	PVOID*	wininfo;
+	ULONG	msg;
+	WPARAM	wparam;
+	LPARAM	lparam;
+	PVOID	wndproc;
+	ULONG	(CALLBACK *func)(PVOID,ULONG,WPARAM,LPARAM,PVOID);
+} NTSIMPLEMESSAGEPACKEDINFO;
 
 typedef struct tagMINMAXINFO {
 	POINT	ptReserved;
@@ -316,6 +332,8 @@ typedef struct _NTMOVINGPACKEDINFO {
 
 #define WM_CREATE           0x0001
 #define WM_MOVE             0x0003
+#define WM_ACTIVATE         0x0006
+#define WM_SHOWWINDOW       0x0018
 #define WM_NCCREATE         0x0081
 #define WM_NCCALCSIZE       0x0083
 #define WM_GETMINMAXINFO    0x0024
@@ -333,6 +351,23 @@ typedef struct _NTMOVINGPACKEDINFO {
 #define WS_GROUP         0x00020000L
 
 #define CW_USEDEFAULT ((INT)0x80000000)
+
+#define SW_HIDE             0
+#define SW_SHOWNORMAL       1
+#define SW_NORMAL           1
+#define SW_SHOWMINIMIZED    2
+#define SW_SHOWMAXIMIZED    3
+#define SW_MAXIMIZE         3
+#define SW_SHOWNOACTIVATE   4
+#define SW_SHOW             5
+#define SW_MINIMIZE         6
+#define SW_SHOWMINNOACTIVE  7
+#define SW_SHOWNA           8
+#define SW_RESTORE          9
+#define SW_SHOWDEFAULT      10
+#define SW_FORCEMINIMIZE    11
+#define SW_MAX              11
+#define SW_NORMALNA         0xCC        /* undoc. flag in MinMaximize */
 
 typedef struct tagUSER32_UNICODE_STRING {
 	ULONG Length;
@@ -353,5 +388,6 @@ NTSTATUS NTAPI NtUserInitializeClientPfnArrays(PVOID,PVOID,PVOID,PVOID);
 NTSTATUS NTAPI NtUserProcessConnect(HANDLE,PVOID,ULONG);
 ATOM NTAPI     NtUserRegisterClassExWOW(PNTWNDCLASSEX,PUNICODE_STRING,PVOID,USHORT,ULONG,ULONG);
 BOOL NTAPI     NtUserResolveDesktop(HANDLE,PVOID,ULONG,PVOID);
+BOOL NTAPI     NtUserShowWindow(HANDLE,int);
 
 #endif // __NTWIN32_H__

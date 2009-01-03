@@ -103,18 +103,30 @@ void init_callback(void *arg)
 	NtCallbackReturn( 0, 0, 0 );
 }
 
+#define MAX_RECEIVED_MESSAGES 0x1000
 ULONG sequence;
+ULONG received_msg[MAX_RECEIVED_MESSAGES];
 
-ULONG minmax_called;
-ULONG nccreate_called;
-ULONG create_called;
-ULONG nccalc_called;
+static inline void record_received( ULONG msg )
+{
+	if (sequence < MAX_RECEIVED_MESSAGES)
+		received_msg[ sequence ++ ] = msg;
+}
 
-typedef struct _NTWINCALLBACKRETINFO {
-	LRESULT	val;
-	ULONG	size;
-	PVOID	buf;
-} NTWINCALLBACKRETINFO;
+void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
+{
+	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
+	record_received( pack->msg );
+	switch (pack->msg)
+	{
+	case WM_SHOWWINDOW:
+	case WM_ACTIVATE:
+		break;
+	default:
+		dprintf("msg %04lx\n", pack->msg );
+		break;
+	}
+}
 
 // magic numbers for everybody
 void getminmax_callback(NTMINMAXPACKEDINFO *pack)
@@ -126,7 +138,7 @@ void getminmax_callback(NTMINMAXPACKEDINFO *pack)
 	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
 	ok( pack->func != NULL, "func NULL\n" );
 
-	minmax_called = ++sequence;
+	record_received( pack->msg );
 
 	NtCallbackReturn( 0, 0, 0 );
 }
@@ -137,15 +149,12 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 
 	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
 	ok( pack->func != NULL, "func NULL\n" );
+	record_received( pack->msg );
 
 	switch (pack->msg)
 	{
 	case WM_NCCREATE:
-		nccreate_called = ++sequence;
-		break;
-
 	case WM_CREATE:
-		create_called = ++sequence;
 		break;
 
 	default:
@@ -161,7 +170,7 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 
 void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 {
-	nccalc_called = ++sequence;
+	record_received( pack->msg );
 	ok( pack->func != NULL, "func NULL\n" );
 	ok( pack->msg == WM_NCCALCSIZE, "message wrong %08lx\n", pack->msg );
 	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
@@ -170,6 +179,7 @@ void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 
 void init_callbacks( void )
 {
+	callback_table[NTWIN32_BASICMSG_CALLBACK] = &basicmsg_callback;
 	callback_table[NTWIN32_THREAD_INIT_CALLBACK] = &init_callback;
 	callback_table[NTWIN32_MINMAX_CALLBACK] = &getminmax_callback;
 	callback_table[NTWIN32_CREATE_CALLBACK] = &create_callback;
@@ -326,11 +336,19 @@ void register_class( void )
 	ok( atom != 0, "return %04x\n", atom );
 }
 
+static inline void check_msg( ULONG msg, ULONG* n )
+{
+	ULONG val = received_msg[*n];
+	ok( val == msg, "%ld sequence %ld != %ld\n", *n, val, msg );
+	(*n)++;
+}
+
 void create_window( void )
 {
 	USER32_UNICODE_STRING cls, title;
 	WCHAR title_str[] = L"test window";
 	HANDLE window;
+	ULONG n = 0;
 
 	cls.Buffer = test_class_name;
 	cls.Length = sizeof test_class_name - 2;
@@ -346,10 +364,10 @@ void create_window( void )
 		0, 0, get_exe_base(), 0, 0x400 );
 	ok( window != 0, "window handle zero\n");
 
-	ok( minmax_called == 1, "WM_GETMINMAXINFO sequence %ld\n", minmax_called);
-	ok( nccreate_called == 2, "WM_NCCREATE sequence %ld\n", nccreate_called);
-	ok( nccalc_called == 3, "WM_NCCALCSIZE sequence %ld\n", nccalc_called);
-	ok( create_called == 4, "WM_CREATE sequence %ld\n", create_called);
+	check_msg( WM_GETMINMAXINFO, &n );
+	check_msg( WM_NCCREATE, &n );
+	check_msg( WM_NCCALCSIZE, &n );
+	check_msg( WM_CREATE, &n );
 }
 
 void test_window()
