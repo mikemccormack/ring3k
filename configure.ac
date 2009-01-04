@@ -30,8 +30,6 @@ AC_CHECK_PROGS(MINGW32AR,i686-pc-mingw32-ar i586-mingw32msvc-ar no)
 AC_CHECK_PROGS(MINGW32RANLIB,i686-pc-mingw32-ranlib i586-mingw32msvc-ranlib no)
 AC_CHECK_PROGS(MINGW32WINDRES,i686-pc-mingw32-windres i586-mingw32msvc-windres no)
 
-AC_CHECK_PROGS(CABEXTRACT,cabextract no)
-
 AC_CHECK_PROGS(ISOINFO,isoinfo no)
 
 AC_CHECK_FUNCS(clone)
@@ -65,11 +63,6 @@ fi
 if test x"$MINGW32CC" = "x"
 then
 	AC_MSG_WARN([mingw32 not present. (Debian package is mingw32)])
-fi
-
-if test x"$CABEXTRACT" = "x"
-then
-	AC_MSG_WARN([cabextract not present. (Debian package is cabextract)])
 fi
 
 if test x"$ISOINFO" = "x"
