@@ -30,7 +30,7 @@ void init_oa( OBJECT_ATTRIBUTES* oa, UNICODE_STRING* us, WCHAR *path );
 extern ULONG pass_count, fail_count;
 
 void dprintf(char *string, ...) __attribute__((format (printf,1,2)));
-void dump_bin(BYTE *buf, ULONG sz);
+void dump_bin(void *ptr, ULONG sz);
 
 #define ok(cond, str, ...) \
     do { \

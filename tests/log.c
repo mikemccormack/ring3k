@@ -176,8 +176,9 @@ char hex(BYTE x)
 	return x+'A'-10;
 }
 
-void dump_bin(BYTE *buf, ULONG sz)
+void dump_bin(void *ptr, ULONG sz)
 {
+	BYTE *buf = ptr;
 	char str[0x33];
 	int i;
 	for (i=0; i<sz; i++)
