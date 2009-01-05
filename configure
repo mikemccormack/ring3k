@@ -4509,11 +4509,13 @@ fi
 
 done
 
-LIBSDL=""
-
-if test "$ac_cv_header_SDL_SDL_h" = "yes"
+if test "$ac_cv_lib_SDL_SDL_Init" = "yes"
 then
 	LIBSDL="-lSDL"
+
+else
+	LIBSDL=""
+
 fi
 
 for ac_prog in i686-pc-mingw32-gcc i586-mingw32msvc-cc no
