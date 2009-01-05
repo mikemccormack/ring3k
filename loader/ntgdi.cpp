@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#include "config.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -35,7 +36,9 @@
 #include "debug.h"
 #include "win32mgr.h"
 
+#if defined (HAVE_SDL) && defined (HAVE_SDL_SDL_H)
 #include <SDL/SDL.h>
+#endif
 
 // shared across all processes (in a window station)
 static section_t *gdi_ht_section;
@@ -99,27 +102,6 @@ BOOLEAN NTAPI NtGdiInit()
 	return TRUE;
 }
 
-class win32k_sdl_t : public win32k_manager_t, public sleeper_t
-{
-protected:
-	SDL_Surface *screen;
-public:
-	virtual BOOL init();
-	virtual void fini();
-	win32k_sdl_t();
-	BOOL set_pixel( INT x, INT y, COLORREF color );
-	BOOL rectangle( INT left, INT top, INT right, INT bottom );
-	virtual BOOL exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text );
-protected:
-	Uint16 map_colorref( COLORREF );
-	virtual SDL_Surface* set_mode() = 0;
-	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
-	virtual void rectangle_l( INT left, INT top, INT right, INT bottom ) = 0;
-	virtual bool sleep_timeout( LARGE_INTEGER& timeout );
-	static Uint32 timeout_callback( Uint32 interval, void *arg );
-};
-
 win32k_manager_t::~win32k_manager_t()
 {
 }
@@ -134,6 +116,29 @@ win32k_info_t *win32k_manager_t::alloc_win32k_info()
 {
 	return new win32k_info_t;
 }
+
+#if defined (HAVE_SDL) && defined (HAVE_SDL_SDL_H)
+
+class win32k_sdl_t : public win32k_manager_t, public sleeper_t
+{
+protected:
+	SDL_Surface *screen;
+public:
+	virtual BOOL init();
+	virtual void fini();
+	win32k_sdl_t();
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
+	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom );
+	virtual BOOL exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text );
+protected:
+	Uint16 map_colorref( COLORREF );
+	virtual SDL_Surface* set_mode() = 0;
+	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
+	virtual void rectangle_l( INT left, INT top, INT right, INT bottom ) = 0;
+	virtual bool sleep_timeout( LARGE_INTEGER& timeout );
+	static Uint32 timeout_callback( Uint32 interval, void *arg );
+};
 
 win32k_sdl_t::win32k_sdl_t()
 {
@@ -307,6 +312,75 @@ void win32k_sdl_16bpp_t::rectangle_l(INT left, INT top, INT right, INT bottom )
 }
 
 win32k_sdl_16bpp_t win32k_manager_sdl_16bpp;
+
+win32k_manager_t* init_sdl_win32k_manager()
+{
+	return &win32k_manager_sdl_16bpp;
+}
+
+#else
+
+win32k_manager_t* init_sdl_win32k_manager()
+{
+	return NULL;
+}
+
+#endif
+
+class win32k_null_t : public win32k_manager_t
+{
+public:
+	virtual BOOL init();
+	virtual void fini();
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
+	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom );
+	virtual BOOL exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text );
+protected:
+	virtual void set_pixel_l( INT x, INT y, COLORREF color );
+	virtual void rectangle_l( INT left, INT top, INT right, INT bottom );
+};
+
+BOOL win32k_null_t::init()
+{
+	return TRUE;
+}
+
+void win32k_null_t::fini()
+{
+}
+
+BOOL win32k_null_t::set_pixel( INT x, INT y, COLORREF color )
+{
+	return TRUE;
+}
+
+BOOL win32k_null_t::rectangle( INT left, INT top, INT right, INT bottom )
+{
+	return TRUE;
+}
+
+BOOL win32k_null_t::exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text )
+{
+	return TRUE;
+}
+
+void win32k_null_t::set_pixel_l( INT x, INT y, COLORREF color )
+{
+}
+
+void win32k_null_t::rectangle_l( INT left, INT top, INT right, INT bottom )
+{
+}
+
+win32k_null_t win32k_manager_null;
+
+win32k_manager_t* init_null_win32k_manager()
+{
+	return &win32k_manager_null;
+}
+
 win32k_manager_t *win32k_manager;
 
 void ntgdi_fini()
@@ -326,7 +400,10 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	// 16bpp by default for now
 	if (!win32k_manager)
-		win32k_manager = &win32k_manager_sdl_16bpp;
+		win32k_manager = init_sdl_win32k_manager();
+
+	if (!win32k_manager)
+		win32k_manager = init_null_win32k_manager();
 
 	if (!win32k_manager->init())
 		die("unable to allocate screen\n");

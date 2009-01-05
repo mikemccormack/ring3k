@@ -22,7 +22,7 @@ DEPFLAG=-Wp,-MD,.$@.d
 CFLAGS_COMMON=-Wall -O2 -D__i386__ -m32 -fshort-wchar -fno-strict-aliasing $(INCLUDE_DIRS)
 CFLAGS=-Wpointer-arith
 CPPFLAGS=$(CFLAGS_COMMON) $(DEPFLAG)
-LIBS=-lxml2 -lSDL -lstdc++ ../libudis86/libudis86.a
+LIBS=-lxml2 @LIBSDL@ -lstdc++ ../libudis86/libudis86.a
 LDFLAGS=-m32 -rdynamic
 
 CC = @CC@

@@ -662,6 +662,7 @@ ac_ct_CXX
 CPP
 GREP
 EGREP
+LIBSDL
 MINGW32CC
 MINGW32STRIP
 MINGW32AS
@@ -4373,6 +4374,13 @@ fi
 
 done
 
+LIBSDL=""
+
+if test "$ac_cv_header_SDL_SDL_h" = "yes"
+then
+	LIBSDL="-lSDL"
+fi
+
 
 for ac_prog in i686-pc-mingw32-gcc i586-mingw32msvc-cc no
 do
@@ -5533,6 +5541,7 @@ ac_ct_CXX!$ac_ct_CXX$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
+LIBSDL!$LIBSDL$ac_delim
 MINGW32CC!$MINGW32CC$ac_delim
 MINGW32STRIP!$MINGW32STRIP$ac_delim
 MINGW32AS!$MINGW32AS$ac_delim
@@ -5544,7 +5553,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 59; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 60; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

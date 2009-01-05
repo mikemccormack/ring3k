@@ -22,6 +22,12 @@ AC_CHECK_HEADERS(libxml/parser.h,
 AC_CHECK_HEADERS(SDL/SDL.h,
 	[AC_CHECK_LIB(SDL, SDL_Init,
 		[AC_DEFINE(HAVE_SDL, 1, [Define if you have the SDL library])])])
+AC_SUBST(LIBSDL,"")
+if test "$ac_cv_header_SDL_SDL_h" = "yes"
+then
+	LIBSDL="-lSDL"
+fi
+
 
 AC_CHECK_PROGS(MINGW32CC,i686-pc-mingw32-gcc i586-mingw32msvc-cc no)
 AC_CHECK_PROGS(MINGW32STRIP,i686-pc-mingw32-strip i586-mingw32msvc-strip no)
