@@ -199,9 +199,19 @@ void get_stub_path( const char *loader_path )
 	strcat( stub_path, stub_name );
 }
 
+// quick check that /proc is mounted
+void check_proc()
+{
+	int fd = open("/proc/self/fd/0", O_RDONLY);
+	if (fd < 0)
+		die("/proc not mounted\n");
+	close( fd );
+}
+
 bool init_tt( const char *loader_path )
 {
 	get_stub_path( loader_path );
+	check_proc();
 	dprintf("using thread tracing, loader %s, client %s\n", loader_path, stub_path );
 	ptrace_address_space_impl::set_signals();
 	pcreate_address_space = &create_tt_address_space;
