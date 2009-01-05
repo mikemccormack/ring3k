@@ -395,6 +395,13 @@ ULONG get_handle_top(HANDLE handle)
 	return (((ULONG)handle)>>24)&0xff;
 }
 
+void *get_user_info( HANDLE handle )
+{
+	gdi_handle_table_entry *table = get_gdi_shared_handle_table();
+	ULONG Index = get_handle_index(handle);
+	return table[Index].user_info;
+}
+
 BOOLEAN check_gdi_handle(HANDLE handle)
 {
 	ULONG ObjectType = get_handle_type(handle);
@@ -537,13 +544,13 @@ void test_gdi_font_assoc( void )
 	ok( r == 0, "return %08lx\n", r );
 }
 
-void test_not_connected()
+void test_not_connected( void )
 {
 	void *p = get_win32threadinfo();
 	ok( p == NULL, "already a gdi thread\n");
 }
 
-void test_create_compat_dc()
+void test_create_compat_dc( void )
 {
 	ULONG r;
 	HANDLE hdc, hdc2;
@@ -563,13 +570,57 @@ void test_create_compat_dc()
 	ok (verify_gdi_handle_deleted(hdc), "handle %p still valid\n", hdc );
 }
 
-void test_get_dc()
+typedef struct _DEVICE_CONTEXT_SHARED_MEMORY {
+	ULONG unk;	// zero
+	ULONG Flags;
+	HANDLE Brush;
+	HANDLE Pen;
+} DEVICE_CONTEXT_SHARED_MEMORY;
+
+void test_get_dc( void )
 {
-	HANDLE dc = NtUserGetDC(0);
+	ULONG type;
+	HANDLE dc;
+	DEVICE_CONTEXT_SHARED_MEMORY *dcshm;
+	//HANDLE white_brush = NtGdiGetStockObject( WHITE_BRUSH );
+	//HANDLE black_pen = NtGdiGetStockObject( BLACK_PEN );
+
+	dc = NtUserGetDC(0);
 	ok( check_gdi_handle(dc), "invalid gdi handle %p\n", dc );
 
-	ULONG type = get_handle_type(dc);
+	type = get_handle_type(dc);
 	ok( type == GDI_OBJECT_DC, "wrong handle type %ld\n", type );
+
+	dcshm = get_user_info( dc );
+	if (dcshm)
+	{
+		//ok( dcshm->Brush == white_brush, "default brush wrong\n" );
+		//ok( dcshm->Pen == black_pen, "default pen wrong\n" );
+	}
+	else
+		ok( 0, "dcshm null\n" );
+}
+
+void check_stock_brush( ULONG id )
+{
+	HANDLE brush;
+	ULONG type;
+
+	brush = NtGdiGetStockObject( id );
+	type = get_handle_type( brush );
+	ok( type == GDI_OBJECT_BRUSH, "brush wrong handle type %ld\n", type );
+	ok( get_user_info( brush ) == NULL, "user_info not null\n");
+}
+
+void test_stock_brush( void )
+{
+	check_stock_brush( WHITE_BRUSH );
+	check_stock_brush( LTGRAY_BRUSH );
+	check_stock_brush( GRAY_BRUSH );
+	check_stock_brush( DKGRAY_BRUSH );
+	check_stock_brush( BLACK_BRUSH );
+	check_stock_brush( NULL_BRUSH );
+	check_stock_brush( HOLLOW_BRUSH );
 }
 
 void NtProcessStartup( void )
@@ -582,5 +633,6 @@ void NtProcessStartup( void )
 	test_create_compat_dc();
 	test_create_compat_dc();
 	test_get_dc();
+	test_stock_brush();
 	log_fini();
 }
