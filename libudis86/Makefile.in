@@ -10,7 +10,7 @@ PERL    = perl
 .SUFFIXES: .c .o
 
 .c.o:
-	$(CC) -m32 -c $(CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 OBJS = mnemonics.o \
 	opcmap.o \

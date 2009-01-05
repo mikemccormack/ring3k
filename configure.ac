@@ -1,5 +1,21 @@
+dnl
+dnl ring3k configure script
+dnl
+dnl Process this file with autoconf to produce a configure script
+dnl
 
 AC_INIT(ring3k,0.0.14)
+
+dnl Check for x86-64 (from Wine's configure.ac)
+AC_CANONICAL_HOST
+case $host in
+  x86_64*linux*)
+    CC="${CC:-gcc} -m32"
+    CXX="${CXX:-g++} -m32"
+    LD="${LD:-ld} -m elf_i386" 
+    AS="${AS:-as} --32"
+    ;;
+esac
 
 AC_PROG_CC
 AC_PROG_CXX
@@ -27,7 +43,6 @@ if test "$ac_cv_header_SDL_SDL_h" = "yes"
 then
 	LIBSDL="-lSDL"
 fi
-
 
 AC_CHECK_PROGS(MINGW32CC,i686-pc-mingw32-gcc i586-mingw32msvc-cc no)
 AC_CHECK_PROGS(MINGW32STRIP,i686-pc-mingw32-strip i586-mingw32msvc-strip no)
