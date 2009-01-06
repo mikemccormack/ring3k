@@ -281,14 +281,30 @@ NTSTATUS directory_t::write( PVOID Buffer, ULONG Length, ULONG *bytes_read )
 	return STATUS_OBJECT_TYPE_MISMATCH;
 }
 
-int getdents(unsigned int fd, struct dirent *dirp, unsigned int count)
+// getdents64 borrowed from wine/dlls/ntdll/directory.c
+
+typedef struct
 {
-	int r;
-	__asm__ __volatile__ (
-		"int $0x80\n"
-		: "=r"(r) : "r"(__NR_getdents), "b"(fd), "c"(dirp), "d"(count) :
-	);
-	return r;
+    ULONG64        d_ino;
+    LONG64         d_off;
+    unsigned short d_reclen;
+    unsigned char  d_type;
+    char           d_name[256];
+} KERNEL_DIRENT64;
+
+int getdents64( int fd, unsigned char *de, unsigned int size )
+{
+    int ret;
+    __asm__( "pushl %%ebx; movl %2,%%ebx; int $0x80; popl %%ebx"
+             : "=a" (ret)
+             : "0" (220 /*NR_getdents64*/), "r" (fd), "c" (de), "d" (size)
+             : "memory" );
+    if (ret < 0)
+    {
+        errno = -ret;
+        ret = -1;
+    }
+    return ret;
 }
 
 void directory_t::reset()
@@ -408,6 +424,12 @@ void directory_t::scandir()
 	int r;
 
 	reset();
+	r = lseek( get_fd(), 0, SEEK_SET );
+	if (r == -1)
+	{
+		dprintf("lseek failed (%d)\n", errno);
+		return;
+	}
 
 	dprintf("reading entries:\n");
 	// . and .. always come first
@@ -416,18 +438,17 @@ void directory_t::scandir()
 
 	do
 	{
-		struct dirent *de = (struct dirent*) buffer;
-		r = ::getdents( get_fd(), de, sizeof buffer );
+		r = ::getdents64( get_fd(), buffer, sizeof buffer );
 		if (r < 0)
 		{
-			dprintf("getdents failed (%d)\n", r);
+			dprintf("getdents64 failed (%d)\n", r);
 			break;
 		}
 
 		int ofs = 0;
 		while (ofs<r)
 		{
-			de = (struct dirent*) &buffer[ofs];
+			KERNEL_DIRENT64* de = (KERNEL_DIRENT64*) &buffer[ofs];
 			//fprintf(stderr, "%ld %d %s\n", de->d_off, de->d_reclen, de->d_name);
 			if (de->d_off <= 0)
 				break;
