@@ -32,8 +32,12 @@ public:
 
 class win32k_manager_t
 {
+	HANDLE stock_object[STOCK_LAST];
 public:
 	win32k_manager_t();
+	void init_stock_objects();
+	HANDLE get_stock_object( ULONG Index );
+	HANDLE create_solid_brush( COLORREF color );
 	virtual ~win32k_manager_t();
 	virtual BOOL init() = 0;
 	virtual void fini() = 0;
@@ -56,7 +60,25 @@ public:
 	virtual ~gdi_object_t() {};
 	virtual BOOL release();
 	static HGDIOBJ alloc( BOOL stock, ULONG type );
+	void *get_shared_mem();
 };
+
+class brush_t : public gdi_object_t
+{
+	ULONG style;
+	COLORREF color;
+	ULONG hatch;
+protected:
+	brush_t( UINT style, COLORREF color, ULONG hatch );
+public:
+	static brush_t* alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock = FALSE );
+};
+
+typedef struct _DEVICE_CONTEXT_SHARED_MEMORY {
+	HANDLE unk;
+	ULONG Flags;
+	HGDIOBJ Brush;
+} DEVICE_CONTEXT_SHARED_MEMORY;
 
 class device_context_t : public gdi_object_t
 {
@@ -79,6 +101,7 @@ public:
 	static BYTE *get_dc_shared_mem_ptr(int n);
 	static BYTE* get_dc_shared_mem();
 	virtual BOOL release();
+	brush_t *get_selected_brush();
 	BOOL set_pixel( INT x, INT y, COLORREF color );
 	BOOL rectangle( INT x, INT y, INT width, INT height );
 	BOOL exttextout( INT x, INT y, UINT options,

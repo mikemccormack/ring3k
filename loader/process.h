@@ -22,7 +22,8 @@
 #define __PROCESS_H__
 
 #include "thread.h"
-#include "win32mgr.h"
+
+class win32k_info_t;
 
 struct process_t : public sync_object_t {
 	sibling_list_t threads;

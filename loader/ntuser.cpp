@@ -33,6 +33,7 @@
 #include "objdir.h"
 #include "ntuser.h"
 #include "ntgdi.h"
+#include "win32mgr.h"
 #include "mem.h"
 #include "debug.h"
 #include "object.inl"

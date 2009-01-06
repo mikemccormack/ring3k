@@ -623,6 +623,17 @@ void test_stock_brush( void )
 	check_stock_brush( HOLLOW_BRUSH );
 }
 
+void test_solid_brush( void )
+{
+	HANDLE brush;
+	ULONG type;
+
+	brush = NtGdiCreateSolidBrush( RGB(1, 2, 3), 0 );
+	type = get_handle_type( brush );
+	ok( type == GDI_OBJECT_BRUSH, "brush wrong handle type %ld\n", type );
+	ok( get_user_info( brush ) == NULL, "user_info not null\n");
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -634,5 +645,6 @@ void NtProcessStartup( void )
 	test_create_compat_dc();
 	test_get_dc();
 	test_stock_brush();
+	test_solid_brush();
 	log_fini();
 }

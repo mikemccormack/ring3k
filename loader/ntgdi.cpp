@@ -537,6 +537,12 @@ HGDIOBJ gdi_object_t::alloc( BOOL stock, ULONG type )
 	return obj->handle;
 }
 
+void *gdi_object_t::get_shared_mem()
+{
+	gdi_handle_table_entry *entry = get_handle_table_entry(handle);
+	return entry->kernel_info;
+}
+
 HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type )
 {
 	return gdi_object_t::alloc( stock, type );
@@ -560,6 +566,13 @@ static dcshm_tracer dcshm_trace;
 
 win32k_manager_t::win32k_manager_t()
 {
+	memset( &stock_object, 0, sizeof stock_object );
+}
+
+void win32k_manager_t::init_stock_objects()
+{
+	stock_object[ WHITE_BRUSH ] = brush_t::alloc( 0, RGB(255,255,255), 0, TRUE);
+	stock_object[ BLACK_BRUSH ] = brush_t::alloc( 0, RGB(0,0,0), 0, TRUE);
 }
 
 section_t *device_context_t::g_dc_section;
@@ -639,9 +652,13 @@ device_context_t* device_context_t::alloc()
 		return NULL;
 
 	// calculate user side pointer to the chunk
-	BYTE* u_dcu = dc_shared_mem + n * dc_size;
-	dprintf("dc number %02x address %p\n", n, u_dcu);
-	dc->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, u_dcu, dc );
+	BYTE *u_shm = dc_shared_mem + n*dc_size;
+	dprintf("dc number %02x address %p\n", n, u_shm );
+	dc->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, u_shm, dc );
+
+	DEVICE_CONTEXT_SHARED_MEMORY *dcshm;
+	dcshm = (DEVICE_CONTEXT_SHARED_MEMORY*) (g_dc_shared_mem + n*dc_size);
+	dcshm->Brush = win32k_manager->get_stock_object( WHITE_BRUSH );
 
 	return dc;
 }
@@ -671,6 +688,42 @@ BOOL device_context_t::exttextout( INT x, INT y, UINT options,
 	return win32k_manager->exttextout( x, y, options, rect, text );
 }
 
+brush_t::brush_t( UINT _style, COLORREF _color, ULONG _hatch ) :
+	style( _style ),
+	color( _color ),
+	hatch( _hatch )
+{
+}
+
+brush_t* brush_t::alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock )
+{
+	brush_t* brush = new brush_t( style, color, hatch );
+	if (!brush)
+		return NULL;
+	brush->handle = alloc_gdi_handle( stock, GDI_OBJECT_BRUSH, NULL, brush );
+	return brush;
+}
+
+brush_t* brush_from_handle( HGDIOBJ handle )
+{
+	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
+	if (!entry)
+		return FALSE;
+	if (entry->Type != GDI_OBJECT_BRUSH)
+		return FALSE;
+	assert( entry->kernel_info );
+	return (brush_t*) entry->kernel_info;
+}
+
+brush_t* device_context_t::get_selected_brush()
+{
+	DEVICE_CONTEXT_SHARED_MEMORY *dcshm;
+	dcshm = (DEVICE_CONTEXT_SHARED_MEMORY*) get_shared_mem();
+	if (!dcshm)
+		return NULL;
+	return brush_from_handle( dcshm->Brush );
+}
+
 device_context_t* dc_from_handle( HGDIOBJ handle )
 {
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
@@ -692,8 +745,16 @@ BOOL win32k_manager_t::release_dc( HGDIOBJ handle )
 
 HGDIOBJ NTAPI NtGdiGetStockObject(ULONG Index)
 {
-	dprintf("%ld\n", Index);
+	return win32k_manager->get_stock_object( Index );
+}
 
+HANDLE win32k_manager_t::create_solid_brush( COLORREF color )
+{
+	return alloc_gdi_object( TRUE, GDI_OBJECT_BRUSH );
+}
+
+HANDLE win32k_manager_t::get_stock_object( ULONG Index )
+{
 	switch (Index)
 	{
 	case WHITE_BRUSH:
@@ -741,8 +802,7 @@ HGDIOBJ NTAPI NtGdiCreateCompatibleDC(HGDIOBJ hdc)
 // has one more parameter than gdi32.CreateSolidBrush
 HGDIOBJ NTAPI NtGdiCreateSolidBrush(COLORREF Color, ULONG u_arg2)
 {
-	dprintf("%08lx %08lx\n", Color, u_arg2);
-	return alloc_gdi_object( FALSE, GDI_OBJECT_BRUSH );
+	return win32k_manager->create_solid_brush( Color );
 }
 
 // looks like CreateDIBitmap, with BITMAPINFO unpacked
@@ -816,7 +876,10 @@ HGDIOBJ NTAPI NtGdiSelectBitmap(HGDIOBJ hdc, HGDIOBJ bitmap)
 {
 	dprintf("%p %p\n", hdc, bitmap);
 
-	//FIXME: validate handle
+	device_context_t* dc = dc_from_handle( hdc );
+	if (!dc)
+		return FALSE;
+
 	if (get_handle_type(bitmap) != GDI_OBJECT_BITMAP)
 		return 0;
 
@@ -1078,6 +1141,8 @@ BOOLEAN NTAPI NtGdiRectangle( HANDLE handle, INT left, INT top, INT right, INT b
 	device_context_t* dc = dc_from_handle( handle );
 	if (!dc)
 		return FALSE;
+
+	dprintf("brush = %p\n", dc->get_selected_brush());
 	return dc->rectangle( left, top, right, bottom );
 }
 

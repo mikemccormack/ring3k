@@ -51,8 +51,11 @@ void draw_pixels( void )
 void draw_rectangle( void )
 {
 	HDC hdc = GetDC( 0 );
+	HBRUSH old, brush = CreateSolidBrush( RGB( 0x7f, 0x7f, 0 ) );
 
+	old = SelectObject( hdc, brush );
 	Rectangle( hdc, 0x10, 0x10, 0x20, 0x20 );
+	SelectObject( hdc, old );
 	ReleaseDC( 0, hdc );
 }
 
