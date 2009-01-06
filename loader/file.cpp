@@ -286,7 +286,7 @@ int getdents(unsigned int fd, struct dirent *dirp, unsigned int count)
 	int r;
 	__asm__ __volatile__ (
 		"int $0x80\n"
-		: "=r"(r) : "a"(__NR_getdents), "b"(fd), "c"(dirp), "d"(count) :
+		: "=r"(r) : "r"(__NR_getdents), "b"(fd), "c"(dirp), "d"(count) :
 	);
 	return r;
 }
@@ -414,12 +414,15 @@ void directory_t::scandir()
 	add_entry(".");
 	add_entry("..");
 
-	while (1)
+	do
 	{
 		struct dirent *de = (struct dirent*) buffer;
 		r = ::getdents( get_fd(), de, sizeof buffer );
-		if (r <= 0)
+		if (r < 0)
+		{
+			dprintf("getdents failed (%d)\n", r);
 			break;
+		}
 
 		int ofs = 0;
 		while (ofs<r)
@@ -428,12 +431,14 @@ void directory_t::scandir()
 			//fprintf(stderr, "%ld %d %s\n", de->d_off, de->d_reclen, de->d_name);
 			if (de->d_off <= 0)
 				break;
+			if (de->d_reclen <=0 )
+				break;
 			ofs += de->d_reclen;
 			if (!strcmp(de->d_name,".") || !strcmp(de->d_name, ".."))
 				continue;
 			add_entry(de->d_name);
 		}
-	}
+	} while (0);
 }
 
 NTSTATUS directory_t::set_mask(unicode_string_t *string)
