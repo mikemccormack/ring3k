@@ -262,6 +262,19 @@ static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
 	return red | (green << 8) | (blue << 16);
 }
 
+  /* Brush styles */
+#define BS_SOLID	0
+#define BS_NULL		1
+#define BS_HOLLOW	1
+#define BS_HATCHED	2
+#define BS_PATTERN	3
+#define BS_INDEXED	4
+#define BS_DIBPATTERN	5
+#define BS_DIBPATTERNPT	6
+#define BS_PATTERN8X8	7
+#define BS_DIBPATTERN8X8 8
+#define BS_MONOPATTERN	9
+
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);
 BOOLEAN NTAPI NtGdiComputeXformCoefficients(HANDLE);
