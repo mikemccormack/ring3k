@@ -213,18 +213,21 @@ typedef struct tagTEXTMETRICW {
 
 #define STOCK_LAST          19
 
+#define RGB(r,g,b)          ((COLORREF)((BYTE)(r) | ((BYTE)(g) << 8) | ((BYTE)(b) << 16)))
+
 NTSTATUS NTAPI NtGdiInit(void);
 BOOLEAN NTAPI NtGdiComputeXformCoefficients(HANDLE);
-HANDLE NTAPI NtGdiCreateCompatibleDC(HANDLE);
+HANDLE  NTAPI NtGdiCreateCompatibleDC(HANDLE);
+HANDLE  NTAPI NtGdiCreateSolidBrush(COLORREF,ULONG);
 BOOLEAN NTAPI NtGdiDeleteObjectApp(HANDLE);
 BOOLEAN NTAPI NtGdiEnumFontChunk(HANDLE,HANDLE,ULONG,PULONG,PVOID);
 BOOLEAN NTAPI NtGdiEnumFontClose(HANDLE);
 HANDLE  NTAPI NtGdiEnumFontOpen(HANDLE,ULONG,ULONG,ULONG,ULONG,ULONG,PULONG);
 BOOLEAN NTAPI NtGdiGetTextMetricsW(HANDLE,PVOID,ULONG);
-HANDLE NTAPI NtGdiGetStockObject(ULONG Index);
+HANDLE  NTAPI NtGdiGetStockObject(ULONG Index);
 HANDLE  NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID);
 NTSTATUS NTAPI NtGdiQueryFontAssocInfo(HANDLE);
-ULONG NTAPI NtGdiSetFontEnumeration(ULONG);
+ULONG   NTAPI NtGdiSetFontEnumeration(ULONG);
 
 typedef struct USER_SHARED_MEMORY_INFO {
 	ULONG Flags;
