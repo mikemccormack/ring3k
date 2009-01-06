@@ -128,14 +128,14 @@ public:
 	virtual void fini();
 	win32k_sdl_t();
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
-	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom );
+	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
 protected:
 	Uint16 map_colorref( COLORREF );
 	virtual SDL_Surface* set_mode() = 0;
 	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
-	virtual void rectangle_l( INT left, INT top, INT right, INT bottom ) = 0;
+	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush ) = 0;
 	virtual bool sleep_timeout( LARGE_INTEGER& timeout );
 	static Uint32 timeout_callback( Uint32 interval, void *arg );
 };
@@ -166,7 +166,7 @@ template<typename T> void swap( T& A, T& B )
 	B = x;
 }
 
-BOOL win32k_sdl_t::rectangle(INT left, INT top, INT right, INT bottom )
+BOOL win32k_sdl_t::rectangle(INT left, INT top, INT right, INT bottom, brush_t* brush )
 {
 	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
 		return FALSE;
@@ -181,7 +181,7 @@ BOOL win32k_sdl_t::rectangle(INT left, INT top, INT right, INT bottom )
 	right = min( screen->w - 1, right );
 	bottom = min( screen->h - 1, bottom );
 
-	rectangle_l( left, top, right, bottom );
+	rectangle_l( left, top, right, bottom, brush );
 
 	if ( SDL_MUSTLOCK(screen) )
 		SDL_UnlockSurface(screen);
@@ -273,7 +273,7 @@ class win32k_sdl_16bpp_t : public win32k_sdl_t
 public:
 	virtual SDL_Surface* set_mode();
 	virtual void set_pixel_l( INT x, INT y, COLORREF color );
-	virtual void rectangle_l( INT left, INT top, INT right, INT bottom );
+	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	Uint16 map_colorref( COLORREF color );
 };
 
@@ -293,22 +293,44 @@ void win32k_sdl_16bpp_t::set_pixel_l( INT x, INT y, COLORREF color )
 	*bufp = map_colorref( color );
 }
 
-void win32k_sdl_16bpp_t::rectangle_l(INT left, INT top, INT right, INT bottom )
+void win32k_sdl_16bpp_t::rectangle_l(INT left, INT top, INT right, INT bottom, brush_t* brush )
 {
-	// FIXME: use brush + pen
-	COLORREF color = RGB( 255, 255, 255 );
-	Uint16 val = map_colorref( color );
+	COLORREF brush_val, pen_val;
+
+	// FIXME: use correct pen color
+	pen_val = map_colorref( RGB( 0, 0, 0 ) );
+	brush_val = map_colorref( brush->get_color() );
+	dprintf("brush color = %08lx\n", brush->get_color());
 
 	Uint16 *ptr = (Uint16 *)screen->pixels + top*screen->pitch/2;
-	while (top <= bottom)
+
+	// top line
+	for (INT count = left; count <= right; count++)
+		ptr[count] = pen_val;
+	ptr += screen->pitch/2;
+	top++;
+
+	while (top <= (bottom -1))
 	{
-		for (INT count = left; count <= right; count++)
-			ptr[count] = val;
+		// left border drawn by pen
+		ptr[ left ] = pen_val;
+
+		// filled by brush
+		INT count;
+		for (count = left+1; (count-1) < right; count++)
+			ptr[count] = brush_val;
+
+		// right border drawn by pen
+		ptr[ count ] = pen_val;
 
 		//next line
 		top++;
 		ptr += screen->pitch/2;
 	}
+
+	// bottom line
+	for (INT count = left; count <= right; count++)
+		ptr[count] = pen_val;
 }
 
 win32k_sdl_16bpp_t win32k_manager_sdl_16bpp;
@@ -333,12 +355,12 @@ public:
 	virtual BOOL init();
 	virtual void fini();
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
-	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom );
+	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
 protected:
 	virtual void set_pixel_l( INT x, INT y, COLORREF color );
-	virtual void rectangle_l( INT left, INT top, INT right, INT bottom );
+	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush );
 };
 
 BOOL win32k_null_t::init()
@@ -355,7 +377,7 @@ BOOL win32k_null_t::set_pixel( INT x, INT y, COLORREF color )
 	return TRUE;
 }
 
-BOOL win32k_null_t::rectangle( INT left, INT top, INT right, INT bottom )
+BOOL win32k_null_t::rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush )
 {
 	return TRUE;
 }
@@ -370,7 +392,7 @@ void win32k_null_t::set_pixel_l( INT x, INT y, COLORREF color )
 {
 }
 
-void win32k_null_t::rectangle_l( INT left, INT top, INT right, INT bottom )
+void win32k_null_t::rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush )
 {
 }
 
@@ -537,12 +559,6 @@ HGDIOBJ gdi_object_t::alloc( BOOL stock, ULONG type )
 	return obj->handle;
 }
 
-void *gdi_object_t::get_shared_mem()
-{
-	gdi_handle_table_entry *entry = get_handle_table_entry(handle);
-	return entry->kernel_info;
-}
-
 HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type )
 {
 	return gdi_object_t::alloc( stock, type );
@@ -585,7 +601,7 @@ HGDIOBJ win32k_manager_t::alloc_dc()
 	return dc->get_handle();
 }
 
-BYTE *device_context_t::get_dc_shared_mem()
+BYTE *device_context_t::get_dc_shared_mem_base()
 {
 	NTSTATUS r;
 
@@ -637,9 +653,14 @@ device_context_t::device_context_t( ULONG n ) :
 {
 }
 
+DEVICE_CONTEXT_SHARED_MEMORY* device_context_t::get_dc_shared_mem()
+{
+	return (DEVICE_CONTEXT_SHARED_MEMORY*) (g_dc_shared_mem + dc_index * dc_size);
+}
+
 device_context_t* device_context_t::alloc()
 {
-	BYTE* dc_shared_mem = get_dc_shared_mem();
+	BYTE* dc_shared_mem = get_dc_shared_mem_base();
 	if (!dc_shared_mem)
 		return NULL;
 
@@ -656,8 +677,7 @@ device_context_t* device_context_t::alloc()
 	dprintf("dc number %02x address %p\n", n, u_shm );
 	dc->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, u_shm, dc );
 
-	DEVICE_CONTEXT_SHARED_MEMORY *dcshm;
-	dcshm = (DEVICE_CONTEXT_SHARED_MEMORY*) (g_dc_shared_mem + n*dc_size);
+	DEVICE_CONTEXT_SHARED_MEMORY *dcshm = dc->get_dc_shared_mem();
 	dcshm->Brush = win32k_manager->get_stock_object( WHITE_BRUSH );
 
 	return dc;
@@ -674,7 +694,11 @@ BOOL device_context_t::release()
 
 BOOL device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
 {
-	return win32k_manager->rectangle( left, top, right, bottom );
+	brush_t *brush = get_selected_brush();
+	if (!brush)
+		return FALSE;
+	dprintf("drawing with brush %p with color %08lx\n", brush->get_handle(), brush->get_color() );
+	return win32k_manager->rectangle( left, top, right, bottom, brush );
 }
 
 BOOL device_context_t::set_pixel( INT x, INT y, COLORREF color )
@@ -701,6 +725,7 @@ brush_t* brush_t::alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock )
 	if (!brush)
 		return NULL;
 	brush->handle = alloc_gdi_handle( stock, GDI_OBJECT_BRUSH, NULL, brush );
+	dprintf("created brush %p with color %08lx\n", brush->handle, color );
 	return brush;
 }
 
@@ -717,8 +742,7 @@ brush_t* brush_from_handle( HGDIOBJ handle )
 
 brush_t* device_context_t::get_selected_brush()
 {
-	DEVICE_CONTEXT_SHARED_MEMORY *dcshm;
-	dcshm = (DEVICE_CONTEXT_SHARED_MEMORY*) get_shared_mem();
+	DEVICE_CONTEXT_SHARED_MEMORY *dcshm = get_dc_shared_mem();
 	if (!dcshm)
 		return NULL;
 	return brush_from_handle( dcshm->Brush );
@@ -750,7 +774,10 @@ HGDIOBJ NTAPI NtGdiGetStockObject(ULONG Index)
 
 HANDLE win32k_manager_t::create_solid_brush( COLORREF color )
 {
-	return alloc_gdi_object( TRUE, GDI_OBJECT_BRUSH );
+	brush_t* brush = brush_t::alloc( BS_SOLID, color, 0 );
+	if (!brush)
+		return NULL;
+	return brush->get_handle();
 }
 
 HANDLE win32k_manager_t::get_stock_object( ULONG Index )
@@ -1142,7 +1169,6 @@ BOOLEAN NTAPI NtGdiRectangle( HANDLE handle, INT left, INT top, INT right, INT b
 	if (!dc)
 		return FALSE;
 
-	dprintf("brush = %p\n", dc->get_selected_brush());
 	return dc->rectangle( left, top, right, bottom );
 }
 

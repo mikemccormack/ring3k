@@ -30,6 +30,8 @@ public:
 	BYTE* user_shared_mem;
 };
 
+class brush_t;
+
 class win32k_manager_t
 {
 	HANDLE stock_object[STOCK_LAST];
@@ -44,7 +46,7 @@ public:
 	HGDIOBJ alloc_dc();
 	BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
-	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom ) = 0;
+	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
 	win32k_info_t* alloc_win32k_info();
 };
@@ -72,6 +74,7 @@ protected:
 	brush_t( UINT style, COLORREF color, ULONG hatch );
 public:
 	static brush_t* alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock = FALSE );
+	COLORREF get_color() {return color;}
 };
 
 typedef struct _DEVICE_CONTEXT_SHARED_MEMORY {
@@ -99,7 +102,8 @@ public:
 	static device_context_t* alloc();
 	static int get_free_index();
 	static BYTE *get_dc_shared_mem_ptr(int n);
-	static BYTE* get_dc_shared_mem();
+	static BYTE* get_dc_shared_mem_base();
+	DEVICE_CONTEXT_SHARED_MEMORY* get_dc_shared_mem();
 	virtual BOOL release();
 	brush_t *get_selected_brush();
 	BOOL set_pixel( INT x, INT y, COLORREF color );
