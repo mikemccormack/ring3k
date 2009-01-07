@@ -110,6 +110,7 @@ win32k_info_t::win32k_info_t() :
 	dc_shared_mem( 0 ),
 	user_shared_mem( 0 )
 {
+	memset( &stock_object, 0, sizeof stock_object );
 }
 
 win32k_info_t *win32k_manager_t::alloc_win32k_info()
@@ -582,13 +583,6 @@ static dcshm_tracer dcshm_trace;
 
 win32k_manager_t::win32k_manager_t()
 {
-	memset( &stock_object, 0, sizeof stock_object );
-}
-
-void win32k_manager_t::init_stock_objects()
-{
-	stock_object[ WHITE_BRUSH ] = brush_t::alloc( 0, RGB(255,255,255), 0, TRUE);
-	stock_object[ BLACK_BRUSH ] = brush_t::alloc( 0, RGB(0,0,0), 0, TRUE);
 }
 
 section_t *device_context_t::g_dc_section;
@@ -719,14 +713,14 @@ brush_t::brush_t( UINT _style, COLORREF _color, ULONG _hatch ) :
 {
 }
 
-brush_t* brush_t::alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock )
+HANDLE brush_t::alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock )
 {
 	brush_t* brush = new brush_t( style, color, hatch );
 	if (!brush)
 		return NULL;
 	brush->handle = alloc_gdi_handle( stock, GDI_OBJECT_BRUSH, NULL, brush );
 	dprintf("created brush %p with color %08lx\n", brush->handle, color );
-	return brush;
+	return brush->handle;
 }
 
 brush_t* brush_from_handle( HGDIOBJ handle )
@@ -774,27 +768,38 @@ HGDIOBJ NTAPI NtGdiGetStockObject(ULONG Index)
 
 HANDLE win32k_manager_t::create_solid_brush( COLORREF color )
 {
-	brush_t* brush = brush_t::alloc( BS_SOLID, color, 0 );
-	if (!brush)
-		return NULL;
-	return brush->get_handle();
+	return brush_t::alloc( BS_SOLID, color, 0 );
 }
 
 HANDLE win32k_manager_t::get_stock_object( ULONG Index )
 {
+	if (Index > STOCK_LAST)
+		return 0;
+	HANDLE& handle = current->process->win32k_info->stock_object[Index];
+	if (handle)
+		return handle;
+
 	switch (Index)
 	{
 	case WHITE_BRUSH:
+		handle = brush_t::alloc( 0, RGB(255,255,255), 0, TRUE);
+		break;
+	case BLACK_BRUSH:
+		handle = brush_t::alloc( 0, RGB(0,0,0), 0, TRUE);
+		break;
 	case LTGRAY_BRUSH:
 	case GRAY_BRUSH:
 	case DKGRAY_BRUSH:
-	case BLACK_BRUSH:
 	case NULL_BRUSH: //case HOLLOW_BRUSH:
-		return alloc_gdi_object( TRUE, GDI_OBJECT_BRUSH );
+	case DC_BRUSH: // FIXME: probably per DC
+		handle = alloc_gdi_object( TRUE, GDI_OBJECT_BRUSH );
+		break;
 	case WHITE_PEN:
 	case BLACK_PEN:
 	case NULL_PEN:
-		return alloc_gdi_object( TRUE, GDI_OBJECT_PEN );
+	case DC_PEN: // FIXME: probably per DC
+		handle = alloc_gdi_object( TRUE, GDI_OBJECT_PEN );
+		break;
 	case OEM_FIXED_FONT:
 	case ANSI_FIXED_FONT:
 	case ANSI_VAR_FONT:
@@ -802,14 +807,13 @@ HANDLE win32k_manager_t::get_stock_object( ULONG Index )
 	case DEVICE_DEFAULT_FONT:
 	case SYSTEM_FIXED_FONT:
 	case DEFAULT_GUI_FONT:
-	case 18: // 18 and 19 are used by csrss.exe when starting
-	case 19:
-		return alloc_gdi_object( TRUE, GDI_OBJECT_FONT );
+		handle = alloc_gdi_object( TRUE, GDI_OBJECT_FONT );
+		break;
 	case DEFAULT_PALETTE:
-		return alloc_gdi_object( TRUE, GDI_OBJECT_PALETTE );
-	default:
-		return 0;
+		handle = alloc_gdi_object( TRUE, GDI_OBJECT_PALETTE );
+		break;
 	}
+	return handle;
 }
 
 // parameters look the same as gdi32.CreateBitmap

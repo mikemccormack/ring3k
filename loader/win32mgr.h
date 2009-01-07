@@ -28,13 +28,13 @@ public:
 	// address that device context shared memory is mapped to
 	BYTE* dc_shared_mem;
 	BYTE* user_shared_mem;
+	HANDLE stock_object[STOCK_LAST + 1];
 };
 
 class brush_t;
 
 class win32k_manager_t
 {
-	HANDLE stock_object[STOCK_LAST];
 public:
 	win32k_manager_t();
 	void init_stock_objects();
@@ -73,7 +73,7 @@ class brush_t : public gdi_object_t
 protected:
 	brush_t( UINT style, COLORREF color, ULONG hatch );
 public:
-	static brush_t* alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock = FALSE );
+	static HANDLE alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock = FALSE );
 	COLORREF get_color() {return color;}
 };
 
