@@ -70,9 +70,8 @@ class brush_t : public gdi_object_t
 	ULONG style;
 	COLORREF color;
 	ULONG hatch;
-protected:
-	brush_t( UINT style, COLORREF color, ULONG hatch );
 public:
+	brush_t( UINT style, COLORREF color, ULONG hatch );
 	static HANDLE alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock = FALSE );
 	COLORREF get_color() {return color;}
 };

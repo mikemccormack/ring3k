@@ -257,6 +257,9 @@ BOOL win32k_sdl_t::init()
 
 	screen = set_mode();
 
+	brush_t light_blue(0, RGB(0x3b, 0x72, 0xa9), 0);
+	rectangle( 0, 0, screen->w, screen->h, &light_blue );
+
 	sleeper = this;
 
 	return TRUE;
