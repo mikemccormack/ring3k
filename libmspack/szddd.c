@@ -11,6 +11,7 @@
 
 #include <system.h>
 #include <szdd.h>
+#include <assert.h>
 
 /* prototypes */
 static struct msszddd_header *szddd_open(
@@ -184,10 +185,13 @@ static int szddd_extract(struct msszdd_decompressor *self,
 {
   struct msszdd_decompressor_p *this = (struct msszdd_decompressor_p *) self;
   struct mspack_system *sys;
-  struct mspack_file *outfh;
+  //struct mspack_file *outfh;
 
   if (!this) return MSPACK_ERR_ARGS;
   sys = this->system;
+  // something missing here?
+  assert(0);
+  return 0;
 }
 
 /***************************************

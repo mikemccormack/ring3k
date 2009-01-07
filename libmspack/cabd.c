@@ -637,7 +637,7 @@ static int cabd_find(struct mscab_decompressor_p *this, unsigned char *buf,
   off_t caboff, offset, foffset, cablen, length;
   struct mspack_system *sys = this->system;
   unsigned char *p, *pend, state = 0;
-  unsigned int cablen_u32, foffset_u32;
+  unsigned int cablen_u32 = 0, foffset_u32 = 0;
   int false_cabs = 0;
 
   /* search through the full file length */

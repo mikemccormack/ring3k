@@ -514,6 +514,7 @@ static int chmd_fast_find(struct mschm_decompressor *base,
   /* perform linear search on quickref segment */
   sys->close(fh);
   sys->free(chunk);
+  return 0;
 }
 
 
