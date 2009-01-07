@@ -314,14 +314,14 @@ void win32k_sdl_16bpp_t::rectangle_l(INT left, INT top, INT right, INT bottom, b
 	ptr += screen->pitch/2;
 	top++;
 
-	while (top <= (bottom -1))
+	while (top < (bottom -1))
 	{
 		// left border drawn by pen
 		ptr[ left ] = pen_val;
 
 		// filled by brush
 		INT count;
-		for (count = left+1; (count-1) < right; count++)
+		for (count = left+1; count < (right - 1); count++)
 			ptr[count] = brush_val;
 
 		// right border drawn by pen
