@@ -28,10 +28,12 @@ Requirements
 * libSDL 1.2
 * the mingw cross compiler (for tests)
 * glibc with the NPTL version of pthreads
-* gcc 4.2.1 or so
+* gcc, g++ 4.2.1 or so
 * libxml2 (for registry code)
 * cabextract (extract windows cab files)
 * isoinfo from http://cdrecord.berlios.de (read the CD)
+* On x86-64, the compiler should be able to generate 32-bit code
+  (Debian users should install gcc-multilib, g++-multilib, ia32-libs)
 
 Instructions
 ------------

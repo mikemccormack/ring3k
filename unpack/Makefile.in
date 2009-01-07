@@ -1,5 +1,7 @@
+CC = @CC@
+CXX = @CXX@
 
-CFLAGS = -Wall -O2 -I../libmspack
+CFLAGS += -Wall -O2 -I../libmspack
 
 unpack: unpack.o ../libmspack/libmspack.a
 	$(CC) -o $@ $^
