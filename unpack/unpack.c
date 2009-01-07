@@ -55,6 +55,12 @@ int main(int argc, char **argv)
 	}
 
 	file = cab->files;
+	if (!file)
+	{
+		fprintf(stderr, "no files in archive!\n");
+		exit(1);
+	}
+
 	if (file->next)
 	{
 		fprintf(stderr, "unpack doesn't handle multiple files\n");
