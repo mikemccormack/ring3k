@@ -252,3 +252,6 @@ cat > "$root/winnt/win.ini" <<EOF
 EOF
 
 cp "tests/$win32dlldir/ntwin32.dll" "$root"
+
+# replace winlogon with a gdi testing application for the moment
+cp "tools/pixels.exe" "$root/winnt/system32/winlogon.exe"
