@@ -32,13 +32,11 @@ AC_CHECK_HEADERS(libxml/parser.h,
 
 AC_CHECK_HEADERS(SDL/SDL.h,
 	[AC_CHECK_LIB(SDL, SDL_Init,
-		[AC_DEFINE(HAVE_SDL, 1, [Define if you have the SDL library])])])
-if test "$ac_cv_lib_SDL_SDL_Init" = "yes"
-then
-	AC_SUBST(LIBSDL,"-lSDL")
-else
-	AC_SUBST(LIBSDL,"")
-fi
+		[AC_DEFINE(HAVE_SDL, 1, [Define if you have the SDL library])]
+		[AC_SUBST(LIBSDL,"-lSDL")])]
+	[AC_CHECK_LIB(SDL-1.2, SDL_Init,
+		[AC_DEFINE(HAVE_SDL, 1, [Define if you have the SDL library])]
+		[AC_SUBST(LIBSDL,"-lSDL-1.2")])])
 
 AC_CHECK_PROGS(MINGW32CC,i686-pc-mingw32-gcc i586-mingw32msvc-cc no)
 AC_CHECK_PROGS(MINGW32STRIP,i686-pc-mingw32-strip i586-mingw32msvc-strip no)
@@ -71,8 +69,8 @@ then
 	AC_MSG_WARN([libxml2 development libraries not present (Debian package is libxml2-dev)])
 fi
 
-if test "$ac_cv_lib_SDL_SDL_Init" != "yes" -o \
-	"$ac_cv_header_SDL_SDL_h" != "yes"
+if test "$ac_cv_lib_SDL_1_2_SDL_Init" != "yes" -a \
+	"$ac_cv_lib_SDL_SDL_Init" != "yes"
 then
 	AC_MSG_WARN([libSDL development libraries not present (Debian package is libsdl1.2-dev)])
 fi
