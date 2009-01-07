@@ -6,19 +6,14 @@ dnl
 
 AC_INIT(ring3k,0.0.14)
 
-dnl Check for x86-64 (from Wine's configure.ac)
-AC_CANONICAL_HOST
-case $host in
-  x86_64*linux*)
-    CC="${CC:-gcc} -m32"
-    CXX="${CXX:-g++} -m32"
-    LD="${LD:-ld} -m elf_i386" 
-    AS="${AS:-as} --32"
-    ;;
-esac
-
 AC_PROG_CC
 AC_PROG_CXX
+
+AC_SUBST(HOSTCC,${CC})
+AC_SUBST(HOSTCXX,${CXX})
+AC_SUBST(CC,"${CC} -m32")
+AC_SUBST(CXX,"${CXX} -m32")
+
 AC_CONFIG_HEADERS([include/config.h])
 AC_CHECK_HEADERS([asm/ptrace.h])
 AC_CHECK_HEADERS([valgrind/valgrind.h])

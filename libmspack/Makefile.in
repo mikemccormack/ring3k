@@ -1,7 +1,6 @@
-
 DEPFLAG=-Wp,-MD,.$@.d
 CFLAGS = -O2 -Wall -I. $(DEPFLAG)
-CC = @CC@
+CC = @HOSTCC@
 
 SOURCE = \
 	cabc.c \
