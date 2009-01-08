@@ -2,25 +2,35 @@
 
 #define DEFAULT_WIDTH 11
 #define DEFAULT_HEIGHT 20
+#define DEFAULT_BLOCKSIZE 20
+#define PREVIEW_BLOCKSIZE 7
 
 #define BLACK 0
 #define RED   1
 #define GREEN 2
 #define BLUE  3
+#define PURPLE  4
+#define YELLOW  5
+#define CYAN  6
 
 ULONG board[DEFAULT_WIDTH * DEFAULT_HEIGHT];
 
 int board_width = DEFAULT_WIDTH;
 int board_height = DEFAULT_HEIGHT;
-int block_size = 20;
+int block_size = DEFAULT_BLOCKSIZE;
 int interval = 1000;
 int piece_orientation = 0;
+int next_piece_type = 0;
 int piece_type = 0;
 int piece_color = RED;
 int piece_x = 0;
 int piece_y = 0;
 
-HBRUSH brushes[4];
+BOOL show_next_piece = TRUE;
+int preview_pos_x = (DEFAULT_WIDTH * DEFAULT_BLOCKSIZE)-(5*PREVIEW_BLOCKSIZE)-1;
+int preview_pos_y = 1;
+
+HBRUSH brushes[6];
 HPEN null_pen;
 
 const char piece[] = {
@@ -174,12 +184,12 @@ const char piece[] = {
 #undef max
 #undef min
 
-int max( int x, int y )
+static inline int max( int x, int y )
 {
 	return x<y?y:x;
 }
 
-int min( int x, int y )
+static inline int min( int x, int y )
 {
 	return x>y?y:x;
 }
@@ -203,6 +213,28 @@ void draw_block( HDC hdc, int x, int y )
 		 (x+1)*block_size - 1, (y+1)*block_size - 1 );
 }
 
+BOOL piece_has_block( int type, int orientation, int x, int y );
+
+void draw_next_piece_preview(HDC hdc)
+{
+	int x, y;
+
+	SelectObject( hdc, brushes[0] );
+
+	for (x=0; x<5; x++)
+		for (y=0; y<5; y++)
+		{
+			if (piece_has_block(next_piece_type, 0, x, y))
+			{
+				SelectObject( hdc, brushes[next_piece_type+1] );
+			} else {
+				SelectObject( hdc, brushes[0] );
+			}
+			Rectangle( hdc, preview_pos_x+(x*PREVIEW_BLOCKSIZE), preview_pos_y+y*PREVIEW_BLOCKSIZE,
+				   preview_pos_x+((x+1)*PREVIEW_BLOCKSIZE), preview_pos_y+(y+1)*PREVIEW_BLOCKSIZE );
+		}
+}
+
 void do_paint( HWND hwnd )
 {
 	PAINTSTRUCT ps;
@@ -215,6 +247,7 @@ void do_paint( HWND hwnd )
 
 	old_brush = SelectObject( hdc, brushes[0] );
 	old_pen = SelectObject( hdc, null_pen );
+
 	for (i=0; i<board_width; i++)
 	{
 		for (j=0; j<board_height; j++)
@@ -222,6 +255,28 @@ void do_paint( HWND hwnd )
 			draw_block( hdc, i, j );
 		}
 	}
+
+	// draw shadow under current block
+	SelectObject( hdc, brushes[0] );
+	Rectangle( hdc, 1, board_height*block_size,
+		   board_width*block_size-1, board_height*block_size+5 );
+	SelectObject( hdc, brushes[piece_color] );
+	for (i=0; i<5; i++)
+	{
+		for (j=0; j<5; j++) {
+			if (piece_has_block(piece_type, piece_orientation,
+					    i, j))
+				break;
+		}
+		if (j<5) {
+			Rectangle( hdc, (i+piece_x)*block_size, board_height*block_size,
+				   (i+piece_x+1)*block_size - 1, board_height*block_size+5 );
+		}
+	}
+
+	if (show_next_piece)
+		draw_next_piece_preview(hdc);
+
 	SelectObject( hdc, old_brush );
 	SelectObject( hdc, old_pen );
 
@@ -238,7 +293,7 @@ void set_block( int x, int y, int color )
 
 BOOL piece_has_block( int type, int orientation, int x, int y )
 {
-	return piece[ piece_type*100 + orientation*25 + y*5 + x] == 'X';
+	return piece[ type*100 + orientation*25 + y*5 + x] == 'X';
 }
 
 void block_at_cursor( int type, int orientation, int color )
@@ -326,9 +381,7 @@ BOOL move_right()
 
 BOOL do_rotate()
 {
-	int new_orientation = piece_orientation + 1;
-	if (new_orientation >= 4)
-		new_orientation = 0;
+	int new_orientation = (piece_orientation + 1) & 3;
 	block_at_cursor( piece_type, piece_orientation, BLACK );
 	if (block_fits_at(piece_type, new_orientation, piece_x, piece_y ))
 		piece_orientation = new_orientation;
@@ -338,11 +391,11 @@ BOOL do_rotate()
 
 BOOL new_block()
 {
-	piece_type += 1;
-	if (piece_type > 5)
-		piece_type = 0;
+	piece_type = next_piece_type;
+	next_piece_type = rand()%6;
+	piece_color = piece_type+1;
 	piece_x = board_width/2 - 2;
-	piece_y = 1;
+	piece_y = 0;
 	block_at_cursor( piece_type, piece_orientation, piece_color );
 	return TRUE;
 }
@@ -443,7 +496,7 @@ LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 	switch (msg)
 	{
 	case WM_SIZE:
-		do_size( hwnd, block_size * board_width, block_size * board_height );
+		do_size( hwnd, block_size * board_width, block_size * board_height + 5 );
 		break;
 	case WM_KEYDOWN:
 		if (do_keydown(wparam))
@@ -468,6 +521,9 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 	HWND hwnd;
 	MSG msg;
 
+	srand(time(NULL));
+	next_piece_type = rand()%5;
+
 	wc.style = 0;
 	wc.lpfnWndProc = minitris_wndproc;
 	wc.cbClsExtra = 0;
@@ -485,7 +541,7 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 	}
 
 	hwnd = CreateWindow("MINITRIS", "Minitris", WS_VISIBLE|WS_POPUP|WS_DLGFRAME,
-		CW_USEDEFAULT, CW_USEDEFAULT, block_size * board_width, block_size * board_height,
+		CW_USEDEFAULT, CW_USEDEFAULT, block_size * board_width, block_size * board_height + 5,
 		NULL, NULL, Instance, NULL);
 	if (!hwnd)
 	{
@@ -498,6 +554,9 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 	brushes[1] = CreateSolidBrush( RGB( 0x80, 0, 0 ) );
 	brushes[2] = CreateSolidBrush( RGB( 0, 0x80, 0 ) );
 	brushes[3] = CreateSolidBrush( RGB( 0, 0, 0x80 ) );
+	brushes[4] = CreateSolidBrush( RGB( 0x80, 0, 0x80 ) );
+	brushes[5] = CreateSolidBrush( RGB( 0x80, 0x80, 0 ) );
+	brushes[6] = CreateSolidBrush( RGB( 0, 0x80, 0x80 ) );
 
 	new_block();
 	SetTimer( hwnd, 0, interval, 0 );
