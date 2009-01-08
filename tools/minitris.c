@@ -389,10 +389,21 @@ BOOL do_rotate()
 	return piece_orientation == new_orientation;
 }
 
+
+BYTE get_random_number()
+{
+	ULONG ticks = GetTickCount();
+	static BYTE random_store;
+	random_store ^= (ticks >> 16) & 0xff;
+	random_store ^= (ticks >> 8) & 0xff;
+	random_store ^= ticks&0xff;
+	return random_store;
+}
+
 BOOL new_block()
 {
 	piece_type = next_piece_type;
-	next_piece_type = rand()%6;
+	next_piece_type = get_random_number()%6;
 	piece_color = piece_type+1;
 	piece_x = board_width/2 - 2;
 	piece_y = 0;
@@ -520,9 +531,6 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 	WNDCLASS wc;
 	HWND hwnd;
 	MSG msg;
-
-	srand(time(NULL));
-	next_piece_type = rand()%5;
 
 	wc.style = 0;
 	wc.lpfnWndProc = minitris_wndproc;
