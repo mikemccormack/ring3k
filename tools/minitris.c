@@ -1,4 +1,6 @@
 #include <windows.h>
+#include <stdio.h>
+#include <time.h>
 
 #define DEFAULT_WIDTH 11
 #define DEFAULT_HEIGHT 20
@@ -6,12 +8,7 @@
 #define PREVIEW_BLOCKSIZE 7
 
 #define BLACK 0
-#define RED   1
-#define GREEN 2
-#define BLUE  3
-#define PURPLE  4
-#define YELLOW  5
-#define CYAN  6
+#define CYAN 1
 
 ULONG board[DEFAULT_WIDTH * DEFAULT_HEIGHT];
 
@@ -22,7 +19,7 @@ int interval = 1000;
 int piece_orientation = 0;
 int next_piece_type = 0;
 int piece_type = 0;
-int piece_color = RED;
+int piece_color = CYAN;
 int piece_x = 0;
 int piece_y = 0;
 
@@ -30,155 +27,160 @@ BOOL show_next_piece = TRUE;
 int preview_pos_x = (DEFAULT_WIDTH * DEFAULT_BLOCKSIZE)-(5*PREVIEW_BLOCKSIZE)-1;
 int preview_pos_y = 1;
 
-HBRUSH brushes[6];
+BOOL game_over = FALSE;
+
+HBRUSH brushes[8];
 HPEN null_pen;
+
+HWND hwnd;
 
 const char piece[] = {
 // straight
-	"     "
-	"  X  "
-	"  X  "
-	"  X  "
-	"  X  "
+	"  X "
+	"  X "
+	"  X "
+	"  X "
 
-	"     "
-	"     "
-	" XXXX"
-	"     "
-	"     "
+	"    "
+	"    "
+	"XXXX"
+	"    "
 
-	"  X  "
-	"  X  "
-	"  X  "
-	"  X  "
-	"     "
+	" X  "
+	" X  "
+	" X  "
+	" X  "
 
-	"     "
-	"     "
-	"XXXX "
-	"     "
-	"     "
+	"    "
+	"XXXX"
+	"    "
+	"    "
+
 // bent left
-	"     "
-	" XX  "
-	"  X  "
-	"  X  "
-	"     "
+	" XX "
+	"  X "
+	"  X "
+	"    "
 
-	"     "
-	"     "
-	" XXX "
-	" X   "
-	"     "
+	"    "
+	" XXX"
+	" X  "
+	"    "
 
-	"     "
-	"  X  "
-	"  X  "
-	"  XX "
-	"     "
+	"    "
+	" X  "
+	" X  "
+	" XX "
 
-	"     "
-	"   X "
-	" XXX "
-	"     "
-	"     "
+	"    "
+	"  X "
+	"XXX "
+	"    "
+
 // bent right
-	"     "
-	"  XX "
-	"  X  "
-	"  X  "
-	"     "
+	"    "
+	" XX "
+	" X  "
+	" X  "
 
-	"     "
-	" X   "
-	" XXX "
-	"     "
-	"     "
+	"    "
+	"X   "
+	"XXX "
+	"    "
 
-	"     "
-	"  X  "
-	"  X  "
-	" XX  "
-	"     "
+	"    "
+	" X  "
+	" X  "
+	"XX  "
 
-	"     "
-	"     "
-	" XXX "
-	"   X "
-	"     "
+	"    "
+	"    "
+	"XXX "
+	"  X "
+
 // T shaped
-	"     "
-	"     "
-	" XXX "
-	"  X  "
-	"     "
+	"    "
+	"XXX "
+	" X  "
+	"    "
 
-	"     "
-	"  X  "
-	"  XX "
-	"  X  "
-	"     "
+	"    "
+	" X  "
+	" XX "
+	" X  "
 
-	"     "
-	"  X  "
-	" XXX "
-	"     "
-	"     "
+	"    "
+	" X  "
+	"XXX "
+	"    "
 
-	"     "
-	"  X  "
-	" XX  "
-	"  X  "
-	"     "
+	"    "
+	" X  "
+	"XX  "
+	" X  "
+
 // dogleg left
-	"     "
-	"     "
-	"  XX "
-	" XX  "
-	"     "
+	"    "
+	"    "
+	" XX "
+	"XX  "
 
-	"     "
-	"  X  "
-	"  XX "
-	"   X "
-	"     "
+	"    "
+	" X  "
+	" XX "
+	"  X "
 
-	"     "
-	"  XX "
-	" XX  "
-	"     "
-	"     "
+	"    "
+	" XX "
+	"XX  "
+	"    "
 
-	"     "
-	" X   "
-	" XX  "
-	"  X  "
-	"     "
+	"    "
+	"X   "
+	"XX  "
+	" X  "
 
 // dogleg right
-	"     "
-	"     "
-	" XX  "
-	"  XX "
-	"     "
+	"    "
+	"    "
+	"XX  "
+	" XX "
 
-	"     "
-	"   X "
-	"  XX "
-	"  X  "
-	"     "
+	"    "
+	"  X "
+	" XX "
+	" X  "
 
-	"     "
-	" XX  "
-	"  XX "
-	"     "
-	"     "
+	"    "
+	"XX  "
+	" XX "
+	"    "
 
-	"     "
-	"  X  "
-	" XX  "
-	" X   "
-	"     "
+	"    "
+	" X  "
+	"XX  "
+	"X   "
+
+// square
+	"    "
+	" XX "
+	" XX "
+	"    "
+
+	"    "
+	" XX "
+	" XX "
+	"    "
+
+	"    "
+	" XX "
+	" XX "
+	"    "
+
+	"    "
+	" XX "
+	" XX "
+	"    "
 };
 
 #undef max
@@ -221,8 +223,8 @@ void draw_next_piece_preview(HDC hdc)
 
 	SelectObject( hdc, brushes[0] );
 
-	for (x=0; x<5; x++)
-		for (y=0; y<5; y++)
+	for (x=0; x<4; x++)
+		for (y=0; y<4; y++)
 		{
 			if (piece_has_block(next_piece_type, 0, x, y))
 			{
@@ -235,7 +237,7 @@ void draw_next_piece_preview(HDC hdc)
 		}
 }
 
-void do_paint( HWND hwnd )
+void do_paint()
 {
 	PAINTSTRUCT ps;
 	HDC hdc;
@@ -261,14 +263,14 @@ void do_paint( HWND hwnd )
 	Rectangle( hdc, 1, board_height*block_size,
 		   board_width*block_size-1, board_height*block_size+5 );
 	SelectObject( hdc, brushes[piece_color] );
-	for (i=0; i<5; i++)
+	for (i=0; i<4; i++)
 	{
-		for (j=0; j<5; j++) {
+		for (j=0; j<4; j++) {
 			if (piece_has_block(piece_type, piece_orientation,
 					    i, j))
 				break;
 		}
-		if (j<5) {
+		if (j<4) {
 			Rectangle( hdc, (i+piece_x)*block_size, board_height*block_size,
 				   (i+piece_x+1)*block_size - 1, board_height*block_size+5 );
 		}
@@ -293,15 +295,15 @@ void set_block( int x, int y, int color )
 
 BOOL piece_has_block( int type, int orientation, int x, int y )
 {
-	return piece[ type*100 + orientation*25 + y*5 + x] == 'X';
+	return piece[ type*64 + orientation*16 + y*4 + x] == 'X';
 }
 
 void block_at_cursor( int type, int orientation, int color )
 {
 	int i, j;
-	for (i=0; i<5; i++)
+	for (i=0; i<4; i++)
 	{
-		for (j=0; j<5; j++)
+		for (j=0; j<4; j++)
 		{
 			if (!piece_has_block( type, orientation, i, j ))
 				continue;
@@ -313,9 +315,9 @@ void block_at_cursor( int type, int orientation, int color )
 BOOL block_fits_at( int type, int orientation, int x, int y )
 {
 	int i, j;
-	for (i=0; i<5; i++)
+	for (i=0; i<4; i++)
 	{
-		for (j=0; j<5; j++)
+		for (j=0; j<4; j++)
 		{
 			ULONG *ptr;
 			if (!piece_has_block( type, orientation, i, j ))
@@ -403,11 +405,15 @@ BYTE get_random_number()
 BOOL new_block()
 {
 	piece_type = next_piece_type;
-	next_piece_type = get_random_number()%6;
+	next_piece_type = get_random_number()%7;
 	piece_color = piece_type+1;
 	piece_x = board_width/2 - 2;
 	piece_y = 0;
-	block_at_cursor( piece_type, piece_orientation, piece_color );
+	if ( !block_fits_at(piece_type, piece_orientation, piece_x, piece_y) )
+		game_over = TRUE;
+	else
+		block_at_cursor( piece_type, piece_orientation, piece_color );
+
 	return TRUE;
 }
 
@@ -460,6 +466,9 @@ ULONG erase_rows( void )
 
 BOOL do_keydown( ULONG vkey )
 {
+	if (game_over && vkey != VK_ESCAPE)
+		return FALSE;
+	
 	switch (vkey)
 	{
 	case VK_ESCAPE:
@@ -496,10 +505,16 @@ void do_size( HWND hwnd, int width, int height )
 
 void do_timer()
 {
-	if (move_down())
-		return;
-	erase_rows();
-	new_block();
+	if (!game_over)
+	{
+		if (move_down())
+			return;
+		erase_rows();
+		new_block();
+	} else {
+		printf("Game over!\n");
+		KillTimer( hwnd, 0 );
+	}
 }
 
 LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -514,7 +529,7 @@ LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 			InvalidateRect( hwnd, 0, 0 );
 		break;
 	case WM_PAINT:
-		do_paint( hwnd );
+		do_paint();
 		break;
 	case WM_NCHITTEST:
 		return HTCAPTION;
@@ -529,7 +544,6 @@ LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Show )
 {
 	WNDCLASS wc;
-	HWND hwnd;
 	MSG msg;
 
 	wc.style = 0;
@@ -559,12 +573,13 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 
 	null_pen = GetStockObject( NULL_PEN );
 	brushes[0] = GetStockObject( BLACK_BRUSH );
-	brushes[1] = CreateSolidBrush( RGB( 0x80, 0, 0 ) );
-	brushes[2] = CreateSolidBrush( RGB( 0, 0x80, 0 ) );
-	brushes[3] = CreateSolidBrush( RGB( 0, 0, 0x80 ) );
-	brushes[4] = CreateSolidBrush( RGB( 0x80, 0, 0x80 ) );
-	brushes[5] = CreateSolidBrush( RGB( 0x80, 0x80, 0 ) );
-	brushes[6] = CreateSolidBrush( RGB( 0, 0x80, 0x80 ) );
+	brushes[1] = CreateSolidBrush( RGB( 0x00, 0xf0, 0xf0 ) );
+	brushes[2] = CreateSolidBrush( RGB( 0xf0, 0xa0, 0x00 ) );
+	brushes[3] = CreateSolidBrush( RGB( 0x00, 0x00, 0xf0 ) );
+	brushes[4] = CreateSolidBrush( RGB( 0xa0, 0x00, 0xf0 ) );
+	brushes[5] = CreateSolidBrush( RGB( 0x00, 0xf0, 0x00 ) );
+	brushes[6] = CreateSolidBrush( RGB( 0xf0, 0x00, 0x00 ) );
+	brushes[7] = CreateSolidBrush( RGB( 0xf0, 0xf0, 0x00 ) );
 
 	new_block();
 	SetTimer( hwnd, 0, interval, 0 );
