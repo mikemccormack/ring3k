@@ -75,8 +75,8 @@ Optionally, install kqemu
 
 One time setup:
 
-1. Create a 2G fake partition:
-    dd if=/dev/zero of=win2k.img bs=1024 count=2M
+1. Create a 2G sparse disk image:
+    dd if=/dev/null of=win2k.img bs=1024 seek=2M
 
 2  Install Windows 2000:
     qemu -hda win2k.img -cdrom win2k.iso -boot d -m 64
