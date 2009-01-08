@@ -457,7 +457,7 @@ HANDLE NTAPI NtUserFindExistingCursorIcon(PUNICODE_STRING Library, PUNICODE_STRI
 HANDLE NTAPI NtUserGetDC(HANDLE Window)
 {
 	dprintf("%p\n", Window);
-	return win32k_manager->alloc_dc();
+	return win32k_manager->alloc_screen_dc();
 }
 
 HGDIOBJ NtUserSelectPalette(HGDIOBJ hdc, HPALETTE palette, BOOLEAN force_bg)

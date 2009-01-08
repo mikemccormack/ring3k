@@ -43,7 +43,8 @@ public:
 	virtual ~win32k_manager_t();
 	virtual BOOL init() = 0;
 	virtual void fini() = 0;
-	HGDIOBJ alloc_dc();
+	HGDIOBJ alloc_compatible_dc();
+	HGDIOBJ alloc_screen_dc();
 	BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
@@ -82,6 +83,15 @@ typedef struct _DEVICE_CONTEXT_SHARED_MEMORY {
 	HGDIOBJ Brush;
 } DEVICE_CONTEXT_SHARED_MEMORY;
 
+class device_context_t;
+
+class device_context_factory_t
+{
+public:
+	virtual device_context_t* alloc( ULONG n ) = 0;
+	virtual ~device_context_factory_t() {};
+};
+
 class device_context_t : public gdi_object_t
 {
 	ULONG dc_index;
@@ -98,16 +108,36 @@ protected:
 protected:
 	device_context_t( ULONG n );
 public:
-	static device_context_t* alloc();
+	static device_context_t* alloc( device_context_factory_t *factory );
 	static int get_free_index();
 	static BYTE *get_dc_shared_mem_ptr(int n);
 	static BYTE* get_dc_shared_mem_base();
 	DEVICE_CONTEXT_SHARED_MEMORY* get_dc_shared_mem();
 	virtual BOOL release();
 	brush_t *get_selected_brush();
-	BOOL set_pixel( INT x, INT y, COLORREF color );
-	BOOL rectangle( INT x, INT y, INT width, INT height );
-	BOOL exttextout( INT x, INT y, UINT options,
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
+	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
+	virtual BOOL exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text ) = 0;
+};
+
+class memory_device_context_t : public device_context_t
+{
+public:
+	memory_device_context_t( ULONG n );
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
+	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
+	virtual BOOL exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text );
+};
+
+class screen_device_context_t : public device_context_t
+{
+public:
+	screen_device_context_t( ULONG n );
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
+	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
+	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
 };
 

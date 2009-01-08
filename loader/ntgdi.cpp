@@ -592,9 +592,27 @@ section_t *device_context_t::g_dc_section;
 BYTE *device_context_t::g_dc_shared_mem = 0;
 bool device_context_t::g_dc_bitmap[max_device_contexts];
 
-HGDIOBJ win32k_manager_t::alloc_dc()
+class memory_device_context_factory_t : public device_context_factory_t {
+public:
+	device_context_t* alloc(ULONG n) { return new memory_device_context_t(n); }
+};
+
+HGDIOBJ win32k_manager_t::alloc_compatible_dc()
 {
-	device_context_t* dc = device_context_t::alloc();
+	memory_device_context_factory_t factory;
+	device_context_t* dc = device_context_t::alloc( &factory );
+	return dc->get_handle();
+}
+
+class screen_device_context_factory_t : public device_context_factory_t {
+public:
+	device_context_t* alloc(ULONG n) { return new screen_device_context_t(n); }
+};
+
+HGDIOBJ win32k_manager_t::alloc_screen_dc()
+{
+	screen_device_context_factory_t factory;
+	device_context_t* dc = device_context_t::alloc( &factory );
 	return dc->get_handle();
 }
 
@@ -655,7 +673,7 @@ DEVICE_CONTEXT_SHARED_MEMORY* device_context_t::get_dc_shared_mem()
 	return (DEVICE_CONTEXT_SHARED_MEMORY*) (g_dc_shared_mem + dc_index * dc_size);
 }
 
-device_context_t* device_context_t::alloc()
+device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 {
 	BYTE* dc_shared_mem = get_dc_shared_mem_base();
 	if (!dc_shared_mem)
@@ -665,7 +683,7 @@ device_context_t* device_context_t::alloc()
 	if (n < 0)
 		return NULL;
 
-	device_context_t* dc = new device_context_t( n );
+	device_context_t* dc = factory->alloc( n );
 	if (!dc)
 		return NULL;
 
@@ -689,7 +707,7 @@ BOOL device_context_t::release()
 	return TRUE;
 }
 
-BOOL device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
+BOOL screen_device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
 {
 	brush_t *brush = get_selected_brush();
 	if (!brush)
@@ -698,15 +716,47 @@ BOOL device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
 	return win32k_manager->rectangle( left, top, right, bottom, brush );
 }
 
-BOOL device_context_t::set_pixel( INT x, INT y, COLORREF color )
+screen_device_context_t::screen_device_context_t( ULONG n ) :
+	device_context_t( n )
+{
+}
+
+BOOL screen_device_context_t::set_pixel( INT x, INT y, COLORREF color )
 {
 	return win32k_manager->set_pixel( x, y, color );
 }
 
-BOOL device_context_t::exttextout( INT x, INT y, UINT options,
+BOOL screen_device_context_t::exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text )
 {
 	return win32k_manager->exttextout( x, y, options, rect, text );
+}
+
+memory_device_context_t::memory_device_context_t( ULONG n ) :
+	device_context_t( n )
+{
+}
+
+BOOL memory_device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
+{
+	brush_t *brush = get_selected_brush();
+	if (!brush)
+		return FALSE;
+	dprintf("\n");
+	return TRUE;
+}
+
+BOOL memory_device_context_t::set_pixel( INT x, INT y, COLORREF color )
+{
+	dprintf("\n");
+	return TRUE;
+}
+
+BOOL memory_device_context_t::exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text )
+{
+	dprintf("\n");
+	return TRUE;
 }
 
 brush_t::brush_t( UINT _style, COLORREF _color, ULONG _hatch ) :
@@ -830,7 +880,7 @@ HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPer
 HGDIOBJ NTAPI NtGdiCreateCompatibleDC(HGDIOBJ hdc)
 {
 	dprintf("%p\n", hdc);
-	return win32k_manager->alloc_dc();
+	return win32k_manager->alloc_compatible_dc();
 }
 
 // has one more parameter than gdi32.CreateSolidBrush
@@ -861,7 +911,7 @@ HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(
 HGDIOBJ NTAPI NtGdiGetDCforBitmap(HGDIOBJ Bitmap)
 {
 	dprintf("%p\n", Bitmap);
-	return win32k_manager->alloc_dc();
+	return win32k_manager->alloc_screen_dc();
 }
 
 gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle)
@@ -959,7 +1009,7 @@ BOOLEAN NTAPI NtGdiRestoreDC(HGDIOBJ hdc, int saved_dc)
 HGDIOBJ NTAPI NtGdiGetDCObject(HGDIOBJ hdc, ULONG object_type)
 {
 	dprintf("%p %08lx\n", hdc, object_type);
-	return win32k_manager->alloc_dc();
+	return win32k_manager->alloc_screen_dc();
 }
 
 // fun...
@@ -1011,6 +1061,15 @@ ULONG NTAPI NtGdiExtGetObjectW(HGDIOBJ Object, ULONG Size, PVOID Buffer)
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ hdcDest, INT xDest, INT yDest, INT cx, INT cy, HGDIOBJ hdcSrc, INT xSrc, INT ySrc, ULONG rop, ULONG, ULONG)
 {
 	dprintf("\n");
+
+	device_context_t* src = dc_from_handle( hdcSrc );
+	if (!src)
+		return FALSE;
+
+	device_context_t* dest = dc_from_handle( hdcSrc );
+	if (!dest)
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -1035,7 +1094,7 @@ BOOL NTAPI NtGdiSetFontEnumeration(PVOID Unknown)
 
 HANDLE NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID)
 {
-	return win32k_manager->alloc_dc();
+	return win32k_manager->alloc_screen_dc();
 }
 
 typedef struct _font_enum_entry {
