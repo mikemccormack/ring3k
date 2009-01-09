@@ -4,7 +4,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script
 dnl
 
-AC_INIT(ring3k,0.0.14)
+AC_INIT(ring3k,0.0.15)
 
 AC_PROG_CC
 AC_PROG_CXX
