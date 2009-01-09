@@ -148,12 +148,23 @@ void timeout_t::remove()
 		g_timeouts.unlink(this);
 }
 
+extern KUSER_SHARED_DATA *shared_memory_address;
+
 LARGE_INTEGER timeout_t::current_time()
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	LARGE_INTEGER ret;
 	ret.QuadPart = (tv.tv_sec * 1000000LL + tv.tv_usec) * 10LL;
+
+	// update the time in shared memory
+	if (shared_memory_address)
+	{
+		KSYSTEM_TIME& st = shared_memory_address->SystemTime;
+		st.LowPart = ret.LowPart;
+		st.High1Time = ret.HighPart;
+		st.High2Time = ret.HighPart;
+	}
 	return ret;
 }
 
