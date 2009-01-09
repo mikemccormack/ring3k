@@ -150,14 +150,28 @@ void timeout_t::remove()
 
 extern KUSER_SHARED_DATA *shared_memory_address;
 
+// numbers from Wine's dlls/ntdll/time.c
+/* 1601 to 1970 is 369 years plus 89 leap days */
+const ULONGLONG tickspersec = 10000000;
+const ULONGLONG secsperday = 86400;
+const ULONGLONG secs_1601_to_1970 = (369 * 365 + 89) * secsperday;
+const ULONGLONG ticks_1601_to_1970 = secs_1601_to_1970 * tickspersec;
+
 LARGE_INTEGER timeout_t::current_time()
 {
 	struct timeval tv;
+
+	// timeofday gives seconds and milliseconds since 01-01-1970 00:00:00
+	// windows uses 01-01-1601 00:00:00
 	gettimeofday(&tv, NULL);
 	LARGE_INTEGER ret;
 	ret.QuadPart = (tv.tv_sec * 1000000LL + tv.tv_usec) * 10LL;
+	ret.QuadPart += ticks_1601_to_1970;
 
 	// update the time in shared memory
+	// High1Time and High2Time need to be the same,
+	// as userspace loops waiting for them to be equal
+	// presumable to avoid a race when the LowPart overflows
 	if (shared_memory_address)
 	{
 		KSYSTEM_TIME& st = shared_memory_address->SystemTime;
