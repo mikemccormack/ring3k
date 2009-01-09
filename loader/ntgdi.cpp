@@ -132,11 +132,14 @@ public:
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
+	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
+
 protected:
 	Uint16 map_colorref( COLORREF );
 	virtual SDL_Surface* set_mode() = 0;
 	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
 	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush ) = 0;
+	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
 	virtual bool sleep_timeout( LARGE_INTEGER& timeout );
 	static Uint32 timeout_callback( Uint32 interval, void *arg );
 };
@@ -204,6 +207,42 @@ BOOL win32k_sdl_t::exttextout( INT x, INT y, UINT options,
 		SDL_UnlockSurface(screen);
 
 	//SDL_UpdateRect( screen, left, top, right - left, bottom - top );
+
+	return TRUE;
+}
+
+BOOL win32k_sdl_t::bitblt(
+	INT xDest, INT yDest,
+	INT cx, INT cy,
+	device_context_t *src,
+	INT xSrc, INT ySrc, ULONG rop )
+{
+	// keep everything on the screen
+	xDest = max( xDest, 0 );
+	yDest = max( yDest, 0 );
+	if ((xDest + cx) > screen->w)
+		cx = screen->w - xDest;
+	if ((yDest + cy) > screen->h)
+		cy = screen->h - yDest;
+
+	// keep everything on the source bitmap
+	bitmap_t *bitmap = src->get_selected_bitmap();
+	xSrc = max( xSrc, 0 );
+	ySrc = max( ySrc, 0 );
+	if ((xSrc + cx) > bitmap->get_width())
+		cx = bitmap->get_width() - xSrc;
+	if ((ySrc + cy) > bitmap->get_height())
+		cy = bitmap->get_height() - ySrc;
+
+	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
+		return FALSE;
+
+	bitblt_l( xDest, yDest, cx, cy, src, xSrc, ySrc, rop );
+
+	if ( SDL_MUSTLOCK(screen) )
+		SDL_UnlockSurface(screen);
+
+	SDL_UpdateRect( screen, xDest, yDest, cx, cy );
 
 	return TRUE;
 }
@@ -278,6 +317,7 @@ public:
 	virtual SDL_Surface* set_mode();
 	virtual void set_pixel_l( INT x, INT y, COLORREF color );
 	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush );
+	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
 	Uint16 map_colorref( COLORREF color );
 };
 
@@ -337,6 +377,28 @@ void win32k_sdl_16bpp_t::rectangle_l(INT left, INT top, INT right, INT bottom, b
 		ptr[count] = pen_val;
 }
 
+void win32k_sdl_16bpp_t::bitblt_l(
+	INT xDest, INT yDest,
+	INT cx, INT cy,
+	device_context_t *src,
+	INT xSrc, INT ySrc, ULONG rop )
+{
+	dprintf("%d,%d %dx%d <- %d,%d\n", xDest, yDest, cx, cy, xSrc, ySrc );
+	if (rop != SRCCOPY)
+		dprintf("ROP %ld not supported\n", rop);
+
+	// copy the pixels
+	COLORREF pixel;
+	for (int i=0; i<cy; i++)
+	{
+		for (int j=0; j<cx; j++)
+		{
+			pixel = src->get_pixel( xSrc+j, ySrc+i );
+			set_pixel_l( xDest+j, yDest+i, pixel );
+		}
+	}
+}
+
 win32k_sdl_16bpp_t win32k_manager_sdl_16bpp;
 
 win32k_manager_t* init_sdl_win32k_manager()
@@ -362,9 +424,7 @@ public:
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
-protected:
-	virtual void set_pixel_l( INT x, INT y, COLORREF color );
-	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush );
+	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
 };
 
 BOOL win32k_null_t::init()
@@ -392,12 +452,9 @@ BOOL win32k_null_t::exttextout( INT x, INT y, UINT options,
 	return TRUE;
 }
 
-void win32k_null_t::set_pixel_l( INT x, INT y, COLORREF color )
+BOOL win32k_null_t::bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop )
 {
-}
-
-void win32k_null_t::rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush )
-{
+	return TRUE;
 }
 
 win32k_null_t win32k_manager_null;
@@ -664,7 +721,8 @@ int device_context_t::get_free_index()
 }
 
 device_context_t::device_context_t( ULONG n ) :
-	dc_index( n )
+	dc_index( n ),
+	selected_bitmap( 0 )
 {
 }
 
@@ -707,6 +765,30 @@ BOOL device_context_t::release()
 	return TRUE;
 }
 
+HANDLE device_context_t::select_bitmap( bitmap_t *bitmap )
+{
+	bitmap_t* old = selected_bitmap;
+	selected_bitmap = bitmap;
+	if (!old)
+		return NULL;
+	return old->get_handle();
+}
+
+bitmap_t* device_context_t::get_selected_bitmap()
+{
+	return selected_bitmap;
+}
+
+BOOL device_context_t::bitblt(
+	INT xDest, INT yDest,
+	INT cx, INT cy,
+	device_context_t *src,
+	INT xSrc, INT ySrc, ULONG rop )
+{
+	// FIXME translate coordinates
+	return win32k_manager->bitblt( xDest, yDest, cx, cy, src, xSrc, ySrc, rop );
+}
+
 BOOL screen_device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
 {
 	brush_t *brush = get_selected_brush();
@@ -732,6 +814,11 @@ BOOL screen_device_context_t::exttextout( INT x, INT y, UINT options,
 	return win32k_manager->exttextout( x, y, options, rect, text );
 }
 
+COLORREF screen_device_context_t::get_pixel( INT x, INT y )
+{
+	return 0;
+}
+
 memory_device_context_t::memory_device_context_t( ULONG n ) :
 	device_context_t( n )
 {
@@ -750,6 +837,14 @@ BOOL memory_device_context_t::set_pixel( INT x, INT y, COLORREF color )
 {
 	dprintf("\n");
 	return TRUE;
+}
+
+COLORREF memory_device_context_t::get_pixel( INT x, INT y )
+{
+	bitmap_t* bitmap = get_selected_bitmap();
+	if (bitmap)
+		return bitmap->get_pixel( x, y );
+	return 0;
 }
 
 BOOL memory_device_context_t::exttextout( INT x, INT y, UINT options,
@@ -869,11 +964,91 @@ HANDLE win32k_manager_t::get_stock_object( ULONG Index )
 	return handle;
 }
 
-// parameters look the same as gdi32.CreateBitmap
-HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPerPixel, VOID**Out)
+bitmap_t::bitmap_t( int _width, int _height, int _planes, int _bpp ) :
+	bits( 0 ),
+	width( _width ),
+	height( _height ),
+	planes( _planes ),
+	bpp( _bpp )
 {
-	dprintf("(%dx%d) %d %d %p\n", Width, Height, Planes, BitsPerPixel, Out);
-	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
+}
+
+bitmap_t::~bitmap_t()
+{
+	delete bits;
+}
+
+ULONG bitmap_t::get_rowsize()
+{
+	ULONG row_size = (width*bpp)/8;
+	return (row_size + 1)& ~1;
+}
+
+ULONG bitmap_t::bitmap_size()
+{
+	return height * get_rowsize();
+}
+
+void bitmap_t::dump()
+{
+	for (int j=0; j<height; j++)
+	{
+		for (int i=0; i<width; i++)
+			fprintf(stderr,"%c", get_pixel(i, j)? 'X' : ' ');
+		fprintf(stderr, "\n");
+	}
+}
+
+HANDLE bitmap_t::alloc( int width, int height, int planes, int bpp, void *pixels )
+{
+	bitmap_t* bitmap = new bitmap_t( width, height, planes, bpp );
+	if (!bitmap)
+		return NULL;
+	bitmap->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, bitmap );
+	bitmap->bits = new unsigned char [bitmap->bitmap_size()];
+	copy_from_user( bitmap->bits, pixels, bitmap->bitmap_size() );
+	return bitmap->handle;
+}
+
+COLORREF bitmap_t::get_pixel( int x, int y )
+{
+	if (x < 0 || x >= width)
+		return 0;
+	if (y < 0 || y >= height)
+		return 0;
+	ULONG row_size = get_rowsize();
+	switch (bpp)
+	{
+	case 1:
+		if ((bits[row_size * y + x*bpp/8 ]>> (7 - (x%8))) & 1)
+			return RGB( 255, 255, 255 );
+		else
+			return RGB( 0, 0, 0 );
+	default:
+		dprintf("%d bpp not implemented\n", bpp);
+	}
+	return 0;
+}
+
+bitmap_t* bitmap_from_handle( HANDLE handle )
+{
+	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
+	if (!entry)
+		return FALSE;
+	if (entry->Type != GDI_OBJECT_BITMAP)
+		return FALSE;
+	assert( entry->kernel_info );
+	return (bitmap_t*) entry->kernel_info;
+}
+
+// parameters look the same as gdi32.CreateBitmap
+HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPerPixel, VOID* Pixels)
+{
+	dprintf("(%dx%d) %d %d %p\n", Width, Height, Planes, BitsPerPixel, Pixels);
+	// FIXME: handle negative heights
+	assert(Height >=0);
+	assert(Width >=0);
+	return bitmap_t::alloc( Width, Height, Planes, BitsPerPixel, Pixels );
 }
 
 // gdi32.CreateComptabibleDC
@@ -956,18 +1131,19 @@ char *get_object_type_name( HGDIOBJ object )
 	return "unknown";
 }
 
-HGDIOBJ NTAPI NtGdiSelectBitmap(HGDIOBJ hdc, HGDIOBJ bitmap)
+HGDIOBJ NTAPI NtGdiSelectBitmap( HGDIOBJ hdc, HGDIOBJ hbm )
 {
-	dprintf("%p %p\n", hdc, bitmap);
+	dprintf("%p %p\n", hdc, hbm );
 
 	device_context_t* dc = dc_from_handle( hdc );
 	if (!dc)
 		return FALSE;
 
-	if (get_handle_type(bitmap) != GDI_OBJECT_BITMAP)
-		return 0;
+	bitmap_t* bitmap = bitmap_from_handle( hbm );
+	if (!bitmap)
+		return FALSE;
 
-	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
+	return dc->select_bitmap( bitmap );
 }
 
 // Info
@@ -1070,7 +1246,7 @@ BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ hdcDest, INT xDest, INT yDest, INT cx, INT cy,
 	if (!dest)
 		return FALSE;
 
-	return TRUE;
+	return dest->bitblt( xDest, yDest, cx, cy, dest, xSrc, ySrc, rop );
 }
 
 HANDLE NTAPI NtGdiCreateDIBSection(

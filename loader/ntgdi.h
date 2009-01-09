@@ -275,10 +275,26 @@ static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
 #define BS_DIBPATTERN8X8 8
 #define BS_MONOPATTERN	9
 
+#define SRCCOPY         0xcc0020
+#define SRCPAINT        0xee0086
+#define SRCAND          0x8800c6
+#define SRCINVERT       0x660046
+#define SRCERASE        0x440328
+#define NOTSRCCOPY      0x330008
+#define NOTSRCERASE     0x1100a6
+#define MERGECOPY       0xc000ca
+#define MERGEPAINT      0xbb0226
+#define PATCOPY         0xf00021
+#define PATPAINT        0xfb0a09
+#define PATINVERT       0x5a0049
+#define DSTINVERT       0x550009
+#define BLACKNESS       0x000042
+#define WHITENESS       0xff0062
+
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);
 BOOLEAN NTAPI NtGdiComputeXformCoefficients(HANDLE);
-HGDIOBJ NTAPI NtGdiCreateBitmap(int,int,UINT,UINT,VOID**);
+HGDIOBJ NTAPI NtGdiCreateBitmap(int,int,UINT,UINT,VOID*);
 HANDLE  NTAPI NtGdiCreateCompatibleBitmap(HANDLE,int,int);
 HGDIOBJ NTAPI NtGdiCreateCompatibleDC(HGDIOBJ);
 HGDIOBJ NTAPI NtGdiCreateSolidBrush(COLORREF,ULONG);

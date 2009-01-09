@@ -32,6 +32,7 @@ public:
 };
 
 class brush_t;
+class device_context_t;
 
 class win32k_manager_t
 {
@@ -49,6 +50,7 @@ public:
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
+	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
 	win32k_info_t* alloc_win32k_info();
 };
 
@@ -77,6 +79,27 @@ public:
 	COLORREF get_color() {return color;}
 };
 
+class bitmap_t : public gdi_object_t
+{
+	unsigned char *bits;
+	int width;
+	int height;
+	int planes;
+	int bpp;
+protected:
+	bitmap_t( int _width, int _height, int _planes, int _bpp );
+	void dump();
+public:
+	~bitmap_t();
+	static HANDLE alloc( int _width, int _height, int _planes, int _bpp, void *pixels );
+	ULONG bitmap_size();
+	int get_width() {return width;}
+	int get_height() {return height;}
+	int get_planes() {return planes;}
+	ULONG get_rowsize();
+	COLORREF get_pixel( int x, int y );
+};
+
 typedef struct _DEVICE_CONTEXT_SHARED_MEMORY {
 	HANDLE unk;
 	ULONG Flags;
@@ -95,6 +118,7 @@ public:
 class device_context_t : public gdi_object_t
 {
 	ULONG dc_index;
+	bitmap_t* selected_bitmap;
 public:
 	static const ULONG max_device_contexts = 0x100;
 	static const ULONG dc_size = 0x100;
@@ -114,11 +138,15 @@ public:
 	static BYTE* get_dc_shared_mem_base();
 	DEVICE_CONTEXT_SHARED_MEMORY* get_dc_shared_mem();
 	virtual BOOL release();
-	brush_t *get_selected_brush();
+	brush_t* get_selected_brush();
+	bitmap_t* get_selected_bitmap();
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text ) = 0;
+	virtual HANDLE select_bitmap( bitmap_t *bitmap );
+	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t* src, INT xSrc, INT ySrc, ULONG rop );
+	virtual COLORREF get_pixel( INT x, INT y ) = 0;
 };
 
 class memory_device_context_t : public device_context_t
@@ -129,6 +157,7 @@ public:
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
+	virtual COLORREF get_pixel( INT x, INT y );
 };
 
 class screen_device_context_t : public device_context_t
@@ -139,6 +168,7 @@ public:
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
+	virtual COLORREF get_pixel( INT x, INT y );
 };
 
 #endif // __WIN32K_MANAGER__
