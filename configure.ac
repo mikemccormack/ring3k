@@ -82,5 +82,5 @@ fi
 
 if test x"$ISOINFO" = "x"
 then
-	AC_MSG_WARN([isoinfo not present. (Debian package is cdrecord)])
+	AC_MSG_WARN([isoinfo not present. (Debian package is genisoimage)])
 fi

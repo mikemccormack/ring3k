@@ -6080,6 +6080,6 @@ fi
 
 if test x"$ISOINFO" = "x"
 then
-	{ echo "$as_me:$LINENO: WARNING: isoinfo not present. (Debian package is cdrecord)" >&5
-echo "$as_me: WARNING: isoinfo not present. (Debian package is cdrecord)" >&2;}
+	{ echo "$as_me:$LINENO: WARNING: isoinfo not present. (Debian package is genisoimage)" >&5
+echo "$as_me: WARNING: isoinfo not present. (Debian package is genisoimage)" >&2;}
 fi
