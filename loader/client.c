@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/syscall.h>
+#include <stdarg.h>
 
 #include "client.h"
 
@@ -82,13 +83,29 @@ int sys_exit( int ret )
 	return r;
 }
 
-void* sys_mmap( void *start, size_t length, int prot, int flags, int fd, off_t offset )
+static void *sys_mmap( void *start, size_t len, int prot, int flags, int fd, off_t offset )
 {
-	void* r;
-	__asm__ __volatile__(
-		"\tint $0x80\n"
-	: "=a" (r) : "a" (SYS_mmap), "b" (&start) );
-	return r;
+    void *r;
+
+    struct
+    {
+        void        *addr;
+        unsigned int length;
+        unsigned int prot;
+        unsigned int flags;
+        unsigned int fd;
+        unsigned int offset;
+    } args;
+
+    args.addr   = start;
+    args.length = len;
+    args.prot   = prot;
+    args.flags  = flags;
+    args.fd     = fd;
+    args.offset = offset;
+    __asm__ __volatile__( "pushl %%ebx; movl %2,%%ebx; int $0x80; popl %%ebx"
+                          : "=a" (r) : "0" (SYS_mmap), "q" (&args) : "memory" );
+    return r;
 }
 
 int sys_munmap( void *start, size_t length )
@@ -136,12 +153,71 @@ static inline int set_thread_area( struct modify_ldt_s *ptr )
     return res;
 }
 
-void dprintf(const char *string)
+/* from wine/loader/preloader.c */
+/*
+ * wld_printf - just the basics
+ *
+ *  %x prints a hex number
+ *  %s prints a string
+ *  %p prints a pointer
+ */
+static int wld_vsprintf(char *buffer, const char *fmt, va_list args )
 {
-	int n = 0;
-	while (string[n])
-		n++;
-	sys_write( 2, string, n );
+    static const char hex_chars[16] = "0123456789abcdef";
+    const char *p = fmt;
+    char *str = buffer;
+    int i;
+
+    while( *p )
+    {
+        if( *p == '%' )
+        {
+            p++;
+            if( *p == 'x' )
+            {
+                unsigned int x = va_arg( args, unsigned int );
+                for(i=7; i>=0; i--)
+                    *str++ = hex_chars[(x>>(i*4))&0xf];
+            }
+            else if (p[0] == 'l' && p[1] == 'x')
+            {
+                unsigned long x = va_arg( args, unsigned long );
+                for(i=7; i>=0; i--)
+                    *str++ = hex_chars[(x>>(i*4))&0xf];
+                p++;
+            }
+            else if( *p == 'p' )
+            {
+                unsigned long x = (unsigned long)va_arg( args, void * );
+                for(i=7; i>=0; i--)
+                    *str++ = hex_chars[(x>>(i*4))&0xf];
+            }
+            else if( *p == 's' )
+            {
+                char *s = va_arg( args, char * );
+                while(*s)
+                    *str++ = *s++;
+            }
+            else if( *p == 0 )
+                break;
+            p++;
+        }
+        *str++ = *p++;
+    }
+    *str = 0;
+    return str - buffer;
+}
+
+static __attribute__((format(printf,1,2))) void dprintf(const char *fmt, ... )
+{
+    va_list args;
+    char buffer[256];
+    int len;
+
+    va_start( args, fmt );
+    len = wld_vsprintf(buffer, fmt, args );
+    va_end( args );
+    sys_write(2, buffer, len);
 }
 
 // allocate fs in the current process
