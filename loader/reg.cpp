@@ -1077,7 +1077,7 @@ void number_to_binary( xmlChar *str, ULONG len, BYTE *buf )
 	ULONG i;
 	BYTE ch;
 
-	if (str[0] == '0' && str[1] == 'x' || str[1] == 'X')
+	if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
 	{
 		// hex
 		base = 0x10;

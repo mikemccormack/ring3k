@@ -499,7 +499,7 @@ NTSTATUS NTAPI NtCreateProcess(
 	HANDLE ExceptionPort )
 {
 	process_t *p = NULL;
-	section_t *section;
+	section_t *section = 0;
 	NTSTATUS r;
 
 	dprintf("%p %08lx %p %p %u %p %p %p\n", ProcessHandle, DesiredAccess,

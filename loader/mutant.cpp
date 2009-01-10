@@ -120,7 +120,7 @@ NTSTATUS NTAPI NtReleaseMutant(
 	HANDLE MutantHandle,
 	PULONG PreviousState)
 {
-	mutant_t *mutant;
+	mutant_t *mutant = 0;
 	ULONG prev = 0;
 	NTSTATUS r;
 
