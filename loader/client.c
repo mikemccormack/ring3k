@@ -274,6 +274,9 @@ int _start( void )
 			dprintf("protocol error\n");
 			sys_exit(1);
 		}
+
+		// exit on the next iteration if something goes wrong
+		req.type = tt_req_exit;
 	}
 
 	dprintf("exit!\n");
