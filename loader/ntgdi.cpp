@@ -60,7 +60,7 @@ void ntgdishm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 	if (ofs < MAX_GDI_HANDLE*0x10)
 	{
 		char unk[16];
-		char *field = "unknown";
+		const char *field = "unknown";
 		switch (ofs&15)
 		{
 #define gdifield(ofs,x) case ofs: field = #x; break;
@@ -1118,7 +1118,7 @@ BOOLEAN NTAPI NtGdiDeleteObjectApp(HGDIOBJ Object)
 	return obj->release();
 }
 
-char *get_object_type_name( HGDIOBJ object )
+const char *get_object_type_name( HGDIOBJ object )
 {
 	switch (get_handle_type( object ))
 	{
