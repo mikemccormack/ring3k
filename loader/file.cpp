@@ -31,7 +31,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <linux/types.h>
-#include <linux/dirent.h>
 #include <linux/unistd.h>
 #include <sys/syscall.h>
 
