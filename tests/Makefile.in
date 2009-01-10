@@ -115,6 +115,7 @@ wine-atom.exe: wine-atom.o log.o $(NTWIN32LIB)
 seh.s: seh.c
 	i586-mingw32msvc-cc $(CFLAGS) -S seh.c
 
+# build an with the tests so that they can be easily run in QEMU
 $(ISO): $(SOURCE:.c=.exe) $(NTWIN32LIB)
 	cp -f $(NTWIN32LIB) ntwin32.dll
 	genisoimage -r -J -input-charset utf-8 -o $(ISO) $(SOURCE:.c=.exe) ntwin32.dll
