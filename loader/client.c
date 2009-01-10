@@ -28,12 +28,22 @@
 
 #include "client.h"
 
+/* refer to wine's loader/preloader.c for explanation of following */
+
+/* required by -fprofile-arcs -ftest-coverage */
+void __bb_init_func(void) { return; }
+
+/* required by -fstack-protector */
+void *__stack_chk_guard = 0;
+void __stack_chk_fail(void) { return; }
+
 int sys_open( const char *path, int flags )
 {
 	int r;
 	__asm__ __volatile__(
 		"\tint $0x80\n"
 	: "=a" (r) : "a" (SYS_open), "b" (path), "c" (flags) );
+	return r;
 }
 
 int sys_read( int fd, void *buf, size_t count )
