@@ -140,8 +140,9 @@ protected:
 	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
 	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush ) = 0;
 	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
-	virtual bool sleep_timeout( LARGE_INTEGER& timeout );
+	virtual bool check_events( bool wait );
 	static Uint32 timeout_callback( Uint32 interval, void *arg );
+	bool handle_sdl_event( SDL_Event& event );
 };
 
 win32k_sdl_t::win32k_sdl_t()
@@ -258,27 +259,57 @@ Uint32 win32k_sdl_t::timeout_callback( Uint32 interval, void *arg )
 	return 0;
 }
 
-bool win32k_sdl_t::sleep_timeout( LARGE_INTEGER& timeout )
+bool win32k_sdl_t::handle_sdl_event( SDL_Event& event )
 {
+       switch (event.type)
+       {
+       case SDL_QUIT:
+               return true;
+       case SDL_KEYDOWN:
+               dprintf("key pressed (%d)\n", event.key.keysym.sym);
+               break;
+       }
+
+       return false;
+}
+
+// wait for timers or input
+// return true if we're quitting
+bool win32k_sdl_t::check_events( bool wait )
+{
+	LARGE_INTEGER timeout;
+	SDL_Event event;
+	bool quit = false;
+
+	bool timers_left = timeout_t::check_timers(timeout);
+
+	// quit if we got an SDL_QUIT
+	if (SDL_PollEvent( &event ) && handle_sdl_event( event ))
+		return true;
+
+	// Check for a deadlock and quit.
+	//  This happens if we're the only active thread,
+	//  there's no more timers, and we're asked to wait.
+	if (!timers_left && wait && fiber_t::last_fiber())
+		return true;
+
+	// only wait if asked to
+	if (!wait)
+		return false;
+
 	Uint32 interval = get_int_timeout( timeout );
 	SDL_TimerID id = SDL_AddTimer( interval, win32k_sdl_t::timeout_callback, 0 );
 
-	SDL_Event event;
-	bool quit = false;
-	while (SDL_WaitEvent( &event ))
+	while (!quit && SDL_WaitEvent( &event ))
 	{
-		if (event.type == SDL_QUIT)
-		{
-			quit = true;
-			break;
-		}
-
 		if (event.type == SDL_USEREVENT && event.user.code == 0)
 		{
 			// timer has expired, no need to cancel it
 			id = NULL;
 			break;
 		}
+
+		quit = handle_sdl_event( event );
 	}
 
 	if (id != NULL)

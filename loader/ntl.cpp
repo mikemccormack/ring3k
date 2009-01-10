@@ -61,7 +61,7 @@ bool forced_quit;
 class default_sleeper_t : public sleeper_t
 {
 public:
-	virtual bool sleep_timeout( LARGE_INTEGER& timeout );
+	virtual bool check_events( bool wait );
 	virtual ~default_sleeper_t() {}
 };
 
@@ -74,8 +74,21 @@ int sleeper_t::get_int_timeout( LARGE_INTEGER& timeout )
 	return t;
 }
 
-bool default_sleeper_t::sleep_timeout( LARGE_INTEGER& timeout )
+bool default_sleeper_t::check_events( bool wait )
 {
+	LARGE_INTEGER timeout;
+
+	// check for expired timers
+	bool timers_left = timeout_t::check_timers(timeout);
+
+	// Check for a deadlock and quit.
+	//  This happens if we're the only active thread,
+	//  there's no more timers, and we're asked to wait.
+	if (!timers_left && wait && fiber_t::last_fiber())
+		return true;
+	if (!wait)
+		return false;
+
 	int t = get_int_timeout( timeout );
 	int r = poll( 0, 0, t );
 	if (r >= 0)
@@ -93,9 +106,8 @@ int schedule(void)
 	/* while there's still a thread running */
 	while (processes.head())
 	{
-		// check if any timers have expired
-		LARGE_INTEGER timeout;
-		timeout_t::check_timers(timeout);
+		// check if any thing interesting has happened
+		sleeper->check_events( false );
 
 		// other fibers are active... schedule run them
 		if (!fiber_t::last_fiber())
@@ -105,12 +117,7 @@ int schedule(void)
 		}
 
 		// there's still processes but no active threads ... sleep
-		if (timeout_t::check_timers(timeout))
-		{
-			if (sleeper->sleep_timeout(timeout))
-				break;
-		}
-		else if (fiber_t::last_fiber())
+		if (sleeper->check_events( true ))
 			break;
 	}
 

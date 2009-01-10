@@ -89,7 +89,7 @@ class sleeper_t
 {
 public:
 	virtual ~sleeper_t() {};
-	virtual bool sleep_timeout( LARGE_INTEGER& timeout ) = 0;
+	virtual bool check_events( bool wait ) = 0;
 protected:
 	int get_int_timeout( LARGE_INTEGER& timeout );
 };
