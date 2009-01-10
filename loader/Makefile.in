@@ -90,7 +90,7 @@ include $(wildcard .*.d)
 $(TARGET): $(OBJECTS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
-ttclient: client.c
+ttclient: client.o
 	$(CC) -o $@ $^ -static -nostartfiles -nodefaultlibs -Wl,-Ttext=0xa0000000
 
 count:
