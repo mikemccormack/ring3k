@@ -34,167 +34,22 @@ HPEN null_pen;
 
 HWND hwnd;
 
-const char piece[] = {
+const unsigned short piece[] = {
 // straight
-	"  X "
-	"  X "
-	"  X "
-	"  X "
-
-	"    "
-	"    "
-	"XXXX"
-	"    "
-
-	" X  "
-	" X  "
-	" X  "
-	" X  "
-
-	"    "
-	"XXXX"
-	"    "
-	"    "
-
+	0x2222,
 // bent left
-	" XX "
-	"  X "
-	"  X "
-	"    "
-
-	"    "
-	" XXX"
-	" X  "
-	"    "
-
-	"    "
-	" X  "
-	" X  "
-	" XX "
-
-	"    "
-	"  X "
-	"XXX "
-	"    "
-
+	0x6220,
 // bent right
-	"    "
-	" XX "
-	" X  "
-	" X  "
-
-	"    "
-	"X   "
-	"XXX "
-	"    "
-
-	"    "
-	" X  "
-	" X  "
-	"XX  "
-
-	"    "
-	"    "
-	"XXX "
-	"  X "
-
+	0x0644,
 // T shaped
-	"    "
-	"XXX "
-	" X  "
-	"    "
-
-	"    "
-	" X  "
-	" XX "
-	" X  "
-
-	"    "
-	" X  "
-	"XXX "
-	"    "
-
-	"    "
-	" X  "
-	"XX  "
-	" X  "
-
+	0x0e40,
 // dogleg left
-	"    "
-	"    "
-	" XX "
-	"XX  "
-
-	"    "
-	" X  "
-	" XX "
-	"  X "
-
-	"    "
-	" XX "
-	"XX  "
-	"    "
-
-	"    "
-	"X   "
-	"XX  "
-	" X  "
-
+	0x006c,
 // dogleg right
-	"    "
-	"    "
-	"XX  "
-	" XX "
-
-	"    "
-	"  X "
-	" XX "
-	" X  "
-
-	"    "
-	"XX  "
-	" XX "
-	"    "
-
-	"    "
-	" X  "
-	"XX  "
-	"X   "
-
+	0x00c6,
 // square
-	"    "
-	" XX "
-	" XX "
-	"    "
-
-	"    "
-	" XX "
-	" XX "
-	"    "
-
-	"    "
-	" XX "
-	" XX "
-	"    "
-
-	"    "
-	" XX "
-	" XX "
-	"    "
+	0x0660,
 };
-
-#undef max
-#undef min
-
-static inline int max( int x, int y )
-{
-	return x<y?y:x;
-}
-
-static inline int min( int x, int y )
-{
-	return x>y?y:x;
-}
 
 ULONG *get_block_ptr( int x, int y )
 {
@@ -215,7 +70,11 @@ void draw_block( HDC hdc, int x, int y )
 		 (x+1)*block_size - 1, (y+1)*block_size - 1 );
 }
 
-BOOL piece_has_block( int type, int orientation, int x, int y );
+BOOL piece_has_block( int type, int orientation, int x, int y )
+{
+	int bit = (orientation & 1) ? (x+4*y) : (3-y+4*x);
+	return (piece[type] & ((orientation & 2) ? (0x8000 >> bit):(1 << bit) )) != 0;
+}
 
 void draw_next_piece_preview(HDC hdc)
 {
@@ -291,11 +150,6 @@ void set_block( int x, int y, int color )
 	ptr = get_block_ptr( x, y );
 	if (ptr)
 		*ptr = color;
-}
-
-BOOL piece_has_block( int type, int orientation, int x, int y )
-{
-	return piece[ type*64 + orientation*16 + y*4 + x] == 'X';
 }
 
 void block_at_cursor( int type, int orientation, int color )
@@ -390,7 +244,6 @@ BOOL do_rotate()
 	block_at_cursor( piece_type, piece_orientation, piece_color );
 	return piece_orientation == new_orientation;
 }
-
 
 BYTE get_random_number()
 {
