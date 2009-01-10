@@ -38,7 +38,7 @@ void __bb_init_func(void) { return; }
 void *__stack_chk_guard = 0;
 void __stack_chk_fail(void) { return; }
 
-int sys_open( const char *path, int flags )
+static int sys_open( const char *path, int flags )
 {
 	int r;
 	__asm__ __volatile__(
@@ -47,16 +47,7 @@ int sys_open( const char *path, int flags )
 	return r;
 }
 
-int sys_read( int fd, void *buf, size_t count )
-{
-	int r;
-	__asm__ __volatile__(
-		"\tint $0x80\n"
-	: "=a" (r) : "a" (SYS_read), "b" (fd), "c" (buf), "d"(count) );
-	return r;
-}
-
-int sys_write( int fd, const void *buf, size_t count )
+static int sys_write( int fd, const void *buf, size_t count )
 {
 	int r;
 	__asm__ __volatile__(
@@ -65,7 +56,7 @@ int sys_write( int fd, const void *buf, size_t count )
 	return r;
 }
 
-int sys_close( int fd )
+static int sys_close( int fd )
 {
 	int r;
 	__asm__ __volatile__(
@@ -74,7 +65,7 @@ int sys_close( int fd )
 	return r;
 }
 
-int sys_exit( int ret )
+static int sys_exit( int ret )
 {
 	int r;
 	__asm__ __volatile__(
@@ -108,7 +99,7 @@ static void *sys_mmap( void *start, size_t len, int prot, int flags, int fd, off
     return r;
 }
 
-int sys_munmap( void *start, size_t length )
+static int sys_munmap( void *start, size_t length )
 {
 	int r;
 	__asm__ __volatile__(
@@ -117,7 +108,7 @@ int sys_munmap( void *start, size_t length )
 	return r;
 }
 
-int sys_mprotect( const void *start, size_t len, int prot )
+static int sys_mprotect( const void *start, size_t len, int prot )
 {
 	int r;
 	__asm__ __volatile__(
@@ -283,7 +274,7 @@ char *append_number( char *target, int num )
 	return target + i + n;
 }
 
-int do_mmap( struct tt_req_map *req )
+static int do_mmap( struct tt_req_map *req )
 {
 	char str[32], *s;
 	void *p;
@@ -307,12 +298,12 @@ int do_mmap( struct tt_req_map *req )
 	return r;
 }
 
-int do_umap( struct tt_req_umap *req )
+static int do_umap( struct tt_req_umap *req )
 {
 	return sys_munmap( (void*) req->addr, req->len );
 }
 
-int do_prot( struct tt_req_prot *req )
+static int do_prot( struct tt_req_prot *req )
 {
 	return sys_mprotect( (void*) req->addr, req->len, req->prot );
 }
