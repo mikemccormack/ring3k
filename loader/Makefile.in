@@ -66,6 +66,7 @@ CPP_SOURCES = \
 	ptrace_base.cpp \
 	random.cpp \
 	reg.cpp \
+	sdl.cpp \
 	section.cpp \
 	semaphore.cpp \
 	skas.cpp \
