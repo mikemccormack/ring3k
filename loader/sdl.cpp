@@ -179,16 +179,16 @@ Uint32 win32k_sdl_t::timeout_callback( Uint32 interval, void *arg )
 
 bool win32k_sdl_t::handle_sdl_event( SDL_Event& event )
 {
-       switch (event.type)
-       {
-       case SDL_QUIT:
-               return true;
-       case SDL_KEYDOWN:
-               dprintf("key pressed (%d)\n", event.key.keysym.sym);
-               break;
-       }
+	switch (event.type)
+	{
+	case SDL_QUIT:
+		return true;
+	case SDL_KEYDOWN:
+		dprintf("key pressed (%d)\n", event.key.keysym.sym);
+		break;
+	}
 
-       return false;
+	return false;
 }
 
 // wait for timers or input
