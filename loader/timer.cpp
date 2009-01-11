@@ -34,7 +34,8 @@
 #include "object.inl"
 
 timeout_list_t timeout_t::g_timeouts;
-LARGE_INTEGER boot_time;
+static LARGE_INTEGER boot_time;
+static ULONG tick_count;
 
 bool timeout_t::has_expired()
 {
@@ -169,24 +170,35 @@ LARGE_INTEGER timeout_t::current_time()
 	ret.QuadPart = (tv.tv_sec * 1000000LL + tv.tv_usec) * 10LL;
 	ret.QuadPart += ticks_1601_to_1970;
 
+	// calculate the tick count
+	tick_count = (ret.QuadPart - boot_time.QuadPart) / 10000LL;
+
 	// update the time in shared memory
 	// High1Time and High2Time need to be the same,
 	// as userspace loops waiting for them to be equal
-	// presumable to avoid a race when the LowPart overflows
+	// presumably to avoid a race when the LowPart overflows
 	if (shared_memory_address)
 	{
 		KSYSTEM_TIME& st = shared_memory_address->SystemTime;
 		st.LowPart = ret.LowPart;
 		st.High1Time = ret.HighPart;
 		st.High2Time = ret.HighPart;
+
+		// http://uninformed.org/index.cgi?v=2&a=2&p=18
+		// milliseconds since boot (T)
+		// T = shr(TickCountLow * TickCountMultiplier, 24)
+		shared_memory_address->TickCountMultiplier = 0x100000;
+		shared_memory_address->TickCountLow = ((tick_count * 0x01000000LL)/shared_memory_address->TickCountMultiplier);
 	}
+
+
 	return ret;
 }
 
 ULONG timeout_t::get_tick_count()
 {
-	LARGE_INTEGER now = current_time();
-	return (now.QuadPart - boot_time.QuadPart) / 10000;
+	current_time();
+	return tick_count;
 }
 
 void get_system_time_of_day( SYSTEM_TIME_OF_DAY_INFORMATION& time_of_day )
