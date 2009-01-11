@@ -418,7 +418,7 @@ NUL(NtUserFlashWindowEx),
 NUL(NtUserGetAltTabInfo),
 NUL(NtUserGetAncestor),
 NUL(NtUserGetAppImeLevel),
-NUL(NtUserGetAsyncKeyState),
+IMP(NtUserGetAsyncKeyState, 1),
 #ifdef SYSCALL_WINXP
 NUL(NtUserGetAtomName), // 2
 #endif

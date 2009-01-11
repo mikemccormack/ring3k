@@ -1247,3 +1247,8 @@ BOOLEAN NtUserRedrawWindow( HANDLE Window, RECT *Update, HANDLE Region, UINT Fla
 {
 	return TRUE;
 }
+
+ULONG NtUserGetAsyncKeyState( ULONG Key )
+{
+	return 0;
+}
