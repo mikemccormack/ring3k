@@ -358,6 +358,8 @@ HGDIOBJ win32k_manager_t::alloc_compatible_dc()
 {
 	memory_device_context_factory_t factory;
 	device_context_t* dc = device_context_t::alloc( &factory );
+	if (!dc)
+		return NULL;
 	return dc->get_handle();
 }
 
@@ -370,6 +372,8 @@ HGDIOBJ win32k_manager_t::alloc_screen_dc()
 {
 	screen_device_context_factory_t factory;
 	device_context_t* dc = device_context_t::alloc( &factory );
+	if (!dc)
+		return NULL;
 	return dc->get_handle();
 }
 
