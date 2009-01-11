@@ -234,7 +234,8 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	if (r < STATUS_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
-	if (0) proc->vm->set_tracer( user_shared_mem, ntusershm_trace );
+	if (option_trace)
+		proc->vm->set_tracer( user_shared_mem, ntusershm_trace );
 
 	info.win2k.Ptr[0] = (void*)user_shared_mem;
 	info.win2k.Ptr[1] = (void*)0xbee20000;
