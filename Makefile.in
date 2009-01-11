@@ -92,5 +92,5 @@ TESTLIST = \
 
 test: all
 	@echo "Thread tracing tests"
-	for tc in $(TESTLIST) ; do echo $$tc ; ./runtest -q $$tc || exit 1 ; done
+	for tc in $(TESTLIST) ; do echo $$tc ; ./runtest $$tc || exit 1 ; done
 

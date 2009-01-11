@@ -404,9 +404,9 @@ bool thread_impl_t::traced_access()
 
 void thread_impl_t::handle_user_segv()
 {
-	if (!option_quiet)
+	dprintf("%04lx: exception at %08lx\n", trace_id(), ctx.Eip);
+	if (option_trace)
 	{
-		fprintf(stderr, "%04lx: exception at %08lx\n", trace_id(), ctx.Eip);
 		dump_regs( &ctx );
 		debugger_backtrace(&ctx);
 	}
@@ -769,8 +769,7 @@ NTSTATUS thread_impl_t::terminate( NTSTATUS status )
 	if (ThreadState == StateTerminated)
 		return STATUS_INVALID_PARAMETER;
 
-	if (!option_quiet)
-		fprintf(stderr, "%04lx: terminated\n", trace_id());
+	dprintf("%04lx: terminated\n", trace_id());
 
 	ExitStatus = status;
 	set_state( StateTerminated );

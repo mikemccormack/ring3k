@@ -38,8 +38,6 @@
 #include "types.h"
 #include "extern.h"
 
-int option_quiet = 0;
-
 char printable( WCHAR x )
 {
 	if (x>=0x20 && x<0x7f)
@@ -76,7 +74,7 @@ void debugprintf(const char *file, const char *func, int line, const char *fmt, 
 	int sz, n, i, is_longlong;
 	va_list va;
 
-	if (option_quiet)
+	if (!option_trace)
 		return;
 
 	va_start( va, fmt );
@@ -216,12 +214,9 @@ void die(const char *fmt, ...)
 	exit(1);
 }
 
-void dump_regs(CONTEXT *ctx)
+void do_dump_regs(CONTEXT *ctx)
 {
-	if (option_quiet)
-		return;
-	fprintf(stderr,
-			"eax %08lx ebx %08lx ecx %08lx edx %08lx\n"
+	fprintf(stderr, "eax %08lx ebx %08lx ecx %08lx edx %08lx\n"
 			"esi %08lx edi %08lx ebp %08lx efl %08lx\n"
 			"cs:eip %04lx:%08lx ss:esp %04lx:%08lx\n"
 			"ds %04lx es %04lx fs %04lx gs %04lx\n",
@@ -229,6 +224,12 @@ void dump_regs(CONTEXT *ctx)
 			ctx->Esi, ctx->Edi, ctx->Ebp, ctx->EFlags,
 			ctx->SegCs, ctx->Eip, ctx->SegSs, ctx->Esp,
 			ctx->SegDs, ctx->SegEs, ctx->SegFs, ctx->SegGs);
+}
+
+void dump_regs(CONTEXT *ctx)
+{
+	if (option_trace)
+		do_dump_regs( ctx );
 }
 
 BYTE* dump_user_mem( BYTE *address )
@@ -389,7 +390,7 @@ void debugger( void )
 			break;
 
 		case 'r': // registers
-			dump_regs( &ctx );
+			do_dump_regs( &ctx );
 			break;
 
 		case 'c': // continue

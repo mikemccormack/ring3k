@@ -304,7 +304,6 @@ void parse_options(int argc, char **argv)
 		static struct option long_options[] = {
 			{"debug", 0, &option_debug, 1 },
 			{"help", 0, 0, 'h' },
-			{"quiet", 0, &option_quiet, 1 },
 			{"trace", 0, &option_trace, 1 },
 			{"version", 0, 0, 'v' },
 			{NULL, 0, 0, 0 },
@@ -321,9 +320,6 @@ void parse_options(int argc, char **argv)
 			break;
 		case 'h':
 			usage();
-			break;
-		case 'q':
-			option_quiet = 1;
 			break;
 		case 't':
 			option_trace = 1;

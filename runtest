@@ -13,10 +13,6 @@ do
 		debug=1
 		shift
 		;;
-	-q)
-		quiet=1
-		shift
-		;;
 	-t)
 		trace=1
 		shift
