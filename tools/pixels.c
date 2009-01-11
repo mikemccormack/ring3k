@@ -185,9 +185,63 @@ const char number_data[] =
 	" X    X "
 	"  XXXX  "
 	"        "
+
+	"        "
+	"   XX   "
+	"  X  X  "
+	" X    X "
+	" XXXXXX "
+	" X    X "
+	" X    X "
+	"        "
+
+	"        "
+	" XXXXX  "
+	" X    X "
+	" XXXXX  "
+	" X    X "
+	" X    X "
+	" XXXXX  "
+	"        "
+
+	"        "
+	"  XXXX  "
+	" X    X "
+	" X      "
+	" X      "
+	" X    X "
+	"  XXXX  "
+	"        "
+
+	"        "
+	" XXXXX  "
+	" X    X "
+	" X    X "
+	" X    X "
+	" X    X "
+	" XXXXX  "
+	"        "
+
+	"        "
+	" XXXXXX "
+	" X      "
+	" X      "
+	" XXXXX  "
+	" X      "
+	" XXXXXX "
+	"        "
+
+	"        "
+	" XXXXXX "
+	" X      "
+	" X      "
+	" XXXXX  "
+	" X      "
+	" X      "
+	"        "
 ;
 
-HBITMAP bitmaps[10];
+HBITMAP bitmaps[16];
 const int bm_width = 16;
 
 // create a bitmap for a number from the string above
@@ -222,26 +276,52 @@ void setup_bitmaps( void )
 	if (!use_bitmaps)
 		return;
 
-	for (i=0; i<10; i++)
+	for (i=0; i<16; i++)
 	{
 		string_to_bits( bitmap_bits, &number_data[i*64] );
 		bitmaps[i] = CreateBitmap(bm_width, bm_width, 1, 1, bitmap_bits);
 	}
 }
 
-void draw_number( HDC hdc, int x_pos, int y_pos, int num )
+void draw_digit( HDC hdc, int x_pos, int y_pos, int num )
 {
 	if (use_bitmaps)
 	{
 		HDC compat = CreateCompatibleDC( hdc );
-		HBITMAP old = SelectObject( compat, bitmaps[num%10] );
+		HBITMAP old = SelectObject( compat, bitmaps[num%16] );
 		BitBlt( hdc, x_pos, y_pos, bm_width, bm_width, compat, 0, 0, SRCCOPY );
 		SelectObject( compat, old );
 	}
 	else
 	{
-		WCHAR ch = (num%10) + '0';
-		TextOutW(hdc, x_pos, y_pos, &ch, 1);
+		WCHAR map[] = L"0123456789ABCDEF";
+		TextOutW(hdc, x_pos, y_pos, map+num%16, 1);
+	}
+}
+
+void draw_decimal( HDC hdc, int x_pos, int y_pos, ULONG val, int digits )
+{
+	int i = 0;
+	unsigned char bcd[10];
+	for (i=0; i<digits; i++)
+	{
+		bcd[i] = val%10;
+		val = val/10;
+	}
+	for (i=0; i<digits; i++)
+	{
+		draw_digit( hdc, x_pos, y_pos, bcd[digits - i - 1] );
+		x_pos += bm_width;
+	}
+}
+
+void draw_ulong( HDC hdc, int x_pos, int y_pos, ULONG val )
+{
+	int i;
+	for (i=28; i>=0; i-=4)
+	{
+		draw_digit( hdc, x_pos, y_pos, (val>>i)&0x0f );
+		x_pos += bm_width;
 	}
 }
 
@@ -250,47 +330,28 @@ void draw_time( int x_pos, int y_pos, SYSTEMTIME *st )
 	HDC hdc = GetDC( 0 );
 
 	// draw the year
-	draw_number( hdc, x_pos, y_pos, st->wYear/1000 );
-	x_pos += bm_width;
-	draw_number( hdc, x_pos, y_pos, st->wYear/100 );
-	x_pos += bm_width;
-	draw_number( hdc, x_pos, y_pos, st->wYear/10 );
-	x_pos += bm_width;
-	draw_number( hdc, x_pos, y_pos, st->wYear );
-	x_pos += bm_width*2;
+	draw_decimal( hdc, x_pos, y_pos, st->wYear, 4 );
+	x_pos += bm_width * 5;
 
 	// draw the month
-	draw_number( hdc, x_pos, y_pos, st->wMonth/10 );
-	x_pos += bm_width;
-	draw_number( hdc, x_pos, y_pos, st->wMonth );
-	x_pos += bm_width*2;
+	draw_decimal( hdc, x_pos, y_pos, st->wMonth, 2 );
+	x_pos += bm_width * 3;
 
 	// draw the day of the month
-	draw_number( hdc, x_pos, y_pos, st->wDay/10 );
-	x_pos += bm_width;
-	draw_number( hdc, x_pos, y_pos, st->wDay );
-	x_pos += bm_width*2;
+	draw_decimal( hdc, x_pos, y_pos, st->wDay, 2 );
+	x_pos += bm_width * 3;
 
 	// hour
-	draw_number( hdc, x_pos, y_pos, st->wHour/10 );
-	x_pos += bm_width;
-	draw_number( hdc, x_pos, y_pos, st->wHour );
-	x_pos += bm_width*2;
+	draw_decimal( hdc, x_pos, y_pos, st->wHour, 2 );
+	x_pos += bm_width * 3;
 
 	// minute
-	draw_number( hdc, x_pos, y_pos, st->wMinute/10 );
-	x_pos += bm_width;
-	draw_number( hdc, x_pos, y_pos, st->wMinute );
-	x_pos += bm_width*2;
+	draw_decimal( hdc, x_pos, y_pos, st->wMinute, 2 );
+	x_pos += bm_width * 3;
 
+	// second
 	if (show_seconds)
-	{
-		// second
-		draw_number( hdc, x_pos, y_pos, st->wSecond/10 );
-		x_pos += bm_width;
-		draw_number( hdc, x_pos, y_pos, st->wSecond );
-		x_pos += bm_width*2;
-	}
+		draw_decimal( hdc, x_pos, y_pos, st->wSecond, 2 );
 
 	// done
 	ReleaseDC( 0, hdc );
@@ -308,8 +369,8 @@ void number_test( void )
 {
 	int i;
 	HDC hdc = GetDC( 0 );
-	for (i=0; i<10; i++)
-		draw_number( hdc, 20*i, 150, i);
+	for (i=0; i<0x10; i++)
+		draw_digit( hdc, 20*i, 150, i);
 	ReleaseDC( 0, hdc );
 }
 
