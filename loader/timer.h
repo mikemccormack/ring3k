@@ -46,6 +46,7 @@ public:
 	void set(PLARGE_INTEGER t);
 	virtual ~timeout_t();
 	static LARGE_INTEGER current_time();
+	static ULONG get_tick_count();
 	void do_timeout();
 	void set_timeout(PLARGE_INTEGER t);
 	virtual void signal_timeout() = 0;

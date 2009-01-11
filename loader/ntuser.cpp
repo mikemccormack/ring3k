@@ -1250,5 +1250,5 @@ BOOLEAN NtUserRedrawWindow( HANDLE Window, RECT *Update, HANDLE Region, UINT Fla
 
 ULONG NtUserGetAsyncKeyState( ULONG Key )
 {
-	return 0;
+	return win32k_manager->get_async_key_state( Key );
 }

@@ -21,6 +21,8 @@
 #ifndef __WIN32K_MANAGER__
 #define __WIN32K_MANAGER__
 
+#include "ntuser.h"
+
 class win32k_info_t
 {
 public:
@@ -36,6 +38,7 @@ class device_context_t;
 
 class win32k_manager_t
 {
+	ULONG key_state[0x100];
 public:
 	win32k_manager_t();
 	void init_stock_objects();
@@ -52,6 +55,8 @@ public:
 	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
 	win32k_info_t* alloc_win32k_info();
+	virtual void send_input( INPUT* input );
+	ULONG get_async_key_state( ULONG Key );
 };
 
 extern win32k_manager_t* win32k_manager;

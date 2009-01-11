@@ -34,6 +34,7 @@
 #include "object.inl"
 
 timeout_list_t timeout_t::g_timeouts;
+LARGE_INTEGER boot_time;
 
 bool timeout_t::has_expired()
 {
@@ -182,9 +183,14 @@ LARGE_INTEGER timeout_t::current_time()
 	return ret;
 }
 
+ULONG timeout_t::get_tick_count()
+{
+	LARGE_INTEGER now = current_time();
+	return (now.QuadPart - boot_time.QuadPart) / 10000;
+}
+
 void get_system_time_of_day( SYSTEM_TIME_OF_DAY_INFORMATION& time_of_day )
 {
-	static LARGE_INTEGER boot_time;
 	if (!boot_time.QuadPart)
 		boot_time = timeout_t::current_time();
 

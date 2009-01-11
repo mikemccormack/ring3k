@@ -99,6 +99,11 @@ BOOLEAN NTAPI NtGdiInit()
 	return TRUE;
 }
 
+win32k_manager_t::win32k_manager_t()
+{
+	memset( key_state, 0, sizeof key_state );
+}
+
 win32k_manager_t::~win32k_manager_t()
 {
 }
@@ -113,6 +118,25 @@ win32k_info_t::win32k_info_t() :
 win32k_info_t *win32k_manager_t::alloc_win32k_info()
 {
 	return new win32k_info_t;
+}
+
+void win32k_manager_t::send_input(INPUT* input)
+{
+	if (input->ki.wVk > 254)
+		return;
+	ULONG val;
+	if (input->ki.dwFlags & KEYEVENTF_KEYUP)
+		val = 0;
+	else
+		val = 0x8000;
+	key_state[input->ki.wVk] = val;
+}
+
+ULONG win32k_manager_t::get_async_key_state( ULONG Key )
+{
+	if (Key > 254)
+		return 0;
+	return key_state[ Key ];
 }
 
 class win32k_null_t : public win32k_manager_t
@@ -340,10 +364,6 @@ void dcshm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 }
 
 static dcshm_tracer dcshm_trace;
-
-win32k_manager_t::win32k_manager_t()
-{
-}
 
 section_t *device_context_t::g_dc_section;
 BYTE *device_context_t::g_dc_shared_mem = 0;

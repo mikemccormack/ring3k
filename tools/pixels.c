@@ -374,12 +374,23 @@ void number_test( void )
 	ReleaseDC( 0, hdc );
 }
 
+BYTE key_state[256];
+
+void check_keyboard( void )
+{
+	USHORT n = GetAsyncKeyState( VK_SPACE );
+	HDC hdc = GetDC( 0 );
+	draw_ulong( hdc, 300, 300, n );
+	ReleaseDC( 0, hdc );
+}
+
 // draw a digital clock, and update it
 // never returns
 void do_clock( void )
 {
 	WORD last = - 1;
 	SYSTEMTIME st;
+	const int timeout = 10;
 
 	setup_bitmaps();
 	number_test();
@@ -389,7 +400,8 @@ void do_clock( void )
 		if (time_changed( &st, &last ))
 			draw_time( 0, 200, &st );
 
-		Sleep(100);
+		check_keyboard();
+		Sleep( timeout );
 		GetSystemTime( &st );
 	}
 }
@@ -405,6 +417,5 @@ int main( int argc, char **argv )
 
 	do_clock();
 
-	Sleep(100*1000);
 	return 0;
 }

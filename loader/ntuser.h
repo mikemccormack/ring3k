@@ -103,6 +103,53 @@ typedef struct tagNTCLASSMENUNAMES {
 	PUNICODE_STRING name_us;
 } NTCLASSMENUNAMES, *PNTCLASSMENUNAMES;
 
+typedef struct tagMOUSEINPUT {
+	LONG    dx;
+	LONG    dy;
+	DWORD   mouseData;
+	DWORD   dwFlags;
+	DWORD   time;
+	ULONG_PTR dwExtraInfo;
+} MOUSEINPUT, *PMOUSEINPUT, *LPMOUSEINPUT;
+
+typedef struct tagKEYBDINPUT {
+	WORD    wVk;
+	WORD    wScan;
+	DWORD   dwFlags;
+	DWORD   time;
+	ULONG_PTR dwExtraInfo;
+} KEYBDINPUT, *PKEYBDINPUT, *LPKEYBDINPUT;
+
+typedef struct tagHARDWAREINPUT {
+	DWORD   uMsg;
+	WORD    wParamL;
+	WORD    wParamH;
+} HARDWAREINPUT, *PHARDWAREINPUT, *LPHARDWAREINPUT;
+
+#define INPUT_MOUSE     0
+#define INPUT_KEYBOARD  1
+#define INPUT_HARDWARE  2
+
+typedef struct tagINPUT
+{
+    DWORD type;
+    union
+    {
+        MOUSEINPUT      mi;
+        KEYBDINPUT      ki;
+        HARDWAREINPUT   hi;
+    };
+} INPUT, *PINPUT, *LPINPUT;
+
+#define VK_ESCAPE           0x1B
+#define VK_SPACE            0x20
+#define VK_LEFT             0x25
+#define VK_UP               0x26
+#define VK_RIGHT            0x27
+#define VK_DOWN             0x28
+
+#define KEYEVENTF_KEYUP     0x0002
+
 ULONG NTAPI    NtUserCallNoParam(ULONG);
 ULONG NTAPI    NtUserCallOneParam(ULONG,ULONG);
 ULONG NTAPI    NtUserCallTwoParam(ULONG,ULONG,ULONG);

@@ -33,6 +33,7 @@
 #include "ntgdi.h"
 #include "debug.h"
 #include "win32mgr.h"
+#include "ntuser.h"
 #include "sdl.h"
 
 #if defined (HAVE_SDL) && defined (HAVE_SDL_SDL_H)
@@ -61,6 +62,7 @@ protected:
 	virtual bool check_events( bool wait );
 	static Uint32 timeout_callback( Uint32 interval, void *arg );
 	bool handle_sdl_event( SDL_Event& event );
+	WORD sdl_keysum_to_vkey( SDLKey sym );
 };
 
 win32k_sdl_t::win32k_sdl_t()
@@ -177,14 +179,47 @@ Uint32 win32k_sdl_t::timeout_callback( Uint32 interval, void *arg )
 	return 0;
 }
 
+WORD win32k_sdl_t::sdl_keysum_to_vkey( SDLKey sym )
+{
+	assert ( SDLK_a == 'a' );
+	assert ( SDLK_1 == '1' );
+	if ((sym >= 'A' && sym <= 'Z') || (sym >= '0' && sym <= '9'))
+		return (WORD) sym;
+
+	switch (sym)
+	{
+#define mk(k) case SDLK_##k: return VK_##k;
+	mk(SPACE)
+	mk(UP)
+	mk(DOWN)
+	mk(LEFT)
+	mk(RIGHT)
+	mk(ESCAPE)
+#undef mk
+	default:
+		dprintf("%d unhandled\n", sym);
+	}
+	return (WORD) sym;
+}
+
 bool win32k_sdl_t::handle_sdl_event( SDL_Event& event )
 {
+	INPUT input;
+	DWORD flags = 0;
 	switch (event.type)
 	{
 	case SDL_QUIT:
 		return true;
+	case SDL_KEYUP:
+		flags |= KEYEVENTF_KEYUP;
+		// fall through
 	case SDL_KEYDOWN:
-		dprintf("key pressed (%d)\n", event.key.keysym.sym);
+		input.ki.time = timeout_t::get_tick_count();
+		input.ki.wVk = sdl_keysum_to_vkey( event.key.keysym.sym );
+		input.ki.wScan = event.key.keysym.scancode;
+		input.ki.dwFlags = flags;
+		input.ki.dwExtraInfo = 0;
+		send_input( &input );
 		break;
 	}
 
