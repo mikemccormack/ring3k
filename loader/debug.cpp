@@ -354,6 +354,20 @@ void chomp( char *buf )
 		buf[ len - 1 ] = 0;
 }
 
+void debugger_help( void )
+{
+	const char *help_text =
+		"ring3k debugger\n\n"
+		" b          backtrace\n"
+		" c          continue\n"
+		" d <addr>   dump the contents of memory\n"
+		" h          help (this text)\n"
+		" r          display registers\n"
+		" q          quit ring3k\n"
+		" u <addr>   disassemble\n";
+	fprintf( stderr, "%s\n", help_text);
+}
+
 void debugger( void )
 {
 	CONTEXT ctx;
@@ -364,8 +378,14 @@ void debugger( void )
 	BYTE *u_address = (BYTE*) ctx.Eip;
 	char buf[100];
 	int errors = 0;
+	static bool help_displayed;
 
-	fprintf( stderr, "Stopped\n");
+	if (!help_displayed)
+	{
+		debugger_help();
+		help_displayed = true;
+	}
+	do_dump_regs( &ctx );
 
 	while (errors < 3)
 	{
@@ -393,6 +413,9 @@ void debugger( void )
 			do_dump_regs( &ctx );
 			break;
 
+		case 'h': // continue
+			debugger_help();
+			break;
 		case 'c': // continue
 			return;
 
