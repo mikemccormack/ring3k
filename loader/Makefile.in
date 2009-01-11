@@ -80,7 +80,7 @@ CPP_SOURCES = \
 
 OBJECTS = $(C_SOURCES:.c=.o) $(CPP_SOURCES:.cpp=.o)
 
-TARGET = ntl
+TARGET = ring3k-bin
 
 .PHONY: all clean count stat test
 

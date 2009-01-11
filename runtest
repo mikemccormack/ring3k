@@ -1,11 +1,18 @@
 #!/bin/sh
 #
-# Copyright 2007 (C) Mike McCormack
+# Copyright 2007-2009 (C) Mike McCormack
 #
 # Test launching script
+# Copies a test executable onto the c: drive and runs it
 #
 
-loader="./loader/ntl"
+loader="./loader/ring3k-bin"
+if test \! -x "$loader"
+then
+	echo "loader binary (ring3k-bin) not present"
+	exit 1
+fi
+
 while test "x$1" != "x"
 do
 	case $1 in

@@ -4,7 +4,9 @@
 *.a
 *.lib
 *.dll
+autom4te.cache
+c:
 config.log
 config.status
-autom4te.cache
+drive
 Makefile

@@ -1,10 +1,8 @@
 Makefile
 *.o
-c:
-drive
 enc
 fiber
-ntl
+ring3k-bin
 ttclient
 .*.dpp
 .*.d

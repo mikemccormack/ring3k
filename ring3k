@@ -1,8 +1,16 @@
 #!/bin/sh
-loader="./loader/ntl"
+#
+# Copyright 2007-2009 (C) Mike McCormack
+#
+# ring3k Launch script
+#
+# Checks that the c: drive directory is present
+#  then launches the loader binary
+
+loader="./loader/ring3k-bin"
 if test \! -x "$loader"
 then
-	echo "loader binary (ntl) not present"
+	echo "loader binary (ring3k-bin) not present"
 	exit 1
 fi
 if test \! -d c:
