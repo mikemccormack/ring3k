@@ -85,6 +85,8 @@ void draw_checkerboard( int x_pos, int y_pos )
 		y += square_size;
 	}
 	SelectObject( hdc, old );
+
+	ReleaseDC( 0, hdc );
 }
 
 void draw_text( void )
@@ -291,6 +293,7 @@ void draw_digit( HDC hdc, int x_pos, int y_pos, int num )
 		HBITMAP old = SelectObject( compat, bitmaps[num%16] );
 		BitBlt( hdc, x_pos, y_pos, bm_width, bm_width, compat, 0, 0, SRCCOPY );
 		SelectObject( compat, old );
+		DeleteDC( hdc );
 	}
 	else
 	{
