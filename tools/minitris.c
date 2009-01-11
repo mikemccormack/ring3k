@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#define POLLED_INPUT
+
 #define DEFAULT_WIDTH 11
 #define DEFAULT_HEIGHT 20
 #define DEFAULT_BLOCKSIZE 20
@@ -31,8 +33,6 @@ BOOL game_over = FALSE;
 
 HBRUSH brushes[8];
 HPEN null_pen;
-
-HWND hwnd;
 
 const unsigned short piece[] = {
 // straight
@@ -96,15 +96,11 @@ void draw_next_piece_preview(HDC hdc)
 		}
 }
 
-void do_paint()
+void paint_board( HDC hdc )
 {
-	PAINTSTRUCT ps;
-	HDC hdc;
 	HBRUSH old_brush;
 	HPEN old_pen;
 	int i, j;
-
-	hdc = BeginPaint( hwnd, &ps );
 
 	old_brush = SelectObject( hdc, brushes[0] );
 	old_pen = SelectObject( hdc, null_pen );
@@ -140,8 +136,6 @@ void do_paint()
 
 	SelectObject( hdc, old_brush );
 	SelectObject( hdc, old_pen );
-
-	EndPaint( hwnd, &ps );
 }
 
 void set_block( int x, int y, int color )
@@ -261,13 +255,26 @@ BOOL new_block()
 	next_piece_type = get_random_number()%7;
 	piece_color = piece_type+1;
 	piece_x = board_width/2 - 2;
-	piece_y = 0;
+	piece_y = 2;
 	if ( !block_fits_at(piece_type, piece_orientation, piece_x, piece_y) )
 		game_over = TRUE;
 	else
 		block_at_cursor( piece_type, piece_orientation, piece_color );
 
 	return TRUE;
+}
+
+void clear_board()
+{
+	int i, j;
+	for (i=0; i<board_width; i++)
+	{
+		for (j=0; j<board_height; j++)
+		{
+			ULONG *ptr = get_block_ptr( i, j );
+			*ptr = BLACK;
+		}
+	}
 }
 
 BOOL row_full( int row )
@@ -317,11 +324,19 @@ ULONG erase_rows( void )
 	return collapsed_rows;
 }
 
+BOOL do_space( void )
+{
+	drop_down();
+	erase_rows();
+	new_block();
+	return TRUE;
+}
+
 BOOL do_keydown( ULONG vkey )
 {
 	if (game_over && vkey != VK_ESCAPE)
 		return FALSE;
-	
+
 	switch (vkey)
 	{
 	case VK_ESCAPE:
@@ -336,10 +351,7 @@ BOOL do_keydown( ULONG vkey )
 	case VK_RIGHT:
 		return move_right();
 	case VK_SPACE:
-		drop_down();
-		erase_rows();
-		new_block();
-		return TRUE;
+		return do_space();
 	}
 	return FALSE;
 }
@@ -356,18 +368,23 @@ void do_size( HWND hwnd, int width, int height )
 	MoveWindow( hwnd, rcWindow.left, rcWindow.top, width + ptDiff.x, height + ptDiff.y, TRUE );
 }
 
-void do_timer()
+void do_timer( void )
 {
 	if (!game_over)
-	{
-		if (move_down())
-			return;
-		erase_rows();
-		new_block();
-	} else {
-		printf("Game over!\n");
-		KillTimer( hwnd, 0 );
-	}
+		return;
+
+	if (move_down())
+		return;
+	erase_rows();
+	new_block();
+}
+
+void do_paint( HWND hwnd )
+{
+	PAINTSTRUCT ps;
+	HDC hdc = BeginPaint( hwnd, &ps );
+	paint_board( hdc );
+	EndPaint( hwnd, &ps );
 }
 
 LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -382,7 +399,7 @@ LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 			InvalidateRect( hwnd, 0, 0 );
 		break;
 	case WM_PAINT:
-		do_paint();
+		do_paint( hwnd );
 		break;
 	case WM_NCHITTEST:
 		return HTCAPTION;
@@ -394,10 +411,28 @@ LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 	return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
+void init_brushes( void )
+{
+	null_pen = GetStockObject( NULL_PEN );
+	brushes[0] = GetStockObject( BLACK_BRUSH );
+	brushes[1] = CreateSolidBrush( RGB( 0x00, 0xf0, 0xf0 ) );
+	brushes[2] = CreateSolidBrush( RGB( 0xf0, 0xa0, 0x00 ) );
+	brushes[3] = CreateSolidBrush( RGB( 0x00, 0x00, 0xf0 ) );
+	brushes[4] = CreateSolidBrush( RGB( 0xa0, 0x00, 0xf0 ) );
+	brushes[5] = CreateSolidBrush( RGB( 0x00, 0xf0, 0x00 ) );
+	brushes[6] = CreateSolidBrush( RGB( 0xf0, 0x00, 0x00 ) );
+	brushes[7] = CreateSolidBrush( RGB( 0xf0, 0xf0, 0x00 ) );
+}
+
+#ifdef POLLED_INPUT
+#define WinMain foo
+#endif
+
 int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Show )
 {
 	WNDCLASS wc;
 	MSG msg;
+	HWND hwnd;
 
 	wc.style = 0;
 	wc.lpfnWndProc = minitris_wndproc;
@@ -424,16 +459,7 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 		return 0;
 	}
 
-	null_pen = GetStockObject( NULL_PEN );
-	brushes[0] = GetStockObject( BLACK_BRUSH );
-	brushes[1] = CreateSolidBrush( RGB( 0x00, 0xf0, 0xf0 ) );
-	brushes[2] = CreateSolidBrush( RGB( 0xf0, 0xa0, 0x00 ) );
-	brushes[3] = CreateSolidBrush( RGB( 0x00, 0x00, 0xf0 ) );
-	brushes[4] = CreateSolidBrush( RGB( 0xa0, 0x00, 0xf0 ) );
-	brushes[5] = CreateSolidBrush( RGB( 0x00, 0xf0, 0x00 ) );
-	brushes[6] = CreateSolidBrush( RGB( 0xf0, 0x00, 0x00 ) );
-	brushes[7] = CreateSolidBrush( RGB( 0xf0, 0xf0, 0x00 ) );
-
+	init_brushes();
 	new_block();
 	SetTimer( hwnd, 0, interval, 0 );
 	while (GetMessage( &msg, 0, 0, 0 ))
@@ -447,3 +473,86 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 
 	return 0;
 }
+
+// this is required when we're replacing winlogon
+void init_window_station( void )
+{
+	SECURITY_ATTRIBUTES sa;
+	HANDLE hwsta, hdesk;
+
+	sa.nLength = sizeof sa;
+	sa.lpSecurityDescriptor = 0;
+	sa.bInheritHandle = TRUE;
+
+	hwsta = CreateWindowStationW( L"winsta0", 0, MAXIMUM_ALLOWED, &sa );
+	SetProcessWindowStation( hwsta );
+	hdesk = CreateDesktopW( L"Winlogon", 0, 0, 0, MAXIMUM_ALLOWED, &sa );
+	SetThreadDesktop( hdesk );
+}
+
+ULONG key_states[0x100];
+
+// debounce...
+BOOL check_pressed( ULONG key )
+{
+	BOOL ret;
+	ULONG val = GetAsyncKeyState( key );
+	ret = ((val & 0x8000) && !(key_states[key] & 0x8000));
+	key_states[key] = val;
+	return ret;
+}
+
+// polled input, as synchronous input is not supported as yet :(
+int main(int argc, char **argv)
+{
+	BOOL repaint, restart = TRUE;
+	ULONG count = 0;
+	init_window_station();
+
+	init_brushes();
+
+	while (1)
+	{
+		if (restart)
+		{
+			clear_board();
+			new_block();
+			restart = 0;
+			game_over = FALSE;
+		}
+
+		repaint = 0;
+		if (GetAsyncKeyState( VK_ESCAPE ))
+		{
+			restart = 1;
+			continue;
+		}
+		if (check_pressed( VK_UP ))
+			repaint |= do_rotate();
+		if (check_pressed( VK_DOWN ))
+			repaint |= move_down();
+		if (check_pressed( VK_LEFT ))
+			repaint |= move_left();
+		if (check_pressed( VK_RIGHT ))
+			repaint |= move_right();
+		if (check_pressed( VK_SPACE ))
+			repaint |= do_space();
+
+		count++;
+		if (count>10)
+		{
+			do_timer();
+			repaint++;
+			count = 0;
+		}
+		if (repaint)
+		{
+			HDC hdc = GetDC( 0 );
+			paint_board( hdc );
+			ReleaseDC( 0, hdc );
+		}
+		Sleep( 50 );
+	}
+	return 0;
+}
+
