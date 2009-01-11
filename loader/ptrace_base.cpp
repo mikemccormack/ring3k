@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -184,6 +185,9 @@ void ptrace_address_space_impl::wait_for_signal( pid_t pid, int signal )
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == signal)
 			return;
 
+		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGINT)
+			exit( 1 );
+
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGALRM)
 			dprintf("stray SIGALRM\n");
 		else
@@ -333,6 +337,9 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGWINCH)
 			break;
+
+		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGINT)
+			exit( 1 );
 
 		if (WIFSTOPPED(status) && single_step)
 			break;
