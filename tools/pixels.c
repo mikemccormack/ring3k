@@ -187,7 +187,7 @@ const char number_data[] =
 	"        "
 ;
 
-HBITMAP bitmaps[9];
+HBITMAP bitmaps[10];
 const int bm_width = 16;
 
 // create a bitmap for a number from the string above
