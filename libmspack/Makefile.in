@@ -1,6 +1,9 @@
-DEPFLAG=-Wp,-MD,.$@.d
-CFLAGS = -O2 -Wall -I. $(DEPFLAG)
-CC = @HOSTCC@
+srcdir  = @srcdir@
+VPATH   = @srcdir@
+
+DEPFLAG = -Wp,-MD,.$@.d
+CFLAGS  = -O2 -Wall -I$(srcdir) $(DEPFLAG)
+CC      = @HOSTCC@
 
 SOURCE = \
 	cabc.c \

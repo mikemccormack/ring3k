@@ -3,6 +3,9 @@
 # Copyright 2007-2008 Mike McCormack
 #
 
+srcdir = @srcdir@
+VPATH  = @srcdir@
+
 DEPFLAG = -Wp,-MD,.$@.d
 CC=@MINGW32CC@
 STRIP=@MINGW32STRIP@
@@ -71,7 +74,8 @@ win2k/ntwin32.o: win2k/ntwin32.s
 	$(AS) -o $@ $<
 
 win2k/ntwin32.s: win2k/ntwin32.in gen_syscalls.pl
-	perl gen_syscalls.pl $< > $@
+	mkdir -p win2k
+	perl $(srcdir)/gen_syscalls.pl $< > $@
 
 winxp/ntwin32.dll: winxp/ntwin32.o
 	$(CC) -o $@ -shared -nostartfiles -nodefaultlibs $<
@@ -80,7 +84,8 @@ winxp/ntwin32.o: winxp/ntwin32.s
 	$(AS) -o $@ $<
 
 winxp/ntwin32.s: winxp/ntwin32.in gen_syscalls.pl
-	perl gen_syscalls.pl $< > $@
+	mkdir -p winxp
+	perl $(srcdir)/gen_syscalls.pl $< > $@
 
 dillo.exe: dillo.o
 	$(CC) -o $@ $< -lntdll

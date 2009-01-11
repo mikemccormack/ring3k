@@ -1,4 +1,5 @@
-# nt loader #
+# nt loader
+#
 # Copyright 2006-2008 Mike McCormack
 #
 # This library is free software; you can redistribute it and/or
@@ -16,8 +17,11 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 #
 
+srcdir = @srcdir@
+VPATH  = @srcdir@
+
 XML_INCLUDES=-I/usr/include/libxml2
-INCLUDE_DIRS=-I. -I../include $(XML_INCLUDES) -I../libudis86
+INCLUDE_DIRS=-I$(srcdir) -I$(srcdir)/../include $(XML_INCLUDES) -I$(srcdir)/../libudis86 -I../libudis86
 DEPFLAG=-Wp,-MD,.$@.d
 CFLAGS_COMMON=-Wall -O2 -D__i386__ -fshort-wchar -fno-strict-aliasing $(INCLUDE_DIRS)
 CFLAGS=-Wpointer-arith
@@ -98,7 +102,7 @@ count:
 	wc $(HEADERS) $(C_SOURCES) $(CPP_SOURCES)
 
 enc: enc.c
-	$(CC) -o enc -Wall enc.c
+	$(CC) -o enc -Wall $<
 
 fiber: fiber_test.o fiber.o platform.o
 	$(CXX) -o $@ $^

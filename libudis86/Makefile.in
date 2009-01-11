@@ -1,8 +1,11 @@
 # adapted from libudis86 Makefile
 
+srcdir  = @srcdir@
+VPATH   = @srcdir@
+
 CC      = @CC@
 DEPFLAG = -Wp,-MD,.$@.d
-CFLAGS  = -Wall -O2 $(DEPFLAG)
+CFLAGS  = -I. -I$(srcdir) -Wall -O2 $(DEPFLAG)
 AR      = ar
 RM      = rm
 PERL    = perl
@@ -12,14 +15,13 @@ PERL    = perl
 SRCS = \
 	decode.c \
 	input.c \
-	mnemonics.c \
 	opcmap.c \
 	syn.c \
 	syn-intel.c \
 	syn-att.c \
 	udis86.c
 
-OBJS = $(SRCS:%.c=%.o)
+OBJS = $(SRCS:%.c=%.o) mnemonics.o
 
 .PHONY: all clean
 
@@ -30,10 +32,10 @@ include $(wildcard .*.d)
 libudis86.a: $(OBJS)
 	$(AR) -r libudis86.a $(OBJS)
 
-$(SRCS): mnemonics.h
+$(SRCS:%=$(srcdir)/%): mnemonics.h
 
 mnemonics.c mnemonics.h: mnemonics.dat mnemonics.pl
-	$(PERL) mnemonics.pl < $<
+	$(PERL) $(srcdir)/mnemonics.pl < $<
 
 clean:
 	$(RM) -f core *.o *.a mnemonics.c mnemonics.h .*.d

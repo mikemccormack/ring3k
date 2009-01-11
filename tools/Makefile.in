@@ -3,6 +3,9 @@
 # Copyright 2008 Mike McCormack
 #
 
+srcdir = @srcdir@
+VPATH  = @srcdir@
+
 DEPFLAG = -Wp,-MD,.$@.d
 CC=@MINGW32CC@
 STRIP=@MINGW32STRIP@
