@@ -63,6 +63,7 @@ clean:
 distclean: clean
 	rm -rf drive
 	rm -rf config.status config.log autom4te.cache
+	find . -name Makefile -exec rm {} \;
 
 TESTLIST = \
 	completion \
