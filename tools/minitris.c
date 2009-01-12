@@ -494,9 +494,9 @@ void init_brushes( void )
 	brushes[7] = CreateSolidBrush( RGB( 0xf0, 0xf0, 0x00 ) );
 }
 
-#ifdef POLLED_INPUT
-#define WinMain foo
-#endif
+#ifndef POLLED_INPUT
+
+// normal windows program
 
 int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Show )
 {
@@ -543,6 +543,8 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 
 	return 0;
 }
+
+#else
 
 // this is required when we're replacing winlogon
 void init_window_station( void )
@@ -626,3 +628,4 @@ int main(int argc, char **argv)
 	return 0;
 }
 
+#endif
