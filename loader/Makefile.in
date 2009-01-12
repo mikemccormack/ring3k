@@ -90,7 +90,7 @@ CPP_SOURCES = \
 OBJECTS = $(C_SOURCES:.c=.o) $(CPP_SOURCES:.cpp=.o)
 
 TARGET = ring3k-bin
-TARGETCLIENT = ttclient
+TARGETCLIENT = ring3k-client
 
 .PHONY: all clean count stat test
 

@@ -51,7 +51,7 @@
 #include "client.h"
 #include "ptrace_base.h"
 
-const char stub_name[] = "ttclient";
+const char stub_name[] = "ring3k-client";
 char stub_path[MAX_PATH];
 
 class tt_address_space_impl: public ptrace_address_space_impl
