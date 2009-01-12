@@ -270,17 +270,31 @@ BYTE get_random_number()
 	return random_store;
 }
 
-BOOL new_block()
+BOOL new_block( void )
 {
-	piece_type = next_piece_type;
-	next_piece_type = get_random_number()%7;
-	piece_color = piece_type+1;
-	piece_x = board_width/2 - 2;
-	piece_y = 2;
-	if ( !block_fits_at(piece_type, piece_orientation, piece_x, piece_y) )
+	int new_x, new_y, new_orientation;
+
+	/* check if we can place a new block */
+	new_x = board_width/2 - 2;
+	new_y = 0;
+	new_orientation = 0;
+	if ( !block_fits_at( next_piece_type, new_orientation, new_x, new_y ) )
+	{
 		game_over = TRUE;
-	else
-		block_at_cursor( piece_type, piece_orientation, piece_color );
+		return FALSE;
+	}
+
+	/* place the new piece */
+	piece_type = next_piece_type;
+	piece_color = piece_type+1;
+	piece_orientation = new_orientation;
+	piece_x = new_x;
+	piece_y = new_y;
+
+	/* calculate the next piece */
+	next_piece_type = get_random_number()%7;
+
+	block_at_cursor( piece_type, piece_orientation, piece_color );
 
 	return TRUE;
 }
@@ -391,7 +405,7 @@ void do_size( HWND hwnd, int width, int height )
 
 void do_timer( void )
 {
-	if (!game_over)
+	if (game_over)
 		return;
 
 	if (move_down())
@@ -543,7 +557,7 @@ int main(int argc, char **argv)
 		}
 
 		repaint = 0;
-		if (GetAsyncKeyState( VK_ESCAPE ))
+		if (check_pressed( VK_ESCAPE ))
 		{
 			restart = 1;
 			continue;
