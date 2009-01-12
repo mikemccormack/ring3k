@@ -25,7 +25,7 @@
 
 #define POLLED_INPUT
 
-#define DEFAULT_WIDTH 11
+#define DEFAULT_WIDTH 10
 #define DEFAULT_HEIGHT 20
 #define DEFAULT_BLOCKSIZE 20
 #define PREVIEW_BLOCKSIZE 7
@@ -55,21 +55,30 @@ BOOL game_over = FALSE;
 HBRUSH brushes[8];
 HPEN null_pen;
 
-const unsigned short piece[] = {
-// straight
-	0x2222,
-// bent left
-	0x6220,
-// bent right
-	0x0644,
-// T shaped
-	0x0e40,
-// dogleg left
-	0x006c,
-// dogleg right
-	0x00c6,
-// square
-	0x0660,
+const unsigned int piece[] = {
+// The pieces are stored in specially formatted 32-bit integers.
+
+// The top 8 bits specify the x and y size of the piece (e.g. 0x41 for
+// a 4*1 piece).  The lower (xsize*ysize) bits are a bitmap of the
+// piece.  This is used instead of a fixed size e.g. 4x4, so that
+// rotation can be done correctly relating to the piece size and
+// prevents "wobbling" when rotating the pieces. When displaying,
+// every piece is mapped (and centered) to a 5x5 area.
+
+        // straight
+	0x41000000 | 0x0f,
+        // bent left
+	0x23000000 | (0x3 << 4) | (0x1 << 2) | 0x1,
+        // bent right
+	0x23000000 | (0x3 << 4) | (0x2 << 2) | 0x2,
+        // T shaped
+	0x32000000 | (0x2 << 3) | 0x7,
+        // dogleg left
+	0x32000000 | (0x3 << 3) | 0x6,
+        // dogleg right
+	0x32000000 | (0x6 << 3) | 0x3,
+        // square
+	0x2200000f,
 };
 
 ULONG *get_block_ptr( int x, int y )
@@ -93,8 +102,34 @@ void draw_block( HDC hdc, int x, int y )
 
 BOOL piece_has_block( int type, int orientation, int x, int y )
 {
-	int bit = (orientation & 1) ? (x+4*y) : (3-y+4*x);
-	return (piece[type] & ((orientation & 2) ? (0x8000 >> bit):(1 << bit) )) != 0;
+	int size_x = (piece[type] & 0xf0000000) >> 28;
+	int size_y = (piece[type] & 0x0f000000) >> 24;
+	int new_x, new_y;
+	BOOL has_block = FALSE;
+
+	// Center in 5x5 area
+	x = (x - (2-(((orientation & 1)?size_y:size_x)>>1)));
+	y = (y - (2-(((orientation & 1)?size_x:size_y)>>1)));
+	if ((x<0)||(y<0))
+		return FALSE;
+
+	if ((orientation & 1) == 0) {
+		new_x = x;
+		new_y = y;
+	} else {
+		new_x = size_x-y-1;
+		new_y = x;
+	}
+	if ((orientation & 2) != 0) {
+		new_x = size_x-1-new_x;
+		new_y = size_y-1-new_y;
+	}
+
+	if ((new_x < 0) || (new_x >= size_x) || (new_y < 0) || (new_y >= size_y))
+		has_block = FALSE;
+	else
+		has_block = ((piece[type] & ((1<<(size_x*size_y-1)) >> ((new_x + size_x*new_y)))) != 0);
+	return has_block;
 }
 
 void draw_next_piece_preview(HDC hdc)
@@ -103,8 +138,8 @@ void draw_next_piece_preview(HDC hdc)
 
 	SelectObject( hdc, brushes[0] );
 
-	for (x=0; x<4; x++)
-		for (y=0; y<4; y++)
+	for (x=0; x<5; x++)
+		for (y=0; y<5; y++)
 		{
 			if (piece_has_block(next_piece_type, 0, x, y))
 			{
@@ -141,12 +176,12 @@ void paint_board( HDC hdc )
 	SelectObject( hdc, brushes[piece_color] );
 	for (i=0; i<4; i++)
 	{
-		for (j=0; j<4; j++) {
+		for (j=0; j<5; j++) {
 			if (piece_has_block(piece_type, piece_orientation,
 					    i, j))
 				break;
 		}
-		if (j<4) {
+		if (j<5) {
 			Rectangle( hdc, (i+piece_x)*block_size, board_height*block_size,
 				   (i+piece_x+1)*block_size - 1, board_height*block_size+5 );
 		}
@@ -170,9 +205,9 @@ void set_block( int x, int y, int color )
 void block_at_cursor( int type, int orientation, int color )
 {
 	int i, j;
-	for (i=0; i<4; i++)
+	for (i=0; i<5; i++)
 	{
-		for (j=0; j<4; j++)
+		for (j=0; j<5; j++)
 		{
 			if (!piece_has_block( type, orientation, i, j ))
 				continue;
@@ -184,9 +219,9 @@ void block_at_cursor( int type, int orientation, int color )
 BOOL block_fits_at( int type, int orientation, int x, int y )
 {
 	int i, j;
-	for (i=0; i<4; i++)
+	for (i=0; i<5; i++)
 	{
-		for (j=0; j<4; j++)
+		for (j=0; j<5; j++)
 		{
 			ULONG *ptr;
 			if (!piece_has_block( type, orientation, i, j ))
