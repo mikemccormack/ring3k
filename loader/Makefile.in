@@ -31,6 +31,11 @@ LDFLAGS=-rdynamic
 
 CC = @CC@
 CXX = @CXX@
+RM = rm -f
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+prefix = @prefix@
+bindir = ${prefix}/bin
 
 HEADERS = \
 	debug.h \
@@ -85,17 +90,18 @@ CPP_SOURCES = \
 OBJECTS = $(C_SOURCES:.c=.o) $(CPP_SOURCES:.cpp=.o)
 
 TARGET = ring3k-bin
+TARGETCLIENT = ttclient
 
 .PHONY: all clean count stat test
 
-all: $(TARGET) enc fiber ttclient
+all: $(TARGET) enc fiber $(TARGETCLIENT)
 
 include $(wildcard .*.d)
 
 $(TARGET): $(OBJECTS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
-ttclient: client.o
+$(TARGETCLIENT): client.o
 	$(CC) -o $@ $^ -static -nostartfiles -nodefaultlibs -Wl,-Ttext=0xa0000000
 
 count:
@@ -107,8 +113,17 @@ enc: enc.c
 fiber: fiber_test.o fiber.o platform.o
 	$(CXX) -o $@ $^
 
+install: $(TARGET) $(TARGETCLIENT)
+	mkdir -p $(DESTDIR)$(bindir)
+	$(INSTALL) $(INSTALL_FLAGS) $(TARGET) $(DESTDIR)$(bindir)
+	$(INSTALL) $(INSTALL_FLAGS) $(TARGETCLIENT) $(DESTDIR)$(bindir)
+
+uninstall:
+	$(RM) $(DESTDIR)$(bindir)/$(TARGET)
+	$(RM) $(DESTDIR)$(bindir)/$(TARGETCLIENT)
+
 clean:
-	rm -f $(TARGET) *.o core enc fiber ttclient *.orig *.rej .*.d
+	rm -f $(TARGET) *.o core enc fiber $(TARGETCLIENT) *.orig *.rej .*.d
 
 stat:
 	@/usr/bin/perl syscall_stat.pl

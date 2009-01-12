@@ -1,6 +1,6 @@
 # native application loader
 #
-# Copyright 2006-2008 Mike McCormack
+# Copyright 2006-2009 Mike McCormack
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -64,6 +64,12 @@ distclean: clean
 	rm -rf drive
 	rm -rf config.status config.log autom4te.cache
 	find . -name Makefile -exec rm {} \;
+
+install:
+	cd loader && make install
+
+uninstall:
+	cd loader && make uninstall
 
 TESTLIST = \
 	completion \
