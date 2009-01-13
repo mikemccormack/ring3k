@@ -126,7 +126,15 @@ ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
 
 static section_t *user_shared_section = 0;
 static const ULONG user_shared_mem_size = 0x20000;
-static void *user_shared_mem = 0;
+
+struct user_shared_mem_t {
+	ULONG x1;
+	ULONG x2;
+	ULONG max_window_handle;
+};
+
+// kernel address for memory shared with the user process
+user_shared_mem_t *user_shared;
 
 // quick hack for the moment
 void **find_free_user_shared()
@@ -135,7 +143,7 @@ void **find_free_user_shared()
 
 	//use top half of shared memory
 	ULONG sz = user_shared_mem_size - 0x10000;
-	void** x = (void**)user_shared_mem + 0x10000/sizeof (void**);
+	void** x = (void**)user_shared + 0x10000/sizeof (void**);
 
 	// use blocks of 0x100 bytes
 	for (i=0; i<sz; i += 0x40)
@@ -149,7 +157,7 @@ void **find_free_user_shared()
 void *init_user_shared_memory()
 {
 	// read/write for the kernel and read only for processes
-	if (!user_shared_mem)
+	if (!user_shared)
 	{
 		LARGE_INTEGER sz;
 		NTSTATUS r;
@@ -159,15 +167,15 @@ void *init_user_shared_memory()
 		if (r < STATUS_SUCCESS)
 			return 0;
 
-		user_shared_mem = (BYTE*) user_shared_section->get_kernel_address();
+		user_shared = (user_shared_mem_t*) user_shared_section->get_kernel_address();
 
 		// create the window stations directory too
 		create_directory_object( (PWSTR) L"\\Windows\\WindowStations" );
 	}
 
-	dprintf("user_shared_mem at %p\n", user_shared_mem );
+	dprintf("user_shared_mem at %p\n", user_shared );
 
-	return user_shared_mem;
+	return user_shared;
 }
 
 class ntusershm_tracer : public block_tracer
@@ -738,7 +746,7 @@ window_tt::window_tt( void *winshm, thread_t* t, wndcls_tt *wndcls, unicode_stri
 
 void *window_tt::get_wininfo()
 {
-	ULONG ofs = (BYTE*)shared_mem - (BYTE*)user_shared_mem;
+	ULONG ofs = (BYTE*)shared_mem - (BYTE*)user_shared;
 	return (void*) (thread->process->win32k_info->user_shared_mem + ofs);
 }
 
