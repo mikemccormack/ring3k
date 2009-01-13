@@ -1414,7 +1414,8 @@ NTSTATUS thread_impl_t::create( CONTEXT *ctx, INITIAL_TEB *init_teb, BOOLEAN sus
 	if (!suspended)
 		resume( NULL );
 
-	if (0) process->vm->set_tracer( addr, teb_trace );
+	if (option_trace)
+		process->vm->set_tracer( addr, teb_trace );
 
 	return STATUS_SUCCESS;
 }
