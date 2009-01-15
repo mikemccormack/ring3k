@@ -39,7 +39,7 @@ DIRS = \
 	tools_dir \
 	unpack_dir
 
-all: $(DIRS) $(LAUNCH_SCRIPT $(SETUP_SCRIPT)
+all: $(DIRS) $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
 
 .PHONY: \
 	$(DIRS)

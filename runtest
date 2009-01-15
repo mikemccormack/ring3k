@@ -37,7 +37,7 @@ done
 
 if [ ! -d drive ]
 then
-	sh extract_disk.sh
+	sh ring3k-setup
 fi
 
 # copy the test into the NT directory
