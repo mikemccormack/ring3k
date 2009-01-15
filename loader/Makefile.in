@@ -58,12 +58,12 @@ CPP_SOURCES = \
 	job.cpp \
 	kthread.cpp \
 	mailslot.cpp \
+	main.cpp \
 	mem.cpp \
 	mutant.cpp \
 	namedpipe.cpp \
 	ntcall.cpp \
 	ntgdi.cpp \
-	ntl.cpp \
 	ntuser.cpp \
 	objdir.cpp \
 	object.cpp \
