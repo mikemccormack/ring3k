@@ -1,7 +1,7 @@
 
  Ring 3 Kernel
 
- Copyright (C) 2006-2008 Mike McCormack
+ Copyright (C) 2006-2009 Mike McCormack
 
 About
 -----
@@ -58,8 +58,10 @@ Files
 -----
 documents/  - a few notes
 loader/     - implementation of the NT userspace loader (an NT-like kernel)
-tests/      - test cases that run on both NT and the loader
 libudis86/  - the udis86 disassembler
+libmspack/  - code to extract files from the windows install disk
+tests/      - test cases that run on both NT and the loader
+tools/      - a collection of windows executables
 
 Development
 -----------
@@ -114,4 +116,32 @@ One time setup:
 
    Then <ALT><CTRL>1 back to Windows and select "Try Again"
    by up arrowing twice on the dialog and pressing enter.
+
+
+Starting minitris.exe or pixels.exe on a Windows 2000 QEMU image
+----------------------------------------------------------------
+
+Assume you have a windows 2000 install on QEMU in a file named win2k.img,
+you can copy minitris.exe over the winlogon.exe on there and it will run
+when the image is booted.
+
+Mount the Windows 2000 disk image (as root):
+
+    mount -o loop,offset=32256 win2k.img /mnt/
+
+Backup winlogon.exe:
+
+    cp -i /mnt/winnt/system32/winlogon.exe /mnt/winnt/system32/_winlogon.exe
+
+Replace winlogon.exe:
+
+    cp -i ring3k/tools/minitris.exe /mnt/winnt/system32/winlogon.exe
+
+Unmount the Windows 2000 disk image:
+
+    umount /mnt
+
+Run QEMU (as user, making sure you have umount'ed the image first!)
+
+    qemu -hda win2k.img
 
