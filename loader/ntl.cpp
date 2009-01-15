@@ -288,7 +288,7 @@ void usage( void )
 void version( void )
 {
 	const char version[] = "%s\n"
-		"Copyright (C) 2008 Mike McCormack\n"
+		"Copyright (C) 2008-2009 Mike McCormack\n"
 		"Licence LGPL\n"
 		"This is free software: you are free to change and redistribute it.\n"
 		"There is NO WARRANTY, to the extent permitted by law.\n\n";
