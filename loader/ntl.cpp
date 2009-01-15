@@ -309,7 +309,7 @@ void parse_options(int argc, char **argv)
 			{NULL, 0, 0, 0 },
 		};
 
-		int ch = getopt_long(argc, argv, "dhtqv", long_options, &option_index );
+		int ch = getopt_long(argc, argv, "dhtqv?", long_options, &option_index );
 		if (ch == -1)
 			break;
 
@@ -318,6 +318,7 @@ void parse_options(int argc, char **argv)
 		case 'd':
 			option_debug = 1;
 			break;
+		case '?':
 		case 'h':
 			usage();
 			break;
