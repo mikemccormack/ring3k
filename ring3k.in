@@ -1,0 +1,59 @@
+#!/bin/sh
+#
+# Copyright 2007-2009 (C) Mike McCormack
+#
+# ring3k Launch script
+#
+# Checks that the c: drive directory is present
+#  then launches the loader binary
+
+
+# from Wine's launch script
+appdir=""
+case "$0" in
+  */*)
+    # $0 contains a path, use it
+    appdir=`dirname "$0"`
+    ;; 
+  *) 
+    # no directory in $0, search in PATH
+    saved_ifs=$IFS
+    IFS=: 
+    for d in $PATH
+    do
+      IFS=$saved_ifs
+      if [ -x "$d/$0" ]
+      then
+        appdir="$d"
+        break
+      fi
+    done
+    ;;
+esac
+
+# find the loader
+loader="$appdir/ring3k-bin"
+if test \! -x "$loader"
+then
+	loader="$appdir/loader/ring3k-bin"
+	if test \! -x "$appdir"
+	then
+		echo "ring3k-bin not found in $appdir"
+		exit 1
+	fi
+fi
+
+# check for a c: link
+if test \! -d c:
+then
+	extract="$appdir/ring3k-setup"
+	if test -r "$extract"
+	then
+		. "$extract"
+	else
+		echo "c: not present and ring3k-setup script not found"
+		exit 2
+	fi
+fi
+
+exec "$loader" $*

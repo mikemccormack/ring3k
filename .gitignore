@@ -10,3 +10,5 @@ config.log
 config.status
 drive
 Makefile
+ring3k
+ring3k-setup

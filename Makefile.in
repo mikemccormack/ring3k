@@ -17,6 +17,20 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 #
 
+srcdir = @srcdir@
+VPATH  = @srcdir@
+
+prefix = @prefix@
+bindir = ${prefix}/bin
+
+INSTALL = @INSTALL@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+
+LAUNCH_SCRIPT = ring3k
+SETUP_SCRIPT = ring3k-setup
+
+RM = rm -f
+
 DIRS = \
 	libudis86_dir \
 	libmspack_dir \
@@ -25,7 +39,7 @@ DIRS = \
 	tools_dir \
 	unpack_dir
 
-all: $(DIRS)
+all: $(DIRS) $(LAUNCH_SCRIPT $(SETUP_SCRIPT)
 
 .PHONY: \
 	$(DIRS)
@@ -33,6 +47,12 @@ all: $(DIRS)
 	clean \
 	distclean \
 	test
+
+$(LAUNCH_SCRIPT): ring3k.in
+	cp -f $< $@
+
+$(SETUP_SCRIPT): ring3k-setup.in
+	cp -f $< $@
 
 loader_dir:
 	cd loader && make
@@ -53,6 +73,7 @@ unpack_dir:
 	cd unpack && make
 
 clean:
+	$(RM) $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
 	cd libudis86 && make clean
 	cd libmspack && make clean
 	cd loader && make clean
@@ -65,10 +86,15 @@ distclean: clean
 	rm -rf config.status config.log autom4te.cache
 	find . -name Makefile -exec rm {} \;
 
-install:
+install: $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
+	mkdir -p $(DESTDIR)$(bindir)
+	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(LAUNCH_SCRIPT) $(DESTDIR)$(bindir)
+	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(SETUP_SCRIPT) $(DESTDIR)$(bindir)
 	cd loader && make install
 
 uninstall:
+	$(RM) $(DESTDIR)$(bindir)/$(LAUNCH_SCRIPT)
+	$(RM) $(DESTDIR)$(bindir)/$(SETUP_SCRIPT)
 	cd loader && make uninstall
 
 TESTLIST = \
