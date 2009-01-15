@@ -32,7 +32,6 @@ LDFLAGS=-rdynamic
 CC = @CC@
 CXX = @CXX@
 RM = rm -f
-INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 prefix = @prefix@
 bindir = ${prefix}/bin
@@ -115,8 +114,8 @@ fiber: fiber_test.o fiber.o platform.o
 
 install: $(TARGET) $(TARGETCLIENT)
 	mkdir -p $(DESTDIR)$(bindir)
-	$(INSTALL) $(INSTALL_FLAGS) $(TARGET) $(DESTDIR)$(bindir)
-	$(INSTALL) $(INSTALL_FLAGS) $(TARGETCLIENT) $(DESTDIR)$(bindir)
+	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) $(TARGET) $(DESTDIR)$(bindir)
+	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) $(TARGETCLIENT) $(DESTDIR)$(bindir)
 
 uninstall:
 	$(RM) $(DESTDIR)$(bindir)/$(TARGET)
