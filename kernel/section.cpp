@@ -246,7 +246,7 @@ IMAGE_NT_HEADERS *pe_section_t::get_nt_header()
 
 NTSTATUS mapit( address_space *vm, object_t *obj, BYTE *&addr )
 {
-	pe_section_t *sec = dynamic_cast<pe_section_t*>( obj );
+	section_t *sec = dynamic_cast<section_t*>( obj );
 	if (!sec)
 		return STATUS_OBJECT_TYPE_MISMATCH;
 	return sec->mapit( vm, addr, 0, MEM_COMMIT, PAGE_READONLY );

@@ -40,6 +40,7 @@
 #include "ntcall.h"
 #include "section.h"
 #include "timer.h"
+#include "file.h"
 #include "unicode.h"
 
 void copy_ustring_to_block( void* addr, ULONG *ofs, UNICODE_STRING *ustr, LPCWSTR str )
@@ -110,55 +111,37 @@ NTSTATUS process_t::create_parameters(
 }
 
 /*
- * this should be done with NtAllocateVirtual( ... MEM_TOP_DOWN )
- * and/or NtMapViewOfSection
+ * map a file (the locale data) into a process's memory
  */
-void *map_file( address_space *vm, const char *name )
-{
-	int fd;
-	off_t size;
-	void *p, *data;
-	NTSTATUS r;
-
-	// FIXME: use a section for this
-	fd = open(name, O_RDONLY);
-	if (fd < 0)
-	{
-		dprintf("failed to map file %s\n", name);
-		return NULL;
-	}
-
-	size = lseek(fd, 0, SEEK_END);
-
-	data = mmap( NULL, size, PROT_READ, MAP_PRIVATE, fd, 0 );
-	if (data != (void*)-1)
-	{
-		// round it up
-		size = (size + 0xfff) & ~0xfff;
-
-		p = NULL;
-		r = vm->allocate_virtual_memory( (BYTE**) &p, 0, size, MEM_COMMIT | MEM_TOP_DOWN, PAGE_READONLY);
-		if (r < STATUS_SUCCESS)
-			die("allocate_virtual_memory failed\n");
-		r = vm->copy_to_user( p, data, size );
-		if (r < STATUS_SUCCESS)
-			die("copying locale data failed\n");
-	}
-
-	close(fd);
-
-	return p;
-}
-
 NTSTATUS map_locale_data( address_space *vm, const char *name, void **addr )
 {
-	void *p;
+	object_t *section = 0;
+	file_t *file = 0;
+	NTSTATUS r;
+	BYTE *data = 0;
+	unicode_string_t us;
+	char path[0x100];
 
-	p = map_file( vm, name );
-	if (!p)
-		return STATUS_UNSUCCESSFUL;
+	strcpy( path, "\\??\\c:\\winnt\\system32\\" );
+	strcat( path, name );
+	us.copy( path );
 
-	*addr = p;
+	r = open_file( file, us );
+	if (r < STATUS_SUCCESS)
+		die("locale data %s missing from system directory (%08lx)\n", name, r);
+
+	r = create_section( &section, file, 0, SEC_FILE, PAGE_EXECUTE_READWRITE );
+	release( file );
+	if (r < STATUS_SUCCESS)
+		die("failed to create section for locale data\n");
+
+	r = mapit( vm, section, data );
+	if (r < STATUS_SUCCESS)
+		die("failed to map locale data (%08lx)\n", r);
+
+	*addr = (void*) data;
+	dprintf("locale data %s at %p\n", name, data);
+
 	return STATUS_SUCCESS;
 }
 
@@ -466,9 +449,9 @@ NTSTATUS create_process( process_t **pprocess, object_t *section )
 	PPEB ppeb = (PPEB) p->peb_section->get_kernel_address();
 
 	/* map the locale data (for LdrInitializeThunk) */
-	map_locale_data( p->vm, "c:/winnt/system32/l_intl.nls", &ppeb->UnicodeCaseTableData );
-	map_locale_data( p->vm, "c:/winnt/system32/c_850.nls", &ppeb->OemCodePageData );
-	map_locale_data( p->vm, "c:/winnt/system32/c_1252.nls", &ppeb->AnsiCodePageData );
+	map_locale_data( p->vm, "l_intl.nls", &ppeb->UnicodeCaseTableData );
+	map_locale_data( p->vm, "c_850.nls", &ppeb->OemCodePageData );
+	map_locale_data( p->vm, "c_1252.nls", &ppeb->AnsiCodePageData );
 
 	ppeb->NumberOfProcessors = 1;
 	ppeb->ImageBaseAddress = (HINSTANCE) p->pexe;
