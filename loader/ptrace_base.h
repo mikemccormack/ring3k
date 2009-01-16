@@ -42,7 +42,7 @@ protected:
 	virtual unsigned short get_userspace_data_seg();
 	virtual unsigned short get_userspace_code_seg();
 	virtual int get_fault_info( void *& addr );
-	static void wait_for_signal( pid_t pid, int signal );
+	void wait_for_signal( pid_t pid, int signal );
 public:
 	static void set_signals();
 };

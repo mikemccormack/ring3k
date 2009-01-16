@@ -188,6 +188,15 @@ void ptrace_address_space_impl::wait_for_signal( pid_t pid, int signal )
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGINT)
 			exit( 1 );
 
+		// if we get a SEGV here, the client has crashed
+		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGSEGV)
+		{
+			CONTEXT ctx;
+			get_context( &ctx );
+			dump_regs( &ctx );
+			die( "client crashed in stub code :-(\n");
+		}
+
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGALRM)
 			dprintf("stray SIGALRM\n");
 		else
