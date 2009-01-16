@@ -3,6 +3,6 @@ Makefile
 enc
 fiber
 ring3k-bin
-ttclient
+ring3k-client
 .*.dpp
 .*.d
