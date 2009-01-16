@@ -576,7 +576,7 @@ PACKAGE_VERSION='0.0.16'
 PACKAGE_STRING='ring3k 0.0.16'
 PACKAGE_BUGREPORT=''
 
-ac_unique_file="loader/thread.cpp"
+ac_unique_file="kernel/thread.cpp"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -5061,7 +5061,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile loader/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile unpack/Makefile"
+ac_config_files="$ac_config_files Makefile kernel/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile unpack/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -5619,7 +5619,7 @@ do
   case $ac_config_target in
     "include/config.h") CONFIG_HEADERS="$CONFIG_HEADERS include/config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-    "loader/Makefile") CONFIG_FILES="$CONFIG_FILES loader/Makefile" ;;
+    "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "tests/Makefile") CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
     "tools/Makefile") CONFIG_FILES="$CONFIG_FILES tools/Makefile" ;;
     "libudis86/Makefile") CONFIG_FILES="$CONFIG_FILES libudis86/Makefile" ;;

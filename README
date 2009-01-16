@@ -56,12 +56,12 @@ make test
 
 Files
 -----
-documents/  - a few notes
-loader/     - implementation of the NT userspace loader (an NT-like kernel)
+kernel/     - implementation of the userspace kernel
 libudis86/  - the udis86 disassembler
 libmspack/  - code to extract files from the windows install disk
 tests/      - test cases that run on both NT and the loader
 tools/      - a collection of windows executables
+documents/  - a few notes
 
 Development
 -----------

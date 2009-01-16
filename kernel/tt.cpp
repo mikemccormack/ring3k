@@ -88,7 +88,7 @@ tt_address_space_impl::tt_address_space_impl()
 		::ptrace( PTRACE_TRACEME, 0, 0, 0 );
 		r = ::execl( stub_path, stub_name, NULL );
 		// the next line should not be reached
-		die("exec failed %d\n", r);
+		die("exec failed (%d) - %s missing?\n", r, stub_path);
 	}
 
 	// trace through exec after traceme
@@ -176,14 +176,14 @@ unsigned short tt_address_space_impl::get_userspace_fs()
 	return stub_regs[FS];
 }
 
-void get_stub_path( const char *loader_path )
+void get_stub_path( const char *kernel_path )
 {
 	// FIXME: handle loader in path too
-	const char *p = strrchr( loader_path, '/' );
+	const char *p = strrchr( kernel_path, '/' );
 	int len;
 	if (p)
 	{
-		len = p - loader_path + 1;
+		len = p - kernel_path + 1;
 	}
 	else
 	{
@@ -192,7 +192,7 @@ void get_stub_path( const char *loader_path )
 		len = sizeof current_dir - 1;
 	}
 
-	memcpy( stub_path, loader_path, len );
+	memcpy( stub_path, kernel_path, len );
 	stub_path[len] = 0;
 	if ((len + sizeof stub_name) > sizeof stub_path)
 		die("path too long\n");
@@ -208,11 +208,11 @@ void check_proc()
 	close( fd );
 }
 
-bool init_tt( const char *loader_path )
+bool init_tt( const char *kernel_path )
 {
-	get_stub_path( loader_path );
+	get_stub_path( kernel_path );
 	check_proc();
-	dprintf("using thread tracing, loader %s, client %s\n", loader_path, stub_path );
+	dprintf("using thread tracing, kernel %s, client %s\n", kernel_path, stub_path );
 	ptrace_address_space_impl::set_signals();
 	pcreate_address_space = &create_tt_address_space;
 	return true;

@@ -5,7 +5,7 @@ dnl Process this file with autoconf to produce a configure script
 dnl
 
 AC_INIT(ring3k,0.0.16)
-AC_CONFIG_SRCDIR(loader/thread.cpp)
+AC_CONFIG_SRCDIR(kernel/thread.cpp)
 
 AC_PROG_CC
 AC_PROG_CXX
@@ -54,7 +54,7 @@ AC_CHECK_FUNCS(sigqueue)
 
 AC_CONFIG_FILES(
 	Makefile
-	loader/Makefile
+	kernel/Makefile
 	tests/Makefile
 	tools/Makefile
 	libudis86/Makefile

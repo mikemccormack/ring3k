@@ -6,10 +6,10 @@
 # Copies a test executable onto the c: drive and runs it
 #
 
-loader="./loader/ring3k-bin"
-if test \! -x "$loader"
+kernel="./kernel/ring3k-bin"
+if test \! -x "$kernel"
 then
-	echo "loader binary (ring3k-bin) not present"
+	echo "kernel binary (ring3k-bin) not present"
 	exit 1
 fi
 
@@ -43,4 +43,4 @@ fi
 # copy the test into the NT directory
 cp tests/$t drive/tests
 ntexepath="\\??\\c:\\tests\\$t"
-exec ${valgrind:+"valgrind"} "$loader" ${debug:+"-d"} ${tt:+"-s"} ${quiet:+"-q"} ${trace:+"-t"} "$ntexepath"
+exec ${valgrind:+"valgrind"} "$kernel" ${debug:+"-d"} ${tt:+"-s"} ${quiet:+"-q"} ${trace:+"-t"} "$ntexepath"

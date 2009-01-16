@@ -1,11 +1,13 @@
 #!/bin/sh
 #
+# ring3k - a user mode kernel for windows executables
+#
 # Copyright 2007-2009 (C) Mike McCormack
 #
 # ring3k Launch script
 #
 # Checks that the c: drive directory is present
-#  then launches the loader binary
+#  then launches the kernel binary
 
 
 # from Wine's launch script
@@ -31,11 +33,11 @@ case "$0" in
     ;;
 esac
 
-# find the loader
-loader="$appdir/ring3k-bin"
-if test \! -x "$loader"
+# find the kernel
+kernel="$appdir/ring3k-bin"
+if test \! -x "$kernel"
 then
-	loader="$appdir/loader/ring3k-bin"
+	kernel="$appdir/kernel/ring3k-bin"
 	if test \! -x "$appdir"
 	then
 		echo "ring3k-bin not found in $appdir"
@@ -56,4 +58,4 @@ then
 	fi
 fi
 
-exec "$loader" $*
+exec "$kernel" $*

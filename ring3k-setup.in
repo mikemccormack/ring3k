@@ -1,5 +1,6 @@
 #!/bin/sh
-# nt loader
+#
+# ring3k - a user mode kernel for windows executables
 #
 # Copyright 2006-2008 Mike McCormack
 #

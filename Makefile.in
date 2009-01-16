@@ -1,4 +1,5 @@
-# native application loader
+#
+# ring3k - a user mode kernel for windows executables
 #
 # Copyright 2006-2009 Mike McCormack
 #
@@ -34,7 +35,7 @@ RM = rm -f
 DIRS = \
 	libudis86_dir \
 	libmspack_dir \
-	loader_dir \
+	kernel_dir \
 	tests_dir \
 	tools_dir \
 	unpack_dir
@@ -54,8 +55,8 @@ $(LAUNCH_SCRIPT): ring3k.in
 $(SETUP_SCRIPT): ring3k-setup.in
 	cp -f $< $@
 
-loader_dir:
-	cd loader && make
+kernel_dir:
+	cd kernel && make
 
 tests_dir:
 	cd tests && make
@@ -76,7 +77,7 @@ clean:
 	$(RM) $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
 	cd libudis86 && make clean
 	cd libmspack && make clean
-	cd loader && make clean
+	cd kernel && make clean
 	cd tests && make clean
 	cd tools && make clean
 	cd unpack && make clean
@@ -90,12 +91,12 @@ install: $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
 	mkdir -p $(DESTDIR)$(bindir)
 	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(LAUNCH_SCRIPT) $(DESTDIR)$(bindir)
 	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(SETUP_SCRIPT) $(DESTDIR)$(bindir)
-	cd loader && make install
+	cd kernel && make install
 
 uninstall:
 	$(RM) $(DESTDIR)$(bindir)/$(LAUNCH_SCRIPT)
 	$(RM) $(DESTDIR)$(bindir)/$(SETUP_SCRIPT)
-	cd loader && make uninstall
+	cd kernel && make uninstall
 
 TESTLIST = \
 	completion \
