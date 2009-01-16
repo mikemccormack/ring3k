@@ -30,6 +30,7 @@ public:
 	// address that device context shared memory is mapped to
 	BYTE* dc_shared_mem;
 	BYTE* user_shared_mem;
+	BYTE* user_handles;
 	HANDLE stock_object[STOCK_LAST + 1];
 };
 

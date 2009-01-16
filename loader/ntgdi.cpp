@@ -110,7 +110,8 @@ win32k_manager_t::~win32k_manager_t()
 
 win32k_info_t::win32k_info_t() :
 	dc_shared_mem( 0 ),
-	user_shared_mem( 0 )
+	user_shared_mem( 0 ),
+	user_handles( 0 )
 {
 	memset( &stock_object, 0, sizeof stock_object );
 }

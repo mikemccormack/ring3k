@@ -77,7 +77,14 @@ public:
 	virtual ~message_tt() {}
 };
 
-class window_tt
+class user_object_t
+{
+public:
+	virtual USHORT get_type() = 0;
+	virtual ~user_object_t();
+};
+
+class window_tt : public user_object_t
 {
 	void *shared_mem;
 	thread_t *thread;
@@ -94,9 +101,9 @@ public:
 	window_tt( void *winshm, thread_t* t, wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
 		 LONG x, LONG y, LONG width, LONG height );
 	NTSTATUS send( message_tt& msg );
-	void *get_shared_address() {return shared_mem;}
 	void *get_wndproc() { return cls->get_wndproc(); }
 	void *get_wininfo();
+	virtual USHORT get_type() { return 1;}
 };
 
 ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
@@ -124,8 +131,17 @@ ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
 	return 0;
 }
 
-static section_t *user_shared_section = 0;
-static const ULONG user_shared_mem_size = 0x20000;
+#define USER_HANDLE_WINDOW 1
+
+struct user_handle_entry_t {
+	union {
+		user_object_t *object;
+		USHORT next_free;
+	};
+	void *owner;
+	USHORT type;
+	USHORT highpart;
+};
 
 struct user_shared_mem_t {
 	ULONG x1;
@@ -133,8 +149,23 @@ struct user_shared_mem_t {
 	ULONG max_window_handle;
 };
 
+static const ULONG user_shared_mem_size = 0x20000;
+
+// section for user handle table
+static section_t *user_handle_table_section = 0;
+
+// kernel address for user handle table (shared)
+static user_handle_entry_t *user_handle_table;
+
+// section for user shared memory
+static section_t *user_shared_section = 0;
+
 // kernel address for memory shared with the user process
-user_shared_mem_t *user_shared;
+static user_shared_mem_t *user_shared;
+
+static USHORT next_user_handle = 1;
+
+#define MAX_USER_HANDLES 0x200
 
 // quick hack for the moment
 void **find_free_user_shared()
@@ -154,6 +185,63 @@ void **find_free_user_shared()
 	return NULL;
 }
 
+void check_max_window_handle( ULONG n )
+{
+	if (user_shared->max_window_handle<n)
+		user_shared->max_window_handle = n;
+}
+
+void init_user_handle_table()
+{
+	USHORT i;
+	next_user_handle = 1;
+	for ( i=next_user_handle; i<(MAX_USER_HANDLES-1); i++ )
+	{
+		user_handle_table[i].object = (user_object_t*) i+1;
+		user_handle_table[i].owner = 0;
+		user_handle_table[i].type = 0;
+		user_handle_table[i].highpart = 1;
+	}
+}
+
+ULONG alloc_user_handle( user_object_t* obj, ULONG type )
+{
+	ULONG ret = next_user_handle;
+	ULONG next = user_handle_table[ret].next_free;
+	assert( user_handle_table[ret].type == 0 );
+	assert( user_handle_table[ret].owner == 0 );
+	assert( next <= MAX_USER_HANDLES );
+	user_handle_table[ret].object = obj;
+	user_handle_table[ret].type = type;
+	user_handle_table[ret].owner = obj;
+	next_user_handle = next;
+	check_max_window_handle( ret );
+	return (user_handle_table[ret].highpart << 16) | ret;
+}
+
+user_object_t *user_obj_from_handle( HANDLE handle, ULONG type )
+{
+	UINT n = (UINT) handle;
+	USHORT lowpart = n&0xffff;
+	//USHORT highpart = (n>>16);
+
+	if (lowpart == 0 || lowpart > user_shared->max_window_handle)
+		return NULL;
+	//FIXME: check high part and type
+	//if (user_handle_table[].highpart != highpart)
+	return user_handle_table[lowpart].object;
+}
+
+window_tt *window_from_handle( HANDLE handle )
+{
+	user_object_t *obj = user_obj_from_handle( handle, 1 );
+	if (!obj)
+		return NULL;
+	window_tt *win = dynamic_cast<window_tt*>( obj );
+	assert( win != NULL );
+	return win;
+}
+
 void *init_user_shared_memory()
 {
 	// read/write for the kernel and read only for processes
@@ -161,6 +249,15 @@ void *init_user_shared_memory()
 	{
 		LARGE_INTEGER sz;
 		NTSTATUS r;
+
+		sz.QuadPart = sizeof (user_handle_entry_t) * MAX_USER_HANDLES;
+		r = create_section( &user_handle_table_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
+		if (r < STATUS_SUCCESS)
+			return 0;
+
+		user_handle_table = (user_handle_entry_t*) user_handle_table_section->get_kernel_address();
+
+		init_user_handle_table();
 
 		sz.QuadPart = user_shared_mem_size;
 		r = create_section( &user_shared_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
@@ -173,7 +270,8 @@ void *init_user_shared_memory()
 		create_directory_object( (PWSTR) L"\\Windows\\WindowStations" );
 	}
 
-	dprintf("user_shared_mem at %p\n", user_shared );
+	dprintf("user_handle_table at %p\n", user_handle_table );
+	dprintf("user_shared at %p\n", user_shared );
 
 	return user_shared;
 }
@@ -215,6 +313,7 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	BYTE*& user_shared_mem = proc->win32k_info->user_shared_mem;
 	if (user_shared_mem)
 		return STATUS_SUCCESS;
+	BYTE*& user_handles = proc->win32k_info->user_handles;
 
 	dprintf("%p %p %lu\n", Process, Buffer, BufferSize);
 	if (BufferSize != sizeof info.winxp && BufferSize != sizeof info.win2k)
@@ -245,8 +344,14 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	if (option_trace)
 		proc->vm->set_tracer( user_shared_mem, ntusershm_trace );
 
+	// map the shared handle table
+	r = user_handle_table_section->mapit( proc->vm, user_handles, 0,
+					MEM_COMMIT, PAGE_READONLY );
+	if (r < STATUS_SUCCESS)
+		return STATUS_UNSUCCESSFUL;
+
 	info.win2k.Ptr[0] = (void*)user_shared_mem;
-	info.win2k.Ptr[1] = (void*)0xbee20000;
+	info.win2k.Ptr[1] = (void*)user_handles;
 	info.win2k.Ptr[2] = (void*)0xbee30000;
 	info.win2k.Ptr[3] = (void*)0xbee40000;
 
@@ -728,6 +833,10 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 	return copy_wstr_from_user( str.Buffer, str.Length );
 }
 
+user_object_t::~user_object_t()
+{
+}
+
 window_tt::window_tt( void *winshm, thread_t* t, wndcls_tt *wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
 		 LONG _x, LONG _y, LONG _width, LONG _height ) :
 	shared_mem( winshm ),
@@ -748,35 +857,6 @@ void *window_tt::get_wininfo()
 {
 	ULONG ofs = (BYTE*)shared_mem - (BYTE*)user_shared;
 	return (void*) (thread->process->win32k_info->user_shared_mem + ofs);
-}
-
-static const ULONG num_win_handles = 0x10;
-static const ULONG handle_offset = 0x10000;
-window_tt *winhandles[num_win_handles];
-
-HANDLE alloc_win_handle( window_tt *win )
-{
-	for (ULONG n=0; n<num_win_handles; n++)
-	{
-		if (!winhandles[n])
-		{
-			winhandles[n] = win;
-			return (HANDLE)(n+handle_offset);
-		}
-	}
-	return 0;
-}
-
-window_tt *window_from_handle( HANDLE handle )
-{
-	UINT n = (UINT) handle;
-
-	if (n < handle_offset)
-		return NULL;
-	n -= handle_offset;
-	if (n >= num_win_handles)
-		return NULL;
-	return winhandles[n];
 }
 
 class wmessage_ptr_tt : public message_tt
@@ -1155,7 +1235,7 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	if (!win)
 		return 0;
 
-	HANDLE ret = alloc_win_handle( win );
+	HANDLE ret = (HANDLE) alloc_user_handle( win, USER_HANDLE_WINDOW );
 	if (!ret)
 		return 0;
 

@@ -343,6 +343,50 @@ static inline void check_msg( ULONG msg, ULONG* n )
 	(*n)++;
 }
 
+#define USER_HANDLE_WINDOW 1
+
+struct user_handle_entry_t {
+	union {
+		void *object;
+		USHORT next_free;
+	};
+	void *owner;
+	USHORT type;
+	USHORT highpart;
+};
+
+struct user_shared_mem_t {
+	ULONG x1;
+	ULONG x2;
+	ULONG max_window_handle;
+};
+
+ULONG handle_highpart( HANDLE handle )
+{
+	return ((ULONG) handle) >> 16;
+}
+
+ULONG handle_lowpart( HANDLE handle )
+{
+	return ((ULONG) handle) & 0xffff;
+}
+
+int check_user_handle( HANDLE handle, USHORT type )
+{
+	struct user_handle_entry_t *user_handle_table;
+	struct user_shared_mem_t *user_shared_mem;
+	ULONG highpart = handle_highpart( handle );
+	ULONG lowpart = handle_lowpart( handle );
+
+	user_shared_mem = user_info.Ptr[0];
+	user_handle_table = (struct user_handle_entry_t *) user_info.Ptr[1];
+	ok( user_shared_mem->max_window_handle >= lowpart, "max_window_handle zero\n");
+	ok( user_handle_table[lowpart].type == type, "type wrong\n");
+	ok( user_handle_table[lowpart].highpart == highpart, "highpart wrong\n");
+	ok( user_handle_table[lowpart].owner != 0, "owner empty\n");
+	ok( (((ULONG) user_handle_table[lowpart].object )&0xffff) != 0, "not a pointer\n");
+}
+
 void create_window( void )
 {
 	USER32_UNICODE_STRING cls, title;
@@ -363,6 +407,8 @@ void create_window( void )
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		0, 0, get_exe_base(), 0, 0x400 );
 	ok( window != 0, "window handle zero\n");
+
+	ok( check_user_handle( window, USER_HANDLE_WINDOW ), "bad window handle\n");
 
 	check_msg( WM_GETMINMAXINFO, &n );
 	check_msg( WM_NCCREATE, &n );
