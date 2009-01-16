@@ -164,6 +164,13 @@ target="$root/winnt/system32"
 win2kiso="win2k.iso"
 winxpiso="winxp.iso"
 iso="win2k.iso"
+unpacker=unpack/unpack
+
+if test \! -x "$unpacker"
+then
+	echo "$unpacker missing"
+	exit 1
+fi
 
 if test -f "$win2kiso"
 then
@@ -222,7 +229,7 @@ do
 	if test "x$compressed" = "x$file"
 	then
 		echo "Extracting $file"
-		unpack/unpack -d "$target" "$tmp"
+		"$unpacker" -d "$target" "$tmp"
 	else
 		lower=`echo "$file" | tr A-Z a-z`
 		echo "Copying    $lower"
