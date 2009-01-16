@@ -204,7 +204,7 @@ NTSTATUS init_ntdll( void )
 
 	r = create_section( &ntdll_section, file, 0, SEC_IMAGE, PAGE_EXECUTE_READWRITE );
 	if (r < STATUS_SUCCESS)
-		die("failed to map ntdll\n");
+		die("failed to create ntdll section\n");
 
 	KiIntSystemCall = get_proc_address( ntdll_section, "KiIntSystemCall" );
 	dprintf("KiIntSystemCall = %08lx\n", KiIntSystemCall);
