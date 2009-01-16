@@ -321,7 +321,7 @@ int _start( void )
 		// the trace client will trap and fill req
 		__asm__ __volatile__(
                           "int $3\n\t"
-                          : : "a"(r), "b"(&req) );
+                          : : "a"(r), "b"(&req) : "memory" );
 
 		switch (req.type)
 		{
