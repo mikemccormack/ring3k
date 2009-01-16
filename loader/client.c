@@ -308,7 +308,7 @@ static int do_prot( struct tt_req_prot *req )
 	return sys_mprotect( (void*) req->addr, req->len, req->prot );
 }
 
-int _start( void )
+void client_main( void )
 {
 	struct tt_req req;
 	int r = 0, finished = 0;
@@ -348,5 +348,40 @@ int _start( void )
 
 	dprintf("exit!\n");
 	sys_exit(1);
-	return 0;
 }
+
+/* set %gs and %fs - from the wine preloader */
+
+static int thread_data[256];
+
+struct
+{
+    /* this is the kernel modify_ldt struct */
+    unsigned int  entry_number;
+    unsigned long base_addr;
+    unsigned int  limit;
+    unsigned int  seg_32bit : 1;
+    unsigned int  contents : 2;
+    unsigned int  read_exec_only : 1;
+    unsigned int  limit_in_pages : 1;
+    unsigned int  seg_not_present : 1;
+    unsigned int  usable : 1;
+    unsigned int  garbage : 25;
+} thread_ldt = { -1, (unsigned long)thread_data, 0xfffff, 1, 0, 0, 1, 0, 1, 0 };
+
+__asm__ (
+".global _start\n"
+"_start:\n"
+	"\tmovl $243,%eax\n"        /* SYS_set_thread_area */
+	"\tmovl $thread_ldt,%ebx\n"
+	"\tint $0x80\n"             /* allocate gs segment */
+	"\torl %eax,%eax\n"
+	"\tjl 1f\n"
+	"\tmovl thread_ldt,%eax\n"  /* thread_ldt.entry_number */
+	"\tshl $3,%eax\n"
+	"\torl $3,%eax\n"
+	"\tmov %ax,%gs\n"
+	"\tmov %ax,%fs\n"           /* set %fs too so libwine can retrieve it later on */
+"1:\n"
+	"\tjmp client_main\n"
+);
