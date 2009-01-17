@@ -41,6 +41,7 @@ then
 fi
 
 # copy the test into the NT directory
-cp tests/$t drive/tests
+cp -f tests/win2k/ntwin32.dll drive
+cp -f "tests/$t" drive/tests
 ntexepath="\\??\\c:\\tests\\$t"
 exec ${valgrind:+"valgrind"} "$kernel" ${debug:+"-d"} ${tt:+"-s"} ${quiet:+"-q"} ${trace:+"-t"} "$ntexepath"
