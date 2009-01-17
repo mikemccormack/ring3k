@@ -371,7 +371,7 @@ ULONG handle_lowpart( HANDLE handle )
 	return ((ULONG) handle) & 0xffff;
 }
 
-int check_user_handle( HANDLE handle, USHORT type )
+void check_user_handle( HANDLE handle, USHORT type )
 {
 	struct user_handle_entry_t *user_handle_table;
 	struct user_shared_mem_t *user_shared_mem;
@@ -408,7 +408,7 @@ void create_window( void )
 		0, 0, get_exe_base(), 0, 0x400 );
 	ok( window != 0, "window handle zero\n");
 
-	ok( check_user_handle( window, USER_HANDLE_WINDOW ), "bad window handle\n");
+	check_user_handle( window, USER_HANDLE_WINDOW );
 
 	check_msg( WM_GETMINMAXINFO, &n );
 	check_msg( WM_NCCREATE, &n );
