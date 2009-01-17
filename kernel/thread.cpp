@@ -1738,8 +1738,6 @@ NTSTATUS NTAPI NtQueueApcThread(
 	return t->queue_apc_thread(ApcRoutine, Arg1, Arg2, Arg3);
 }
 
-#define DBG_PRINTEXCEPTION_C 0x40010006
-
 NTSTATUS output_debug_string( EXCEPTION_RECORD& exrec )
 {
 	NTSTATUS r;
