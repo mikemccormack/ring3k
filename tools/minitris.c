@@ -459,6 +459,9 @@ void do_paint( HWND hwnd )
 
 LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
+	char str[80];
+	sprintf(str, "minitris_wndproc %p %08x %08x %08lx", hwnd, msg, wparam, lparam);
+	OutputDebugString( str );
 	switch (msg)
 	{
 	case WM_SIZE:
@@ -532,9 +535,12 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 	init_brushes();
 	new_block();
 	SetTimer( hwnd, 0, interval, 0 );
+	OutputDebugString("Before GetMessage");
 	while (GetMessage( &msg, 0, 0, 0 ))
 	{
+		OutputDebugString("dispatching message");
 		DispatchMessage( &msg );
+		OutputDebugString("dispatched message");
 	}
 
 	DeleteObject( brushes[1] );
