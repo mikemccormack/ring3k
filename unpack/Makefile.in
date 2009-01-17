@@ -3,10 +3,20 @@ VPATH  = @srcdir@
 
 CC = @HOSTCC@
 
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+prefix = @prefix@
+bindir = ${prefix}/bin
+
 CFLAGS += -Wall -O2 -I$(srcdir)/../libmspack -I../libmspack
 
-unpack: unpack.o ../libmspack/libmspack.a
+TARGET = unpack
+
+$(TARGET): unpack.o ../libmspack/libmspack.a
 	$(CC) -o $@ $^
 
+install: $(TARGET)
+	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) $(TARGET) $(DESTDIR)$(bindir)
+
 clean:
-	rm -f unpack.o unpack
+	rm -f *.o $(UNPACK)
