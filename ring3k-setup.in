@@ -196,27 +196,34 @@ win2kiso="win2k.iso"
 winxpiso="winxp.iso"
 
 # find our unpack program
-unpacker="$appdir/unpack/ring3k-unpack"
-echo "checking for $unpacker"
+unpacker="unpack/ring3k-unpack"
 if test \! -x "$unpacker"
 then
-	unpacker="$appdir/ring3k-unpack"
+	unpacker="$appdir/unpack/ring3k-unpack"
 	if test \! -x "$unpacker"
 	then
-		echo "$unpacker missing"
-		exit 1
+		unpacker="$appdir/ring3k-unpack"
+		if test \! -x "$unpacker"
+		then
+			echo "$unpacker missing"
+			exit 1
+		fi
 	fi
 fi
 
 # find the winlogon replacement
-minitris="$appdir/tools/minitris.exe"
+minitris="tools/minitris.exe"
 if test \! -r "$minitris"
 then
-	minitris="$appdir/../data/minitris.exe"
+	minitris="$appdir/tools/minitris.exe"
 	if test \! -r "$minitris"
 	then
-		echo "Can't find minitris.exe"
-		exit 1
+		minitris="$appdir/../data/minitris.exe"
+		if test \! -r "$minitris"
+		then
+			echo "Can't find minitris.exe"
+			exit 1
+		fi
 	fi
 fi
 
