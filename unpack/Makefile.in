@@ -19,4 +19,4 @@ install: $(TARGET)
 	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) $(TARGET) $(DESTDIR)$(bindir)
 
 clean:
-	rm -f *.o $(UNPACK)
+	rm -f *.o $(TARGET)

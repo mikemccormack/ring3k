@@ -64,7 +64,7 @@ minitris.exe: minitris.c
 	$(CC) $(CFLAGS) -o $@ $< -lgdi32 -luser32 -Wl,--subsystem=windows
 
 clean:
-	rm -f *.o advapi32.dll dumphandles.exe hello.exe qdf.exe winlogon.exe .*.d
+	rm -f *.o *.dll *.exe .*.d
 
 install: minitris.exe
 	mkdir -p $(DESTDIR)$(datadir)
