@@ -196,6 +196,31 @@ NTSTATUS file_t::set_position( LARGE_INTEGER& ofs )
 	return STATUS_SUCCESS;
 }
 
+NTSTATUS file_t::remove()
+{
+	char name[40];
+	char path[255];
+	int r;
+
+	// get the file's name
+	sprintf( name, "/proc/self/fd/%d", get_fd() );
+	r = readlink( name, path, sizeof path - 1 );
+	if (r < 0)
+		return STATUS_ACCESS_DENIED;
+	path[r] = 0;
+
+	// remove it
+	if (0 > unlink( path ) &&
+		0 > rmdir( path ))
+	{
+		fprintf(stderr, "Failed to delete %s\n", path);
+		// FIXME: check errno
+		return STATUS_ACCESS_DENIED;
+	}
+
+	return STATUS_SUCCESS;
+}
+
 class directory_entry_t;
 
 typedef list_anchor<directory_entry_t,0> dirlist_t;
@@ -579,25 +604,6 @@ char *get_unix_path( int fd, UNICODE_STRING& str, bool case_insensitive )
 	}
 
 	return file;
-}
-
-char *get_unix_name( POBJECT_ATTRIBUTES oa )
-{
-	const WCHAR prefix[] = { '\\','?','?','\\' };
-	UNICODE_STRING str, *us;
-
-	us = oa->ObjectName;
-	if (!us)
-		return NULL;
-	if (us->Length < sizeof prefix)
-		return NULL;
-	if (memcmp(us->Buffer, prefix, sizeof prefix))
-		return NULL;
-
-	str.Length = us->Length - sizeof prefix;
-	str.Buffer = &us->Buffer[ sizeof prefix/2 ];
-
-	return get_unix_path( -1, str, oa->Attributes & OBJ_CASE_INSENSITIVE );
 }
 
 int directory_t::open_unicode_file( const char *unix_path, int flags, bool &created )
@@ -1046,15 +1052,24 @@ NTSTATUS NTAPI NtDeleteFile(
 	dprintf("root %p attr %08lx %pus\n",
 			oa.RootDirectory, oa.Attributes, oa.ObjectName);
 
-	char *name = get_unix_name( &oa );
-	if (0 > unlink( name ) &&
-		0 > rmdir( name ))
-	{
-		// check errno
-		r = STATUS_ACCESS_DENIED;
-	}
-	delete[] name;
+	if (!oa.ObjectName || !oa.ObjectName->Buffer)
+		return STATUS_INVALID_PARAMETER;
 
+	// FIXME: use oa.RootDirectory
+	object_t *obj = 0;
+	file_create_info_t open_info( 0, 0, FILE_OPEN );
+	open_info.path.set( *oa.ObjectName );
+	open_info.Attributes = oa.Attributes;
+	r = open_root( obj, open_info );
+	if (r < STATUS_SUCCESS)
+		return r;
+
+	file_t *file = dynamic_cast<file_t*>(obj );
+	if (file)
+		r = file->remove();
+	else
+		r = STATUS_OBJECT_TYPE_MISMATCH;
+	release( obj );
 	return r;
 }
 

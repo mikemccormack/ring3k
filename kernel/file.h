@@ -66,6 +66,7 @@ public:
 	virtual NTSTATUS query_information( FILE_BASIC_INFORMATION& info );
 	virtual NTSTATUS query_information( FILE_ATTRIBUTE_TAG_INFORMATION& info );
 	virtual NTSTATUS set_position( LARGE_INTEGER& ofs );
+	virtual NTSTATUS remove();
 	int get_fd();
 };
 
