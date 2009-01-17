@@ -600,23 +600,6 @@ char *get_unix_name( POBJECT_ATTRIBUTES oa )
 	return get_unix_path( -1, str, oa->Attributes & OBJ_CASE_INSENSITIVE );
 }
 
-int stat_unicode( POBJECT_ATTRIBUTES oa, struct stat *st )
-{
-	char *file;
-	int r = -1;
-
-	file = get_unix_name( oa );
-	if (file)
-	{
-		r = ::stat( file, st );
-		dprintf("%s -> %d\n", file, r);
-		delete[] file;
-	}
-	else
-		dprintf("failed to translate nt path %pus\n", oa->ObjectName );
-	return r;
-}
-
 int directory_t::open_unicode_file( const char *unix_path, int flags, bool &created )
 {
 	int r = -1;
@@ -739,6 +722,7 @@ NTSTATUS open_file( file_t *&file, UNICODE_STRING& name )
 {
 	file_create_info_t info( 0, 0, FILE_OPEN );
 	info.path.set( name );
+	info.Attributes = OBJ_CASE_INSENSITIVE;
 	object_t *obj = 0;
 	NTSTATUS r = open_root( obj, info );
 	if (r < STATUS_SUCCESS)
@@ -959,7 +943,6 @@ NTSTATUS NTAPI NtQueryAttributesFile(
 	object_attributes_t oa;
 	NTSTATUS r;
 	FILE_BASIC_INFORMATION info;
-	struct stat st;
 
 	dprintf("%p %p\n", ObjectAttributes, FileInformation);
 
@@ -973,15 +956,25 @@ NTSTATUS NTAPI NtQueryAttributesFile(
 	if (!oa.ObjectName || !oa.ObjectName->Buffer)
 		return STATUS_INVALID_PARAMETER;
 
-	if (0 == stat_unicode( &oa, &st ))
+	// FIXME: use oa.RootDirectory
+	object_t *obj = 0;
+	file_create_info_t open_info( 0, 0, FILE_OPEN );
+	open_info.path.set( *oa.ObjectName );
+	open_info.Attributes = oa.Attributes;
+	r = open_root( obj, open_info );
+	if (r < STATUS_SUCCESS)
+		return r;
+
+	file_t *file = dynamic_cast<file_t*>(obj );
+	if (file)
 	{
+
 		memset( &info, 0, sizeof info );
-		info.FileAttributes = FILE_ATTRIBUTE_ARCHIVE;
-		dprintf("found %pus\n", oa.ObjectName);
-		r = copy_to_user( FileInformation, &info, sizeof info );
+		r = file->query_information( info );
 	}
 	else
-		r = STATUS_OBJECT_PATH_NOT_FOUND;
+		r = STATUS_OBJECT_TYPE_MISMATCH;
+	release( obj );
 
 	return r;
 }
