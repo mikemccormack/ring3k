@@ -5,7 +5,6 @@
 *.lib
 *.dll
 autom4te.cache
-c:
 config.log
 config.status
 drive

@@ -46,7 +46,7 @@ then
 fi
 
 # check for a c: link
-if test \! -d c:
+if test \! -d "drive"
 then
 	extract="$appdir/ring3k-setup"
 	if test -r "$extract"

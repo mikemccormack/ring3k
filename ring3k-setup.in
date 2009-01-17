@@ -255,7 +255,6 @@ mkdir -p "$root/winnt/security/logs"
 mkdir -p "$root/program files"
 mkdir -p "$root/program files/common files"
 mkdir -p "$root/tests"
-ln -s "$root" c:
 
 for file in $sys32files
 do
