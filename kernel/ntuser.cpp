@@ -131,6 +131,8 @@ ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
 	return 0;
 }
 
+// see http://winterdom.com/dev/ui/wnd.html
+
 #define USER_HANDLE_WINDOW 1
 
 struct user_handle_entry_t {
@@ -187,8 +189,10 @@ void **find_free_user_shared()
 
 void check_max_window_handle( ULONG n )
 {
+	n++;
 	if (user_shared->max_window_handle<n)
 		user_shared->max_window_handle = n;
+	dprintf("max_window_handle = %04lx\n", user_shared->max_window_handle);
 }
 
 void init_user_handle_table()
@@ -290,6 +294,35 @@ void ntusershm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 
 static ntusershm_tracer ntusershm_trace;
 
+class ntuserhandle_tracer : public block_tracer
+{
+public:
+	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+};
+
+void ntuserhandle_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
+{
+	ULONG ofs = address - mb->get_base_address();
+	const int sz = sizeof (user_handle_entry_t);
+	ULONG number = ofs/sz;
+	const char *field = "unknown";
+	switch (ofs % sz)
+	{
+#define f(n, x) case n: field = #x; break;
+	f( 0, owner )
+	f( 4, object )
+	f( 8, type )
+	f( 10, highpart )
+#undef f
+	default:
+		field = "unknown";
+	}
+
+	fprintf(stderr, "%04lx: accessed user handle[%04lx]+%s (%ld) from %08lx\n",
+		current->trace_id(), number, field, ofs%sz, eip);
+}
+static ntuserhandle_tracer ntuserhandle_trace;
+
 NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSize)
 {
 	union {
@@ -342,7 +375,10 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 		return STATUS_UNSUCCESSFUL;
 
 	if (option_trace)
+	{
 		proc->vm->set_tracer( user_shared_mem, ntusershm_trace );
+		proc->vm->set_tracer( user_handles, ntuserhandle_trace );
+	}
 
 	// map the shared handle table
 	r = user_handle_table_section->mapit( proc->vm, user_handles, 0,
