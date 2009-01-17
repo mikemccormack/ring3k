@@ -19,6 +19,12 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 #
 
+# This script sets up a basic windows install for ring3k to work with
+# Eventually it should be replaced with something with a GUI front end.
+#
+# There should also be an option to use an existing Windows install.
+
+# list of files to extract from a Windows 2000 install disk
 win2ksys32files="
  ADVAPI32.DL_
  AUTOCHK.EXE
@@ -94,6 +100,7 @@ win2ksys32files="
  WSOCK32.DL_
 "
 
+# list of files to extract from a Windows XP install disk
 winxpsys32files="
  ADVAPI32.DL_
  AUTOCHK.EXE
@@ -159,20 +166,61 @@ winxpsys32files="
  WSOCK32.DL_
 "
 
+# from Wine's launch script
+appdir=""
+case "$0" in
+  */*)
+    # $0 contains a path, use it
+    appdir=`dirname "$0"`
+    ;; 
+  *) 
+    # no directory in $0, search in PATH
+    saved_ifs=$IFS
+    IFS=: 
+    for d in $PATH
+    do
+      IFS=$saved_ifs
+      if [ -x "$d/$0" ]
+      then
+        appdir="$d"
+        break
+      fi
+    done
+    ;;
+esac
+
 tmp=".$$.temp.cab"
 root="drive"
 target="$root/winnt/system32"
 win2kiso="win2k.iso"
 winxpiso="winxp.iso"
-iso="win2k.iso"
-unpacker=unpack/unpack
 
+# find our unpack program
+unpacker="$appdir/unpack/ring3k-unpack"
+echo "checking for $unpacker"
 if test \! -x "$unpacker"
 then
-	echo "$unpacker missing"
-	exit 1
+	unpacker="$appdir/ring3k-unpack"
+	if test \! -x "$unpacker"
+	then
+		echo "$unpacker missing"
+		exit 1
+	fi
 fi
 
+# find the winlogon replacement
+minitris="$appdir/tools/minitris.exe"
+if test \! -r "$minitris"
+then
+	minitris="$appdir/../data/minitris.exe"
+	if test \! -r "$minitris"
+	then
+		echo "Can't find minitris.exe"
+		exit 1
+	fi
+fi
+
+# find an iso to unpack from
 if test -f "$win2kiso"
 then
 	echo "Windows 2000 ISO found"
@@ -192,6 +240,7 @@ else
 	fi
 fi
 
+# create the various system directories
 mkdir -p "$target"
 mkdir -p "$root/winnt/temp"
 mkdir -p "$root/winnt/security"
@@ -200,13 +249,6 @@ mkdir -p "$root/program files"
 mkdir -p "$root/program files/common files"
 mkdir -p "$root/tests"
 ln -s "$root" c:
-
-# add dummy security database
-dd if=/dev/null of=drive/winnt/security/res1.log bs=1024 count=1024
-dd if=/dev/null of=drive/winnt/security/res2.log bs=1024 count=1024
-dd if=/dev/null of=drive/winnt/security/edb.chk bs=8192 count=1
-dd if=/dev/null of=drive/winnt/security/edb.log bs=1024 count=1024
-dd if=/dev/null of=drive/winnt/security/edb007ec.log bs=1024 count=1024
 
 for file in $sys32files
 do
@@ -239,6 +281,7 @@ do
 	rm -f "$tmp"
 done
 
+# create a default system.ini
 cat > "$root/winnt/system.ini" <<EOF
 [drivers]
 wave=mmdrv.dll
@@ -255,13 +298,13 @@ CGA40WOA.FON=CGA40WOA.FON
 
 EOF
 
-# win.ini
+# create a default win.ini
 cat > "$root/winnt/win.ini" <<EOF
 ; empty
 
 EOF
 
-# the registry
+# create a default registry
 cat > reg.xml <<EOF
 <?xml version="1.0"?>
 <k n="REGISTRY">
@@ -606,7 +649,12 @@ cat > reg.xml <<EOF
 </k>
 EOF
 
-cp "tests/$win32dlldir/ntwin32.dll" "$root"
+# add dummy security database
+dd if=/dev/null of="$root/winnt/security/res1.log" bs=1024 count=1024
+dd if=/dev/null of="$root/winnt/security/res2.log" bs=1024 count=1024
+dd if=/dev/null of="$root/winnt/security/edb.chk" bs=8192 count=1
+dd if=/dev/null of="$root/winnt/security/edb.log" bs=1024 count=1024
+dd if=/dev/null of="$root/winnt/security/edb007ec.log" bs=1024 count=1024
 
 # replace winlogon with a gdi testing application for the moment
-cp "tools/minitris.exe" "$root/winnt/system32/winlogon.exe"
+cp "$minitris" "$root/winnt/system32/winlogon.exe"

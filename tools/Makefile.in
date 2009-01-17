@@ -15,6 +15,13 @@ AR=@MINGW32AR@
 RANLIB=@MINGW32RANLIB@
 WINDRES=@MINGW32WINDRES@
 
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+prefix = @prefix@
+bindir = ${prefix}/bin
+datadir = ${prefix}/data
+
 SOURCE = \
 	console.c \
 	dumphandles.c \
@@ -58,3 +65,7 @@ minitris.exe: minitris.c
 
 clean:
 	rm -f *.o advapi32.dll dumphandles.exe hello.exe qdf.exe winlogon.exe .*.d
+
+install: minitris.exe
+	mkdir -p $(DESTDIR)$(datadir)
+	$(INSTALL_DATA) $(INSTALL_FLAGS) $< $(DESTDIR)$(datadir)

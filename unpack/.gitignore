@@ -1,3 +1,3 @@
 Makefile
 *.o
-unpack
+ring3k-unpack

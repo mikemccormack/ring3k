@@ -92,6 +92,7 @@ install: $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
 	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(LAUNCH_SCRIPT) $(DESTDIR)$(bindir)
 	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(SETUP_SCRIPT) $(DESTDIR)$(bindir)
 	cd kernel && make install
+	cd tools && make install
 	cd unpack && make install
 
 uninstall:
