@@ -287,6 +287,42 @@ void test_apc(void)
 	ok( r == STATUS_SUCCESS, "return was (%08lx)\n", r);
 }
 
+#define DBG_PRINTEXCEPTION_C 0x40010006
+
+void test_outputdebugstring( void )
+{
+	char string[] = "hello";
+	CONTEXT ctx;
+	EXCEPTION_RECORD rec;
+	NTSTATUS r;
+
+	rec.ExceptionCode = DBG_PRINTEXCEPTION_C;
+	rec.ExceptionFlags = 0;
+	rec.ExceptionRecord = 0;
+	rec.ExceptionAddress = 0;
+	rec.NumberParameters = 2;
+	rec.ExceptionInformation[0] = sizeof string - 1;
+	rec.ExceptionInformation[1] = (ULONG) string;
+
+	ctx.ContextFlags = CONTEXT_CONTROL;
+	r = NtGetContextThread( NtCurrentThread(), &ctx );
+	ok( r == STATUS_SUCCESS, "return was (%08lx)\n", r);
+
+	__asm__ __volatile(
+		"\tpush $1\n"
+		"\tpush %1\n"
+		"\tpush %0\n"
+	// set the instuction pointer in the context to be after NtRaiseException
+		"\tcall 1f\n"
+	"1:\n"
+		"\tpop %%eax\n"
+		"\tadd $(2f - 1b), %%eax\n"
+		"\tmov %%eax, (%2)\n"
+		"\tcall _NtRaiseException@12\n"
+	"2:\n"
+		: : "a"( &rec), "b"(&ctx), "c"(&ctx.Eip) );
+}
+
 void NtProcessStartup( void )
 {
 	NTSTATUS r = 0;
@@ -298,6 +334,9 @@ void NtProcessStartup( void )
 	test_continue();
 	test_raise_exception();
 	test_apc();
+
+	// doesn't match windows behaviour yet
+	//test_outputdebugstring();
 
 	log_fini();
 }

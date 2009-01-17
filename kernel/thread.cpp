@@ -1738,12 +1738,43 @@ NTSTATUS NTAPI NtQueueApcThread(
 	return t->queue_apc_thread(ApcRoutine, Arg1, Arg2, Arg3);
 }
 
+#define DBG_PRINTEXCEPTION_C 0x40010006
+
+NTSTATUS output_debug_string( EXCEPTION_RECORD& exrec )
+{
+	NTSTATUS r;
+
+	if (exrec.NumberParameters != 2)
+	{
+		dprintf("OutputDebugStringA with %ld args\n",
+			exrec.NumberParameters);
+		return STATUS_INVALID_PARAMETER;
+	}
+
+	ULONG len = exrec.ExceptionInformation[0];
+	LPCWSTR str = (LPCWSTR) exrec.ExceptionInformation[1];
+
+	char buffer[0x100];
+	len = min( sizeof buffer - 1, len );
+
+	r = copy_from_user( buffer, str, len );
+	if (r != STATUS_SUCCESS)
+	{
+		dprintf("OutputDebugStringA %p %ld (unreadable)\n", str, len);
+		return r;
+	}
+	buffer[len] = 0;
+
+	if (option_trace)
+		fprintf(stderr, "OutputDebugString: %s\n", buffer );
+
+	return STATUS_SUCCESS;
+}
+
 NTSTATUS NTAPI NtRaiseException( PEXCEPTION_RECORD ExceptionRecord, PCONTEXT Context, BOOL SearchFrames )
 {
 	exception_stack_frame info;
 	NTSTATUS r;
-
-	dprintf("%p %p %d\n", ExceptionRecord, Context, SearchFrames);
 
 	r = copy_from_user( &info.rec, ExceptionRecord, sizeof info.rec );
 	if (r < STATUS_SUCCESS)
@@ -1752,6 +1783,16 @@ NTSTATUS NTAPI NtRaiseException( PEXCEPTION_RECORD ExceptionRecord, PCONTEXT Con
 	r = copy_from_user( &info.ctx, Context, sizeof info.ctx );
 	if (r < STATUS_SUCCESS)
 		return r;
+
+	// Get this when OutputDebugStringA is used
+	if (info.rec.ExceptionCode == DBG_PRINTEXCEPTION_C)
+	{
+		output_debug_string( info.rec );
+		thread_impl_t *thread = dynamic_cast<thread_impl_t*>( current );
+		assert( thread );
+		thread->set_context( info.ctx );
+		return STATUS_SUCCESS;
+	}
 
 	// FIXME: perhaps we should blow away everything pushed on after the current frame
 
