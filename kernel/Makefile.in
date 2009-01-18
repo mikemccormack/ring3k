@@ -37,12 +37,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 prefix = @prefix@
 bindir = ${prefix}/bin
 
-HEADERS = \
-	debug.h \
-	mem.h \
-	ntcall.h \
-	object.h \
-	section.h
+HEADERS = $(wildcard *.h)
 
 C_SOURCES = \
 	ptrace_if.c \
@@ -93,7 +88,7 @@ OBJECTS = $(C_SOURCES:.c=.o) $(CPP_SOURCES:.cpp=.o)
 TARGET = ring3k-bin
 TARGETCLIENT = ring3k-client
 
-.PHONY: all clean count stat test
+.PHONY: all clean stat test
 
 all: $(TARGET) enc fiber $(TARGETCLIENT)
 
@@ -104,9 +99,6 @@ $(TARGET): $(OBJECTS)
 
 $(TARGETCLIENT): client.o
 	$(CC) -o $@ $^ -static -nostartfiles -nodefaultlibs -Wl,-Ttext=0xa0000000
-
-count:
-	wc $(HEADERS) $(C_SOURCES) $(CPP_SOURCES)
 
 enc: enc.c
 	$(CC) -o enc -Wall $<
