@@ -48,6 +48,7 @@ C_SOURCES = \
 	ptrace_if.c \
 
 CPP_SOURCES = \
+	alloc_bitmap.cpp \
 	atom.cpp \
 	block.cpp \
 	completion.cpp \

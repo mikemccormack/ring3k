@@ -50,6 +50,7 @@
 #include "file.h"
 #include "event.h"
 #include "symlink.h"
+#include "alloc_bitmap.h"
 
 process_list_t processes;
 thread_t *current;
@@ -359,6 +360,9 @@ int main(int argc, char **argv)
 
 	// enable backtraces
 	signal(SIGSEGV, segv_handler);
+
+	// quick sanity test
+	allocation_bitmap_t::test();
 
 	// initialize boottime
 	SYSTEM_TIME_OF_DAY_INFORMATION dummy;
