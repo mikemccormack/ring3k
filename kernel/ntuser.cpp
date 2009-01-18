@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+#include <new>
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -37,8 +38,9 @@
 #include "mem.h"
 #include "debug.h"
 #include "object.inl"
+#include "alloc_bitmap.h"
 
-class window_tt;
+struct window_tt;
 class wndcls_tt;
 
 typedef list_anchor<wndcls_tt, 0> wndcls_list_tt;
@@ -77,33 +79,53 @@ public:
 	virtual ~message_tt() {}
 };
 
-class user_object_t
+// shared memory structure!!
+// see http://winterdom.com/dev/ui/wnd.html
+struct window_tt
 {
-public:
-	virtual USHORT get_type() = 0;
-	virtual ~user_object_t();
-};
-
-class window_tt : public user_object_t
-{
-	void *shared_mem;
-	thread_t *thread;
-	wndcls_tt *cls;
-	unicode_string_t name;
-	ULONG style;
+	HANDLE handle;
+	thread_t *thread; // ULONG unk1;
+	ULONG unk2;
+	ULONG unk3;
+	window_tt* self;
+	ULONG dwFlags;
+	ULONG unk6;
 	ULONG exstyle;
-	LONG x;
-	LONG y;
-	LONG width;
-	LONG height;
+	ULONG style;
+	PVOID hInstance;
+	ULONG unk10;
+	window_tt* next;
 	window_tt* parent;
+	window_tt* first_child;
+	window_tt* owner;
+	RECT rcWnd;
+	RECT rcClient;
+	void* wndproc;
+	void* wndcls;
+	ULONG unk25;
+	ULONG unk26;
+	ULONG unk27;
+	ULONG unk28;
+	union {
+		ULONG dwWndID;
+		void* Menu;
+	} id;
+	ULONG unk30;
+	ULONG unk31;
+	ULONG unk32;
+	PWSTR pText;
+	ULONG dwWndBytes;
+	ULONG unk35;
+	ULONG unk36;
+	ULONG wlUserData;
+	ULONG wlWndExtra[1];
+
 public:
-	window_tt( void *winshm, thread_t* t, wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
-		 LONG x, LONG y, LONG width, LONG height );
+	window_tt( thread_t* t, wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
+		 LONG x, LONG y, LONG width, LONG height, PVOID instance );
 	NTSTATUS send( message_tt& msg );
-	void *get_wndproc() { return cls->get_wndproc(); }
+	void *get_wndproc() { return wndproc; }
 	void *get_wininfo();
-	virtual USHORT get_type() { return 1;}
 };
 
 ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
@@ -137,7 +159,7 @@ ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
 
 struct user_handle_entry_t {
 	union {
-		user_object_t *object;
+		void *object;
 		USHORT next_free;
 	};
 	void *owner;
@@ -152,6 +174,7 @@ struct user_shared_mem_t {
 };
 
 static const ULONG user_shared_mem_size = 0x20000;
+static const ULONG user_shared_mem_reserve = 0x10000;
 
 // section for user handle table
 static section_t *user_handle_table_section = 0;
@@ -165,27 +188,12 @@ static section_t *user_shared_section = 0;
 // kernel address for memory shared with the user process
 static user_shared_mem_t *user_shared;
 
+// bitmap of free memory
+allocation_bitmap_t user_shared_bitmap;
+
 static USHORT next_user_handle = 1;
 
 #define MAX_USER_HANDLES 0x200
-
-// quick hack for the moment
-void **find_free_user_shared()
-{
-	ULONG i;
-
-	//use top half of shared memory
-	ULONG sz = user_shared_mem_size - 0x10000;
-	void** x = (void**)user_shared + 0x10000/sizeof (void**);
-
-	// use blocks of 0x100 bytes
-	for (i=0; i<sz; i += 0x40)
-	{
-		if (x[i] == NULL)
-			return &x[i];
-	}
-	return NULL;
-}
 
 void check_max_window_handle( ULONG n )
 {
@@ -201,14 +209,14 @@ void init_user_handle_table()
 	next_user_handle = 1;
 	for ( i=next_user_handle; i<(MAX_USER_HANDLES-1); i++ )
 	{
-		user_handle_table[i].object = (user_object_t*) i+1;
+		user_handle_table[i].object = (void*) (i+1);
 		user_handle_table[i].owner = 0;
 		user_handle_table[i].type = 0;
 		user_handle_table[i].highpart = 1;
 	}
 }
 
-ULONG alloc_user_handle( user_object_t* obj, ULONG type )
+ULONG alloc_user_handle( void* obj, ULONG type )
 {
 	ULONG ret = next_user_handle;
 	ULONG next = user_handle_table[ret].next_free;
@@ -223,7 +231,7 @@ ULONG alloc_user_handle( user_object_t* obj, ULONG type )
 	return (user_handle_table[ret].highpart << 16) | ret;
 }
 
-user_object_t *user_obj_from_handle( HANDLE handle, ULONG type )
+void* user_obj_from_handle( HANDLE handle, ULONG type )
 {
 	UINT n = (UINT) handle;
 	USHORT lowpart = n&0xffff;
@@ -238,12 +246,10 @@ user_object_t *user_obj_from_handle( HANDLE handle, ULONG type )
 
 window_tt *window_from_handle( HANDLE handle )
 {
-	user_object_t *obj = user_obj_from_handle( handle, 1 );
+	void *obj = user_obj_from_handle( handle, 1 );
 	if (!obj)
 		return NULL;
-	window_tt *win = dynamic_cast<window_tt*>( obj );
-	assert( win != NULL );
-	return win;
+	return (window_tt*) obj;
 }
 
 void *init_user_shared_memory()
@@ -269,6 +275,11 @@ void *init_user_shared_memory()
 			return 0;
 
 		user_shared = (user_shared_mem_t*) user_shared_section->get_kernel_address();
+
+		// setup the allocation bitmap for user objects (eg. windows)
+		void *object_area = (void*) ((BYTE*) user_shared + user_shared_mem_reserve);
+		user_shared_bitmap.set_area( object_area,
+			user_shared_mem_size - user_shared_mem_reserve );
 
 		// create the window stations directory too
 		create_directory_object( (PWSTR) L"\\Windows\\WindowStations" );
@@ -869,30 +880,26 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 	return copy_wstr_from_user( str.Buffer, str.Length );
 }
 
-user_object_t::~user_object_t()
-{
-}
-
-window_tt::window_tt( void *winshm, thread_t* t, wndcls_tt *wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
-		 LONG _x, LONG _y, LONG _width, LONG _height ) :
-	shared_mem( winshm ),
+window_tt::window_tt( thread_t* t, wndcls_tt *_wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
+		 LONG x, LONG y, LONG width, LONG height, PVOID instance ) :
 	thread( t ),
-	cls( wndcls ),
-	style( _style ),
-	exstyle( _exstyle ),
-	x( _x ),
-	y( _y ),
-	width( _width ),
-	height( _height ),
 	parent( 0 )
 {
-	name.copy( &_name );
+	self = this;
+	wndcls = _wndcls;
+	style = _style;
+	exstyle = _exstyle;
+	rcWnd.left = x;
+	rcWnd.top = y;
+	rcWnd.right = x + width;
+	rcWnd.bottom = y + height;
+	hInstance = instance;
 }
 
 void *window_tt::get_wininfo()
 {
-	ULONG ofs = (BYTE*)shared_mem - (BYTE*)user_shared;
-	return (void*) (thread->process->win32k_info->user_shared_mem + ofs);
+	ULONG ofs = (BYTE*)this - (BYTE*)user_shared;
+	return (void*) (current->process->win32k_info->user_shared_mem + ofs);
 }
 
 class wmessage_ptr_tt : public message_tt
@@ -1249,6 +1256,11 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	if (!wndcls)
 		return 0;
 
+	// tweak the styles
+	Style |= WS_CLIPSIBLINGS;
+	ExStyle |= WS_EX_WINDOWEDGE;
+	ExStyle &= ~0x80000000;
+
 	NTCREATESTRUCT cs;
 
 	cs.lpCreateParams = Param;
@@ -1263,19 +1275,21 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	cs.lpszClass = NULL;
 	cs.dwExStyle = ExStyle;
 
-	void **winshm = find_free_user_shared();
-	if (!winshm)
+	window_tt *win;
+	void *mem = user_shared_bitmap.alloc( sizeof *win );
+	if (!mem)
 		return 0;
+	memset( mem, 0, sizeof *win );
 
-	window_tt *win = new window_tt( winshm, current, wndcls, window_name, Style, ExStyle, x, y, Width, Height );
-	if (!win)
-		return 0;
+	win = new(mem) window_tt( current, wndcls, window_name, Style, ExStyle, x, y, Width, Height, Instance );
 
-	HANDLE ret = (HANDLE) alloc_user_handle( win, USER_HANDLE_WINDOW );
-	if (!ret)
-		return 0;
+	win->handle = (HANDLE) alloc_user_handle( win, USER_HANDLE_WINDOW );
+	win->wndproc = wndcls->get_wndproc();
 
-	*winshm = ret;
+	// check set the offset
+	// FIXME: there might be a better place to do this
+	ULONG ofs = (BYTE*) user_shared - current->process->win32k_info->user_shared_mem;
+	current->get_teb()->KernelUserPointerOffset = ofs;
 
 	// send WM_GETMINMAXINFO
 	getminmaxinfo_tt minmax;
@@ -1293,7 +1307,7 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	create_message_tt create( cs, wndcls_name, window_name );
 	win->send( create );
 
-	return ret;
+	return win->handle;
 }
 
 BOOLEAN NTAPI NtUserSetLogonNotifyWindow( HANDLE Window )

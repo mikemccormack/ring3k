@@ -121,6 +121,7 @@ public:
 	virtual NTSTATUS verify_for_write( void *dest, size_t count ) = 0;
 	virtual void* push( ULONG count ) = 0;
 	virtual void pop( ULONG count ) = 0;
+	virtual PTEB get_teb() = 0;
 };
 
 NTSTATUS create_thread( thread_t **pthread, process_t *p, PCLIENT_ID id, CONTEXT *ctx, INITIAL_TEB *init_teb, BOOLEAN suspended );

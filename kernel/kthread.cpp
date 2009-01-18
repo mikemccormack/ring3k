@@ -67,6 +67,7 @@ public:
 	virtual BOOLEAN is_signalled( void );
 	virtual void* push( ULONG count );
 	virtual void pop( ULONG count );
+	virtual PTEB get_teb();
 };
 
 kernel_thread_t::kernel_thread_t( process_t *p ) :
@@ -175,6 +176,12 @@ void* kernel_thread_t::push( ULONG count )
 void kernel_thread_t::pop( ULONG count )
 {
 	assert(0);
+}
+
+PTEB kernel_thread_t::get_teb()
+{
+	assert(0);
+	return 0;
 }
 
 class security_reference_monitor_t : public kernel_thread_t

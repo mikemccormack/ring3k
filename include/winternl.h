@@ -342,7 +342,10 @@ typedef struct _TEB
     ULONG           gdiRgn;                     /* 6dc */
     ULONG           gdiPen;                     /* 6e0 */
     ULONG           gdiBrush;                   /* 6e4 */
+    union {
+    ULONG           KernelUserPointerOffset;	/* 6e8 */
     CLIENT_ID       RealClientId;               /* 6e8 */
+    };
     HANDLE          GdiCachedProcessHandle;     /* 6f0 */
     ULONG           GdiClientPID;               /* 6f4 */
     ULONG           GdiClientTID;               /* 6f8 */

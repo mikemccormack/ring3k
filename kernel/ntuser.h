@@ -150,6 +150,9 @@ typedef struct tagINPUT
 
 #define KEYEVENTF_KEYUP     0x0002
 
+#define WS_CLIPSIBLINGS  0x04000000L
+#define WS_EX_WINDOWEDGE       0x00000100L
+
 ULONG NTAPI    NtUserCallNoParam(ULONG);
 ULONG NTAPI    NtUserCallOneParam(ULONG,ULONG);
 ULONG NTAPI    NtUserCallTwoParam(ULONG,ULONG,ULONG);

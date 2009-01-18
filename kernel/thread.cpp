@@ -196,6 +196,7 @@ public:
 
 	virtual void* push( ULONG count );
 	virtual void pop( ULONG count );
+	virtual PTEB get_teb();
 };
 
 list_anchor<runlist_entry_t,0> runlist_entry_t::running_threads;
@@ -537,6 +538,10 @@ void thread_impl_t::pop( ULONG count )
 	ctx.Esp += count;
 }
 
+PTEB thread_impl_t::get_teb()
+{
+	return teb;
+}
 
 NTSTATUS thread_impl_t::do_user_callback( ULONG index, ULONG &length, PVOID &buffer)
 {
