@@ -1200,6 +1200,9 @@ NTSTATUS window_tt::send( message_tt& msg )
 	if (thread->is_terminated())
 		return STATUS_THREAD_IS_TERMINATING;
 
+	PTEB teb = thread->get_teb();
+	teb->CachedWindowHandle = handle;
+
 	msg.set_window_info( this );
 
 	void *address = thread->push( msg.get_size() );

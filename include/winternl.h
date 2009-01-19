@@ -347,7 +347,10 @@ typedef struct _TEB
     CLIENT_ID       RealClientId;               /* 6e8 */
     };
     HANDLE          GdiCachedProcessHandle;     /* 6f0 */
+    union {
+    HANDLE          CachedWindowHandle;         /* 6f4 */
     ULONG           GdiClientPID;               /* 6f4 */
+    };
     ULONG           GdiClientTID;               /* 6f8 */
     PVOID           GdiThreadLocaleInfo;        /* 6fc */
     PVOID           UserReserved[5];            /* 700 */

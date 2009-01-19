@@ -126,11 +126,18 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 	}
 }
 
+HANDLE get_cached_window_handle(void);
+
 // magic numbers for everybody
 void getminmax_callback(NTMINMAXPACKEDINFO *pack)
 {
+	HANDLE window = *(pack->wininfo);
 	//dprintf("wininfo = %p\n", pack->wininfo );
-	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
+	//dprintf("handle = %p\n", window );
+	//dprintf("cached = %p\n", get_cached_window_handle() );
+	ok( get_cached_window_handle() == window, "cached handle mismatch\n");
+	ok( pack->wininfo != NULL, "wininfo NULL\n" );
+	ok( window != NULL, "handle NULL\n" );
 	ok( pack->wparam == 0, "wparam wrong %08x\n", pack->wparam );
 	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
 	ok( pack->msg == WM_GETMINMAXINFO, "message wrong %08lx\n", pack->msg );
@@ -221,6 +228,14 @@ void *get_exe_base( void )
 {
 	void** peb = get_peb();
 	return peb[ofs_exe_base_in_peb/4];
+}
+
+const int ofs_cached_window_handle_in_teb = 0x6f4;
+
+HANDLE get_cached_window_handle( void )
+{
+	void **p = get_teb();
+	return p[ofs_cached_window_handle_in_teb/sizeof (*p)];
 }
 
 USER_PROCESS_CONNECT_INFO user_info;
