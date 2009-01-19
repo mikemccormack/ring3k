@@ -55,7 +55,7 @@ $(LAUNCH_SCRIPT): ring3k.in
 $(SETUP_SCRIPT): ring3k-setup.in
 	cp -f $< $@
 
-kernel_dir:
+kernel_dir: libudis86_dir
 	cd kernel && make
 
 tests_dir:
@@ -70,7 +70,7 @@ libudis86_dir:
 libmspack_dir:
 	cd libmspack && make
 
-unpack_dir:
+unpack_dir: libmspack_dir
 	cd unpack && make
 
 clean:
