@@ -61,7 +61,7 @@ kernel_dir: libudis86_dir
 tests_dir:
 	cd tests && make
 
-tools_dir:
+tools_dir: tests_dir
 	cd tools && make
 
 libudis86_dir:
