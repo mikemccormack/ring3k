@@ -875,7 +875,8 @@ thread_t::thread_t(process_t *p) :
 	fiber_t( fiber_default_stack_size ),
 	process( p ),
 	MessageId(0),
-	port(0)
+	port(0),
+	queue(0)
 {
 	id = allocate_id();
 	addref( process );

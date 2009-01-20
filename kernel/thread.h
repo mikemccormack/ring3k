@@ -63,6 +63,7 @@ struct kernel_debug_string_output {
 
 struct section_t;
 class mblock;
+class thread_message_queue_tt;
 
 class runlist_entry_t
 {
@@ -96,6 +97,8 @@ public:
 	// LPC information
 	ULONG MessageId;
 	port_t *port;
+
+	thread_message_queue_tt* queue;
 
 public:
 	thread_t( process_t *p );

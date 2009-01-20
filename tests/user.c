@@ -515,7 +515,7 @@ void create_window( void )
 
 	ok( msg.hwnd == 0, "window wrong %p\n", msg.hwnd );
 	ok( msg.message == WM_QUIT, "message wrong %08x\n", msg.message );
-	//ok( msg.wParam == quit_magic, "wParam wrong %08x\n", msg.wParam );
+	ok( msg.wParam == quit_magic, "wParam wrong %08x\n", msg.wParam );
 	ok( msg.lParam == 0, "lParam wrong %08lx\n", msg.lParam );
 }
 

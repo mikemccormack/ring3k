@@ -128,6 +128,20 @@ public:
 	void *get_wininfo();
 };
 
+// derived from Wine's struct thread_input
+// see wine/server/queue.c (by Alexandre Julliard)
+class thread_message_queue_tt : public sync_object_t
+{
+	bool	quit_message;    // is there a pending quit message?
+	int	exit_code;       // exit code of pending quit message
+
+public:
+	thread_message_queue_tt();
+	void post_quit_message( ULONG exit_code );
+	bool get_quit_message( MSG &msg );
+	virtual BOOLEAN is_signalled( void );
+};
+
 ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
 {
 	switch (InfoClass)
@@ -484,6 +498,13 @@ BOOLEAN NtReleaseDC( HANDLE hdc )
 	return win32k_manager->release_dc( hdc );
 }
 
+BOOLEAN NtPostQuitMessage( ULONG ret )
+{
+	if (current->queue)
+		current->queue->post_quit_message( ret );
+	return TRUE;
+}
+
 ULONG NTAPI NtUserCallOneParam(ULONG Param, ULONG Index)
 {
 	dprintf("%lu (%08lx)\n", Index, Param);
@@ -521,8 +542,8 @@ ULONG NTAPI NtUserCallOneParam(ULONG Param, ULONG Index)
 		return TRUE;
 	case 0x25: // used by SoftModalMessageBox
 		return TRUE;
-	case 0x26: // PostQuitMessage
-		return TRUE;
+	case NTUCOP_POSTQUITMESSAGE:
+		return NtPostQuitMessage( Param );
 	case 0x27: // RealizeUserPalette
 		return TRUE;
 	case 0x28: // used by ClientThreadSetup
@@ -857,13 +878,52 @@ ULONG NTAPI NtUserRegisterWindowMessage(PUNICODE_STRING Message)
 	return message_no++;
 }
 
+thread_message_queue_tt::thread_message_queue_tt() :
+	quit_message( 0 ),
+	exit_code( 0 )
+{
+}
+
+bool thread_message_queue_tt::get_quit_message( MSG& msg )
+{
+	bool ret = quit_message;
+	if (quit_message)
+	{
+		msg.message = WM_QUIT;
+		msg.wParam = exit_code;
+		quit_message = false;
+	}
+	return ret;
+}
+
+BOOLEAN thread_message_queue_tt::is_signalled( void )
+{
+	return FALSE;
+}
+
+void thread_message_queue_tt::post_quit_message( ULONG ret )
+{
+	quit_message = true;
+	exit_code = ret;
+}
+
 BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HANDLE Window, ULONG MinMessage, ULONG MaxMessage)
 {
+	// no input queue...
+	thread_message_queue_tt* queue = current->queue;
+	if (!queue)
+		return FALSE;
+
 	MSG msg;
 	memset( &msg, 0, sizeof msg );
-	msg.message = WM_QUIT;
-	copy_to_user( Message, &msg, sizeof msg );
-	return FALSE;
+	if (queue->get_quit_message( msg ))
+	{
+		copy_to_user( Message, &msg, sizeof msg );
+		return FALSE;
+	}
+
+	current->stop();
+	return TRUE;
 }
 
 class user32_unicode_string_t : public unicode_string_t
@@ -1266,6 +1326,10 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	// FIXME: there might be a better place to do this
 	ULONG ofs = (BYTE*) user_shared - current->process->win32k_info->user_shared_mem;
 	current->get_teb()->KernelUserPointerOffset = ofs;
+
+	// create a thread message queue if necessary
+	if (!current->queue)
+		current->queue = new thread_message_queue_tt;
 
 	// send WM_GETMINMAXINFO
 	getminmaxinfo_tt minmax;
