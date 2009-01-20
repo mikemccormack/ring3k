@@ -69,6 +69,7 @@ CPP_SOURCES = \
 	profile.cpp \
 	process.cpp \
 	ptrace_base.cpp \
+	queue.cpp \
 	random.cpp \
 	reg.cpp \
 	sdl.cpp \

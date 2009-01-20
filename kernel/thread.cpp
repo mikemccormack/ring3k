@@ -38,6 +38,7 @@
 #include "section.h"
 #include "timer.h"
 #include "file.h"
+#include "queue.h"
 
 class thread_impl_t;
 
@@ -885,6 +886,8 @@ thread_t::thread_t(process_t *p) :
 
 thread_t::~thread_t()
 {
+	if (queue)
+		delete queue;
 	process->threads.unlink( this );
 	release( process );
 }

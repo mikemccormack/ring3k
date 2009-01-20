@@ -39,6 +39,7 @@
 #include "debug.h"
 #include "object.inl"
 #include "alloc_bitmap.h"
+#include "queue.h"
 
 struct window_tt;
 class wndcls_tt;
@@ -126,20 +127,6 @@ public:
 	NTSTATUS send( message_tt& msg );
 	void *get_wndproc() { return wndproc; }
 	void *get_wininfo();
-};
-
-// derived from Wine's struct thread_input
-// see wine/server/queue.c (by Alexandre Julliard)
-class thread_message_queue_tt : public sync_object_t
-{
-	bool	quit_message;    // is there a pending quit message?
-	int	exit_code;       // exit code of pending quit message
-
-public:
-	thread_message_queue_tt();
-	void post_quit_message( ULONG exit_code );
-	bool get_quit_message( MSG &msg );
-	virtual BOOLEAN is_signalled( void );
 };
 
 ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
@@ -876,54 +863,6 @@ ULONG NTAPI NtUserRegisterWindowMessage(PUNICODE_STRING Message)
 	dprintf("message = %pus -> %04lx\n", &us, message_no);
 
 	return message_no++;
-}
-
-thread_message_queue_tt::thread_message_queue_tt() :
-	quit_message( 0 ),
-	exit_code( 0 )
-{
-}
-
-bool thread_message_queue_tt::get_quit_message( MSG& msg )
-{
-	bool ret = quit_message;
-	if (quit_message)
-	{
-		msg.message = WM_QUIT;
-		msg.wParam = exit_code;
-		quit_message = false;
-	}
-	return ret;
-}
-
-BOOLEAN thread_message_queue_tt::is_signalled( void )
-{
-	return FALSE;
-}
-
-void thread_message_queue_tt::post_quit_message( ULONG ret )
-{
-	quit_message = true;
-	exit_code = ret;
-}
-
-BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HANDLE Window, ULONG MinMessage, ULONG MaxMessage)
-{
-	// no input queue...
-	thread_message_queue_tt* queue = current->queue;
-	if (!queue)
-		return FALSE;
-
-	MSG msg;
-	memset( &msg, 0, sizeof msg );
-	if (queue->get_quit_message( msg ))
-	{
-		copy_to_user( Message, &msg, sizeof msg );
-		return FALSE;
-	}
-
-	current->stop();
-	return TRUE;
 }
 
 class user32_unicode_string_t : public unicode_string_t
