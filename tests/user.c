@@ -468,6 +468,8 @@ void create_window( void )
 	WND *wndptr, *kernel_wndptr;
 	ULONG style, exstyle;
 	void *instance;
+	MSG msg;
+	const int quit_magic = 0xdada;
 
 	cls.Buffer = test_class_name;
 	cls.Length = sizeof test_class_name - 2;
@@ -498,6 +500,23 @@ void create_window( void )
 	check_msg( WM_NCCREATE, &n );
 	check_msg( WM_NCCALCSIZE, &n );
 	check_msg( WM_CREATE, &n );
+
+	NtUserCallOneParam( quit_magic, NTUCOP_POSTQUITMESSAGE );
+
+	msg.hwnd = 0;
+	msg.message = 0;
+	msg.wParam = 0;
+	msg.lParam = 0;
+	while (NtUserGetMessage( &msg, 0, 0, 0 ))
+	{
+		ok( msg.hwnd == window, "window wrong %p\n", msg.hwnd );
+		NtUserDispatchMessage( &msg );
+	}
+
+	ok( msg.hwnd == 0, "window wrong %p\n", msg.hwnd );
+	ok( msg.message == WM_QUIT, "message wrong %08x\n", msg.message );
+	//ok( msg.wParam == quit_magic, "wParam wrong %08x\n", msg.wParam );
+	ok( msg.lParam == 0, "lParam wrong %08lx\n", msg.lParam );
 }
 
 void test_window()

@@ -859,9 +859,10 @@ ULONG NTAPI NtUserRegisterWindowMessage(PUNICODE_STRING Message)
 
 BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HANDLE Window, ULONG MinMessage, ULONG MaxMessage)
 {
-	dprintf("\n");
-	// hmm... nothing to return yet...
-	current->stop();
+	MSG msg;
+	memset( &msg, 0, sizeof msg );
+	msg.message = WM_QUIT;
+	copy_to_user( Message, &msg, sizeof msg );
 	return FALSE;
 }
 
@@ -1356,12 +1357,17 @@ BOOLEAN NTAPI NtUserMoveWindow( HANDLE Window, int x, int y, int width, int heig
 	return TRUE;
 }
 
-BOOLEAN NtUserRedrawWindow( HANDLE Window, RECT *Update, HANDLE Region, UINT Flags )
+BOOLEAN NTAPI NtUserRedrawWindow( HANDLE Window, RECT *Update, HANDLE Region, UINT Flags )
 {
 	return TRUE;
 }
 
-ULONG NtUserGetAsyncKeyState( ULONG Key )
+ULONG NTAPI NtUserGetAsyncKeyState( ULONG Key )
 {
 	return win32k_manager->get_async_key_state( Key );
+}
+
+LRESULT NTAPI NtUserDispatchMessage( PMSG Message )
+{
+	return 0;
 }
