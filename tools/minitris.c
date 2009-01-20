@@ -535,6 +535,7 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 	init_brushes();
 	new_block();
 	SetTimer( hwnd, 0, interval, 0 );
+	PostMessage( hwnd, WM_NULL, 0, 0 );
 	OutputDebugString("Before GetMessage");
 	while (GetMessage( &msg, 0, 0, 0 ))
 	{
