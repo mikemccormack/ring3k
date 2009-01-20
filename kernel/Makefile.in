@@ -57,6 +57,7 @@ CPP_SOURCES = \
 	mailslot.cpp \
 	main.cpp \
 	mem.cpp \
+	message.cpp \
 	mutant.cpp \
 	namedpipe.cpp \
 	ntcall.cpp \

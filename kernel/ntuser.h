@@ -1,7 +1,7 @@
 /*
  * nt loader
  *
- * Copyright 2006-2008 Mike McCormack
+ * Copyright 2006-2009 Mike McCormack
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -89,6 +89,34 @@ typedef struct tagNTCLASSMENUNAMES {
 	PWSTR name_w;
 	PUNICODE_STRING name_us;
 } NTCLASSMENUNAMES, *PNTCLASSMENUNAMES;
+
+typedef struct _NTNCCALCSIZEPACKEDINFO {
+	PVOID	wininfo;
+	ULONG	msg;
+	BOOL	wparam;
+	PVOID	wndproc;
+	ULONG	(CALLBACK *func)(PVOID,ULONG,WPARAM,NCCALCSIZE_PARAMS*,PVOID);
+	NCCALCSIZE_PARAMS params;
+	WINDOWPOS winpos;
+} NTNCCALCSIZEPACKEDINFO;
+
+typedef struct _NTMINMAXPACKEDINFO {
+	PVOID	wininfo;
+	ULONG	msg;
+	WPARAM	wparam;
+	MINMAXINFO minmax;
+	PVOID	wndproc;
+	ULONG	(CALLBACK *func)(PVOID,ULONG,WPARAM,MINMAXINFO*,PVOID);
+} NTMINMAXPACKEDINFO;
+
+typedef struct _NTSIMPLEMESSAGEPACKEDINFO {
+	PVOID	wininfo;
+	ULONG	msg;
+	WPARAM	wparam;
+	LPARAM	lparam;
+	PVOID	wndproc;
+	ULONG	(CALLBACK *func)(PVOID,ULONG,WPARAM,LPARAM,PVOID);
+} NTSIMPLEMESSAGEPACKEDINFO;
 
 #define NTUCOP_POSTQUITMESSAGE 0x26
 
