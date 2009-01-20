@@ -51,6 +51,7 @@ AC_CHECK_PROGS(ISOINFO,isoinfo no)
 
 AC_CHECK_FUNCS(clone)
 AC_CHECK_FUNCS(sigqueue)
+AC_CHECK_FUNCS(fstatat)
 
 AC_CONFIG_FILES(
 	Makefile

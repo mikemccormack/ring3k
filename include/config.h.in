@@ -9,6 +9,9 @@
 /* Define to 1 if you have the `clone' function. */
 #undef HAVE_CLONE
 
+/* Define to 1 if you have the `fstatat' function. */
+#undef HAVE_FSTATAT
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 

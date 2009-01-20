@@ -332,6 +332,57 @@ int getdents64( int fd, unsigned char *de, unsigned int size )
     return ret;
 }
 
+#ifndef HAVE_FSTATAT
+int fstatat64( int dirfd, const char *path, struct stat64 *buf, int flags )
+{
+	int ret;
+
+	__asm__(
+		"pushl %%ebx\n"
+		"\tmovl %2,%%ebx\n"
+		"\tint $0x80\n"
+		"\tpopl %%ebx\n"
+		: "=a"(ret)
+		: "0"(300 /*NR_fstatat64*/), "r"( dirfd ), "c"( path ), "d"( buf ), "S"(flags)
+		: "memory" );
+	if (ret < 0)
+	{
+		errno = -ret;
+		ret = -1;
+	}
+	return ret;
+}
+
+int fstatat( int dirfd, const char *path, struct stat *buf, int flags )
+{
+	struct stat64 st;
+	int ret;
+
+	ret = fstatat64( dirfd, path, &st, flags );
+	if (ret >= 0)
+	{
+		buf->st_dev = st.st_dev;
+		buf->st_ino = st.st_ino;
+		buf->st_mode = st.st_mode;
+		buf->st_nlink = st.st_nlink;
+		buf->st_uid = st.st_uid;
+		buf->st_gid = st.st_gid;
+		buf->st_rdev = st.st_rdev;
+		if (st.st_size < 0x100000000LL)
+			buf->st_size = st.st_size;
+		else
+			buf->st_size = ~0;
+		buf->st_blksize = st.st_blksize;
+		buf->st_blocks = st.st_blocks;
+		buf->st_atime = st.st_atime;
+		buf->st_mtime = st.st_mtime;
+		buf->st_ctime = st.st_ctime;
+	}
+	return ret;
+}
+
+#endif
+
 void directory_t::reset()
 {
 	ptr = 0;
@@ -417,12 +468,12 @@ bool directory_t::match(unicode_string_t &name) const
 
 void directory_t::add_entry(const char *name)
 {
-	char fullname[MAX_PATH];
-	sprintf(fullname, "/proc/self/fd/%d/%s", get_fd(), name);
 	dprintf("adding dir entry: %s\n", name);
 	directory_entry_t *ent = new directory_entry_t;
 	ent->name.copy(name);
-	if (0 != stat(fullname, &ent->st))
+	/* FIXME: Should symlinks be deferenced?
+	   AT_SYMLINK_NOFOLLOW */
+	if (0 != fstatat(get_fd(), name, &ent->st, 0))
 	{
 		delete ent;
 		return;
