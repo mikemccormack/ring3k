@@ -514,7 +514,7 @@ NUL(NtUserOpenInputDesktop),
 NUL(NtUserOpenWindowStation),
 NUL(NtUserPaintDesktop),
 NUL(NtUserPeekMessage),
-NUL(NtUserPostMessage),
+IMP(NtUserPostMessage, 4),
 NUL(NtUserPostThreadMessage),
 #ifdef SYSCALL_WINXP
 NUL(NtUserPrintWindow), // 3

@@ -1435,3 +1435,8 @@ LRESULT NTAPI NtUserDispatchMessage( PMSG Message )
 {
 	return 0;
 }
+
+BOOLEAN NTAPI NtUserPostMessage( HANDLE Window, UINT Message, WPARAM Wparam, LPARAM Lparam )
+{
+	return TRUE;
+}
