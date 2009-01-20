@@ -936,7 +936,6 @@ wmessage_ptr_tt::wmessage_ptr_tt( pointer_info_tt& pointer_info ) :
 class create_message_tt : public wmessage_ptr_tt
 {
 	static const ULONG NTWIN32_CREATE_CALLBACK = 9;
-	static const ULONG WM_CREATE = 0x0001;
 protected:
 	struct create_client_data : public pointer_info_tt
 	{
@@ -960,7 +959,6 @@ public:
 
 class nccreate_message_tt : public create_message_tt
 {
-	static const ULONG WM_NCCREATE = 0x0081;
 public:
 	nccreate_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name );
 };
@@ -1012,14 +1010,6 @@ void create_message_tt::set_window_info( window_tt *win )
 	info.func = (typeof(info.func)) g_funcsW[17];
 }
 
-typedef struct tagMINMAXINFO {
-	POINT	ptReserved;
-	POINT	ptMaxSize;
-	POINT	ptMaxPosition;
-	POINT	ptMinTrackSize;
-	POINT	ptMaxTrackSize;
-} MINMAXINFO, *PMINMAXINFO, *LPMINMAXINFO;
-
 typedef struct _NTMINMAXPACKEDINFO {
 	PVOID	wininfo;
 	ULONG	msg;
@@ -1032,7 +1022,6 @@ typedef struct _NTMINMAXPACKEDINFO {
 class getminmaxinfo_tt : public message_tt
 {
 	static const ULONG NTWIN32_MINMAX_CALLBACK = 17;
-	static const ULONG WM_GETMINMAXINFO = 0x24;
 	NTMINMAXPACKEDINFO info;
 public:
 	getminmaxinfo_tt();
@@ -1070,21 +1059,6 @@ void getminmaxinfo_tt::set_window_info( window_tt *win )
 	info.func = (typeof(info.func)) g_funcsW[17];
 }
 
-typedef struct _WINDOWPOS {
-	HANDLE	hwnd;
-	HANDLE	hwndInsertAfter;
-	INT	x;
-	INT	y;
-	INT	cx;
-	INT	cy;
-	UINT	flags;
-} WINDOWPOS;
-
-typedef struct _NCCALCSIZE_PARAMS {
-	RECT	rgrc[3];
-	WINDOWPOS *lppos;
-} NCCALCSIZE_PARAMS;
-
 typedef struct _NTNCCALCSIZEPACKEDINFO {
 	PVOID	wininfo;
 	ULONG	msg;
@@ -1098,7 +1072,6 @@ typedef struct _NTNCCALCSIZEPACKEDINFO {
 class nccalcsize_message_tt : public message_tt
 {
 	static const ULONG NTWIN32_NCCALC_CALLBACK = 20;
-	static const ULONG WM_NCCALCSIZE = 0x0083;
 	NTNCCALCSIZEPACKEDINFO info;
 public:
 	nccalcsize_message_tt();
@@ -1183,7 +1156,6 @@ void basicmsg_tt::set_window_info( window_tt *win )
 
 class showwindowmsg_tt : public basicmsg_tt
 {
-	static const ULONG WM_SHOWWINDOW = 0x0018;
 public:
 	showwindowmsg_tt( bool show );
 };

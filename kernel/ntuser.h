@@ -21,6 +21,11 @@
 #ifndef __NTUSER_H__
 #define __NTUSER_H__
 
+#include <stdarg.h>
+#define __ms_va_list va_list
+typedef void *LPSECURITY_ATTRIBUTES;
+#include "winuser.h"
+
 #define NUMBER_OF_USER_SHARED_SECTIONS 29
 
 typedef struct USER_SHARED_MEMORY_INFO {
@@ -42,24 +47,6 @@ typedef struct _USER_PROCESS_CONNECT_INFO_XP {
 	PVOID Ptr[4];
 	USER_SHARED_MEMORY_INFO SharedSection[NUMBER_OF_USER_SHARED_SECTIONS_XP];
 } USER_PROCESS_CONNECT_INFO_XP, *PUSER_PROCESS_CONNECT_INFO_XP;
-
-typedef struct _ICONINFO {
-	BOOL	fIcon;
-	DWORD	xHotspot;
-	DWORD	yHotspot;
-	HBITMAP	hbmMask;
-	HBITMAP	hbmColor;
-} ICONINFO, *PICONINFO;
-
-typedef struct tagMSG
-{
-	HWND	hwnd;
-	UINT	message;
-	WPARAM	wParam;
-	LPARAM	lParam;
-	DWORD	time;
-	POINT	pt;
-} MSG, *PMSG;
 
 typedef struct tagUSER32_UNICODE_STRING {
 	ULONG Length;
@@ -102,56 +89,6 @@ typedef struct tagNTCLASSMENUNAMES {
 	PWSTR name_w;
 	PUNICODE_STRING name_us;
 } NTCLASSMENUNAMES, *PNTCLASSMENUNAMES;
-
-typedef struct tagMOUSEINPUT {
-	LONG    dx;
-	LONG    dy;
-	DWORD   mouseData;
-	DWORD   dwFlags;
-	DWORD   time;
-	ULONG_PTR dwExtraInfo;
-} MOUSEINPUT, *PMOUSEINPUT, *LPMOUSEINPUT;
-
-typedef struct tagKEYBDINPUT {
-	WORD    wVk;
-	WORD    wScan;
-	DWORD   dwFlags;
-	DWORD   time;
-	ULONG_PTR dwExtraInfo;
-} KEYBDINPUT, *PKEYBDINPUT, *LPKEYBDINPUT;
-
-typedef struct tagHARDWAREINPUT {
-	DWORD   uMsg;
-	WORD    wParamL;
-	WORD    wParamH;
-} HARDWAREINPUT, *PHARDWAREINPUT, *LPHARDWAREINPUT;
-
-#define INPUT_MOUSE     0
-#define INPUT_KEYBOARD  1
-#define INPUT_HARDWARE  2
-
-typedef struct tagINPUT
-{
-    DWORD type;
-    union
-    {
-        MOUSEINPUT      mi;
-        KEYBDINPUT      ki;
-        HARDWAREINPUT   hi;
-    };
-} INPUT, *PINPUT, *LPINPUT;
-
-#define VK_ESCAPE           0x1B
-#define VK_SPACE            0x20
-#define VK_LEFT             0x25
-#define VK_UP               0x26
-#define VK_RIGHT            0x27
-#define VK_DOWN             0x28
-
-#define KEYEVENTF_KEYUP     0x0002
-
-#define WS_CLIPSIBLINGS  0x04000000L
-#define WS_EX_WINDOWEDGE       0x00000100L
 
 ULONG NTAPI    NtUserCallNoParam(ULONG);
 ULONG NTAPI    NtUserCallOneParam(ULONG,ULONG);
