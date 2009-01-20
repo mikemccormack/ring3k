@@ -21,28 +21,7 @@
 #ifndef __NTGDI_H__
 #define __NTGDI_H__
 
-// stock objects
-#define WHITE_BRUSH		0
-#define LTGRAY_BRUSH		1
-#define GRAY_BRUSH		2
-#define DKGRAY_BRUSH		3
-#define BLACK_BRUSH		4
-#define NULL_BRUSH		5
-#define HOLLOW_BRUSH		5
-#define WHITE_PEN		6
-#define BLACK_PEN		7
-#define NULL_PEN		8
-#define OEM_FIXED_FONT		10
-#define ANSI_FIXED_FONT		11
-#define ANSI_VAR_FONT		12
-#define SYSTEM_FONT		13
-#define DEVICE_DEFAULT_FONT	14
-#define DEFAULT_PALETTE		15
-#define SYSTEM_FIXED_FONT	16
-#define DEFAULT_GUI_FONT	17
-#define DC_BRUSH		18
-#define DC_PEN			19
-#define STOCK_LAST		19
+#include "wingdi.h"
 
 // from FengYuan's Windows Graphics Programming Section 3.2, page 144
 
@@ -82,181 +61,25 @@ inline ULONG get_handle_type(HGDIOBJ handle)
 
 HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type );
 
-typedef struct {
-	BYTE	rgbBlue;
-	BYTE	rgbGreen;
-	BYTE	rgbRed;
-	BYTE	rgbReserved;
-} RGBQUAD, *LPRGBQUAD;
-
-typedef struct
-{
-	INT	bmType;
-	INT	bmWidth;
-	INT	bmHeight;
-	INT	bmWidthBytes;
-	WORD	bmPlanes;
-	WORD	bmBitsPixel;
-	LPVOID	bmBits;
-} BITMAP, *PBITMAP, *LPBITMAP;
-
-typedef struct {
-	DWORD	biSize;
-	LONG	biWidth;
-	LONG	biHeight;
-	WORD	biPlanes;
-	WORD	biBitCount;
-	DWORD	biCompression;
-	DWORD	biSizeImage;
-	LONG	biXPelsPerMeter;
-	LONG	biYPelsPerMeter;
-	DWORD	biClrUsed;
-	DWORD	biClrImportant;
-} BITMAPINFOHEADER, *PBITMAPINFOHEADER, *LPBITMAPINFOHEADER;
-
-typedef struct tagBITMAPINFO {
-	BITMAPINFOHEADER	bmiHeader;
-	RGBQUAD			bmiColors[1];
-} BITMAPINFO, *PBITMAPINFO, *LPBITMAPINFO;
-
-#define LF_FACESIZE     32
-#define LF_FULLFACESIZE 64
-
-typedef struct tagLOGFONTW {
-    LONG   lfHeight;
-    LONG   lfWidth;
-    LONG   lfEscapement;
-    LONG   lfOrientation;
-    LONG   lfWeight;
-    BYTE   lfItalic;
-    BYTE   lfUnderline;
-    BYTE   lfStrikeOut;
-    BYTE   lfCharSet;
-    BYTE   lfOutPrecision;
-    BYTE   lfClipPrecision;
-    BYTE   lfQuality;
-    BYTE   lfPitchAndFamily;
-    WCHAR  lfFaceName[LF_FACESIZE];
-} LOGFONTW, *PLOGFONTW, *LPLOGFONTW;
-
-typedef struct {
-  LOGFONTW elfLogFont;
-  WCHAR      elfFullName[LF_FULLFACESIZE];
-  WCHAR      elfStyle[LF_FACESIZE];
-  WCHAR      elfScript[LF_FACESIZE];
-} ENUMLOGFONTEXW,*LPENUMLOGFONTEXW;
-
-typedef struct {
-    LONG      tmHeight;
-    LONG      tmAscent;
-    LONG      tmDescent;
-    LONG      tmInternalLeading;
-    LONG      tmExternalLeading;
-    LONG      tmAveCharWidth;
-    LONG      tmMaxCharWidth;
-    LONG      tmWeight;
-    LONG      tmOverhang;
-    LONG      tmDigitizedAspectX;
-    LONG      tmDigitizedAspectY;
-    WCHAR     tmFirstChar;
-    WCHAR     tmLastChar;
-    WCHAR     tmDefaultChar;
-    WCHAR     tmBreakChar;
-    BYTE      tmItalic;
-    BYTE      tmUnderlined;
-    BYTE      tmStruckOut;
-    BYTE      tmPitchAndFamily;
-    BYTE      tmCharSet;
-    DWORD     ntmFlags;
-    UINT      ntmSizeEM;
-    UINT      ntmCellHeight;
-    UINT      ntmAvgWidth;
-} NEWTEXTMETRICW, *PNEWTEXTMETRICW, *LPNEWTEXTMETRICW;
-
-typedef struct {
-  DWORD fsUsb[4];
-  DWORD fsCsb[2];
-} FONTSIGNATURE, *PFONTSIGNATURE, *LPFONTSIGNATURE;
-
-typedef struct {
-    NEWTEXTMETRICW	ntmTm;
-    FONTSIGNATURE       ntmFontSig;
-} NEWTEXTMETRICEXW;
-
-#define RASTER_FONTTYPE     0x0001
-#define DEVICE_FONTTYPE     0x0002
-#define TRUETYPE_FONTTYPE   0x0004
-
-#define DEFAULT_PITCH       0x00
-#define FIXED_PITCH         0x01
-#define VARIABLE_PITCH      0x02
-#define MONO_FONT           0x08
-
-#define FF_DONTCARE         0x00
-#define FF_ROMAN            0x10
-#define FF_SWISS            0x20
-#define FF_MODERN           0x30
-#define FF_SCRIPT           0x40
-#define FF_DECORATIVE       0x50
-
-#define FW_DONTCARE	    0
-#define FW_THIN		    100
-#define FW_EXTRALIGHT	    200
-#define FW_ULTRALIGHT	    200
-#define FW_LIGHT	    300
-#define FW_NORMAL	    400
-#define FW_REGULAR	    400
-#define FW_MEDIUM	    500
-#define FW_SEMIBOLD	    600
-#define FW_DEMIBOLD	    600
-#define FW_BOLD		    700
-#define FW_EXTRABOLD	    800
-#define FW_ULTRABOLD	    800
-#define FW_HEAVY	    900
-#define FW_BLACK	    900
-
-#define ANSI_CHARSET	      (BYTE)0
-#define OEM_CHARSET	      (BYTE)255
-
-typedef struct tagTEXTMETRICW
-{
-    LONG      tmHeight;
-    LONG      tmAscent;
-    LONG      tmDescent;
-    LONG      tmInternalLeading;
-    LONG      tmExternalLeading;
-    LONG      tmAveCharWidth;
-    LONG      tmMaxCharWidth;
-    LONG      tmWeight;
-    LONG      tmOverhang;
-    LONG      tmDigitizedAspectX;
-    LONG      tmDigitizedAspectY;
-    WCHAR     tmFirstChar;
-    WCHAR     tmLastChar;
-    WCHAR     tmDefaultChar;
-    WCHAR     tmBreakChar;
-    BYTE      tmItalic;
-    BYTE      tmUnderlined;
-    BYTE      tmStruckOut;
-    BYTE      tmPitchAndFamily;
-    BYTE      tmCharSet;
-} TEXTMETRICW, *LPTEXTMETRICW, *PTEXTMETRICW;
-
+#undef GetRValue
 static inline BYTE GetRValue(COLORREF rgb)
 {
 	return rgb&0xff;
 }
 
+#undef GetGValue
 static inline BYTE GetGValue(COLORREF rgb)
 {
 	return (rgb>>8)&0xff;
 }
 
+#undef GetBValue
 static inline BYTE GetBValue(COLORREF rgb)
 {
 	return (rgb>>16)&0xff;
 }
 
+#undef RGB
 static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
 {
 	return red | (green << 8) | (blue << 16);
