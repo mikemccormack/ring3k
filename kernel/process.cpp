@@ -342,7 +342,8 @@ process_t::process_t() :
 	exception_port(0),
 	priority(0),
 	hard_error_mode(1),
-	win32k_info(0)
+	win32k_info(0),
+	window_station(0)
 {
 	ExitStatus = STATUS_PENDING;
 	id = allocate_id();

@@ -23,8 +23,6 @@
 #include <stdio.h>
 #include <time.h>
 
-#define POLLED_INPUT
-
 #define DEFAULT_WIDTH 10
 #define DEFAULT_HEIGHT 20
 #define DEFAULT_BLOCKSIZE 20
@@ -497,11 +495,8 @@ void init_brushes( void )
 	brushes[7] = CreateSolidBrush( RGB( 0xf0, 0xf0, 0x00 ) );
 }
 
-#ifndef POLLED_INPUT
-
 // normal windows program
-
-int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Show )
+int window_winmain( HINSTANCE Instance )
 {
 	WNDCLASS wc;
 	MSG msg;
@@ -551,8 +546,6 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 	return 0;
 }
 
-#else
-
 // this is required when we're replacing winlogon
 void init_window_station( void )
 {
@@ -582,10 +575,11 @@ BOOL check_pressed( ULONG key )
 }
 
 // polled input, as synchronous input is not supported as yet :(
-int main(int argc, char **argv)
+int polled_winmain( void )
 {
 	BOOL repaint, restart = TRUE;
 	ULONG count = 0;
+
 	init_window_station();
 
 	init_brushes();
@@ -635,4 +629,18 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-#endif
+int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Show )
+{
+	// a bit of a hack...
+	if (GetProcessWindowStation())
+	{
+		// running as normal windows program
+		return window_winmain( Instance );
+	}
+	else
+	{
+		// running as winlogon.exe
+		return polled_winmain();
+	}
+}
+

@@ -708,13 +708,14 @@ HANDLE NTAPI NtUserCreateDesktop(
 BOOLEAN NTAPI NtUserSetProcessWindowStation(HANDLE WindowStation)
 {
 	dprintf("\n");
+	current->process->window_station = WindowStation;
 	return TRUE;
 }
 
 HANDLE NTAPI NtUserGetProcessWindowStation(void)
 {
 	dprintf("\n");
-	return (HANDLE) 0xf00d2000;
+	return current->process->window_station;
 }
 
 BOOLEAN NTAPI NtUserSetThreadDesktop(HANDLE Desktop)

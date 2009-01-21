@@ -52,6 +52,8 @@ struct process_t : public sync_object_t {
 
 	ULONG execute_flags;
 
+	HANDLE window_station;
+
 public:
 	NTSTATUS create_exe_ppb( RTL_USER_PROCESS_PARAMETERS **pparams, UNICODE_STRING& name );
 	NTSTATUS create_parameters(
