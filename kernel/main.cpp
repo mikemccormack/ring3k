@@ -246,7 +246,7 @@ void do_cleanup( void )
 		fprintf(stderr, "%d threads %d processes left\n", num_threads, num_processes);
 }
 
-static void segv_handler(int)
+static void backtrace_and_quit()
 {
 	const int max_frames = 20;
 	void *bt[max_frames];
@@ -266,6 +266,16 @@ static void segv_handler(int)
 		fprintf(stderr, "%d: %s\n", n, names[n]);
 	}
 	exit(1);
+}
+
+static void segv_handler(int)
+{
+	backtrace_and_quit();
+}
+
+static void abort_handler(int)
+{
+	backtrace_and_quit();
 }
 
 bool init_skas();
@@ -360,6 +370,7 @@ int main(int argc, char **argv)
 
 	// enable backtraces
 	signal(SIGSEGV, segv_handler);
+	signal(SIGABRT, abort_handler);
 
 	// quick sanity test
 	allocation_bitmap_t::test();
