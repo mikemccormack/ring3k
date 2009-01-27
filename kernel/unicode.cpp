@@ -61,13 +61,19 @@ unicode_string_t::unicode_string_t() :
 unicode_string_t::unicode_string_t( const UNICODE_STRING& source ) :
 	buf(0)
 {
-	copy( &source );
+	Buffer = 0;
+	Length = 0;
+	MaximumLength = 0;
+	assert (STATUS_SUCCESS == copy( &source ));
 }
 
 unicode_string_t::unicode_string_t( const unicode_string_t& source ) :
 	buf(0)
 {
-	copy( &source );
+	Buffer = 0;
+	Length = 0;
+	MaximumLength = 0;
+	assert (STATUS_SUCCESS == copy( &source ));
 }
 
 void unicode_string_t::set( UNICODE_STRING& us )
