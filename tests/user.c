@@ -104,21 +104,38 @@ void init_callback(void *arg)
 #define MAX_RECEIVED_MESSAGES 0x1000
 ULONG sequence;
 ULONG received_msg[MAX_RECEIVED_MESSAGES];
+HWND received_hwnd[MAX_RECEIVED_MESSAGES];
 
-static inline void record_received( ULONG msg )
+void clear_msg_sequence(void)
+{
+	memset( &received_msg, 0, sizeof received_msg );
+	sequence = 0;
+}
+
+static inline void record_received( HWND hwnd, ULONG msg )
 {
 	if (sequence < MAX_RECEIVED_MESSAGES)
+	{
+		received_hwnd[ sequence ] = hwnd;
 		received_msg[ sequence ++ ] = msg;
+	}
 }
 
 void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 {
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
-	record_received( pack->msg );
+	record_received( pack->wininfo->handle, pack->msg );
 	switch (pack->msg)
 	{
 	case WM_SHOWWINDOW:
 	case WM_ACTIVATE:
+	case WM_ACTIVATEAPP:
+	case WM_NCACTIVATE:
+	case WM_SETFOCUS:
+	case WM_NCPAINT:
+	case WM_ERASEBKGND:
+	case WM_SIZE:
+	case WM_MOVE:
 		break;
 	default:
 		dprintf("msg %04lx\n", pack->msg );
@@ -144,7 +161,7 @@ void getminmax_callback(NTMINMAXPACKEDINFO *pack)
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	ok( pack->func != NULL, "func NULL\n" );
 
-	record_received( pack->msg );
+	record_received( pack->wininfo->handle, pack->msg );
 
 	NtCallbackReturn( 0, 0, 0 );
 }
@@ -155,7 +172,7 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	ok( pack->func != NULL, "func NULL\n" );
-	record_received( pack->msg );
+	record_received( pack->wininfo->handle, pack->msg );
 
 	switch (pack->msg)
 	{
@@ -176,10 +193,36 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 
 void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 {
-	record_received( pack->msg );
 	ok( pack->func != NULL, "func NULL\n" );
-	ok( pack->msg == WM_NCCALCSIZE, "message wrong %08lx\n", pack->msg );
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
+	record_received( pack->wininfo->handle, pack->msg );
+	ok( pack->msg == WM_NCCALCSIZE, "message wrong %08lx\n", pack->msg );
+	NtCallbackReturn( 0, 0, 0 );
+}
+
+void position_changing_callback( PNTPOSCHANGINGPACKEDINFO pack )
+{
+	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
+	record_received( pack->wininfo->handle, pack->msg );
+	ok( pack->msg == WM_WINDOWPOSCHANGING, "message wrong %08lx\n", pack->msg );
+	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
+	ok( pack->func != NULL, "func NULL\n" );
+	NtCallbackReturn( 0, 0, 0 );
+}
+
+void position_changed_callback( PNTPOSCHANGINGPACKEDINFO pack )
+{
+	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
+	record_received( pack->wininfo->handle, pack->msg );
+	ok( pack->msg == WM_WINDOWPOSCHANGED, "message wrong %08lx\n", pack->msg );
+	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
+	ok( pack->func != NULL, "func NULL\n" );
+	NtCallbackReturn( 0, 0, 0 );
+}
+
+void stub_callback( BYTE *data )
+{
+	dump_bin( data, 0x20 );
 	NtCallbackReturn( 0, 0, 0 );
 }
 
@@ -190,7 +233,8 @@ void init_callbacks( void )
 	callback_table[NTWIN32_MINMAX_CALLBACK] = &getminmax_callback;
 	callback_table[NTWIN32_CREATE_CALLBACK] = &create_callback;
 	callback_table[NTWIN32_NCCALC_CALLBACK] = &nccalc_callback;
-	ok( NTWIN32_MINMAX_CALLBACK == 17, "wrong!\n");
+	callback_table[NTWIN32_POSCHANGING_CALLBACK] = &position_changing_callback;
+	callback_table[NTWIN32_POSCHANGED_CALLBACK] = &position_changed_callback;
 
 	__asm__ (
 		"movl %%fs:0x18, %%eax\n\t"
@@ -351,10 +395,11 @@ void register_class( void )
 	ok( atom != 0, "return %04x\n", atom );
 }
 
-static inline void check_msg( ULONG msg, ULONG* n )
+static inline void check_msg( HWND hwnd, ULONG msg, ULONG* n )
 {
 	ULONG val = received_msg[*n];
-	ok( val == msg, "%ld sequence %ld != %ld\n", *n, val, msg );
+	ok( hwnd == NULL || hwnd == received_hwnd[*n], "hwnd wrong\n");
+	ok( val == msg, "%ld sequence received %04lx != expected %04lx\n", *n, val, msg );
 	(*n)++;
 }
 
@@ -409,7 +454,7 @@ void* kernel_to_user( void *kptr )
 	return (void*) ((ULONG)kptr - get_user_pointer_offset());
 }
 
-void create_window( void )
+void create_window( BOOL visible )
 {
 	USER32_UNICODE_STRING cls, title;
 	WCHAR title_str[] = L"test window";
@@ -422,6 +467,8 @@ void create_window( void )
 	const int quit_magic = 0xdada;
 	BOOL r;
 
+	clear_msg_sequence();
+
 	cls.Buffer = test_class_name;
 	cls.Length = sizeof test_class_name - 2;
 	cls.MaximumLength = sizeof test_class_name;
@@ -432,6 +479,8 @@ void create_window( void )
 
 	instance = get_exe_base();
 	style = WS_CAPTION |WS_SYSMENU |WS_GROUP;
+	if (visible)
+		style |= WS_VISIBLE;
 	exstyle = 0x80000000;
 	window = NtUserCreateWindowEx(exstyle, &cls, &title, style,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -447,10 +496,29 @@ void create_window( void )
 	ok( wndptr->exstyle == WS_EX_WINDOWEDGE, "exstyle wrong %08lx %08lx\n", wndptr->exstyle, exstyle);
 	ok( wndptr->hInstance == instance, "instance wrong\n");
 
-	check_msg( WM_GETMINMAXINFO, &n );
-	check_msg( WM_NCCREATE, &n );
-	check_msg( WM_NCCALCSIZE, &n );
-	check_msg( WM_CREATE, &n );
+	check_msg( window, WM_GETMINMAXINFO, &n );
+	check_msg( window, WM_NCCREATE, &n );
+	check_msg( window, WM_NCCALCSIZE, &n );
+	check_msg( window, WM_CREATE, &n );
+	if (visible)
+	{
+		check_msg( window, WM_SHOWWINDOW, &n );
+		check_msg( window, WM_WINDOWPOSCHANGING, &n );
+		// two WM_ACTIVATEAPP messages
+		// first for the window being deactivated
+		// then for the window being activated
+		check_msg( window, WM_ACTIVATEAPP, &n );
+		check_msg( 0, WM_ACTIVATEAPP, &n );
+		check_msg( window, WM_NCACTIVATE, &n );
+		check_msg( window, WM_ACTIVATE, &n );
+		check_msg( window, WM_SETFOCUS, &n );
+		check_msg( window, WM_NCPAINT, &n );
+		check_msg( window, WM_ERASEBKGND, &n );
+		check_msg( window, WM_WINDOWPOSCHANGED, &n );
+		check_msg( window, WM_SIZE, &n );
+		check_msg( window, WM_MOVE, &n );
+	}
+	ok( sequence == n, "got %ld != %ld messages\n", sequence, n);
 
 	// clear the message
 	msg.hwnd = 0;
@@ -484,7 +552,8 @@ void create_window( void )
 void test_window()
 {
 	register_class();
-	create_window();
+	create_window( FALSE );
+	//create_window( TRUE );
 }
 
 void NtProcessStartup( void )
