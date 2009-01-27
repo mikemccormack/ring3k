@@ -34,40 +34,10 @@ public:
 	virtual ~message_tt() {}
 };
 
-class wmessage_ptr_tt : public message_tt
+class create_message_tt : public message_tt
 {
 protected:
-	struct pointer_info_tt
-	{
-		ULONG sz;
-		ULONG x;
-		ULONG count;
-		PVOID kernel_address;
-		ULONG adjust_info_ofs;
-		BOOL  no_adjust;
-	};
-	pointer_info_tt &pi;
-public:
-	wmessage_ptr_tt( pointer_info_tt& pointer_info );
-	virtual ULONG get_size() const = 0;
-	virtual NTSTATUS copy_to_user( void *ptr ) const = 0;
-	virtual ULONG get_callback_num() const = 0;
-	virtual void set_window_info( window_tt *win ) = 0;
-};
-
-class create_message_tt : public wmessage_ptr_tt
-{
-protected:
-	struct create_client_data : public pointer_info_tt
-	{
-		PVOID wininfo;
-		ULONG msg;
-		WPARAM wparam;
-		BOOL cs_nonnull;
-		NTCREATESTRUCT cs;
-		PVOID wndproc;
-		ULONG (CALLBACK *func)(PVOID/*PWININFO*/,ULONG,WPARAM,PVOID/*LPCREATESTRUCT*/,PVOID);
-	} info;
+	NTCREATEPACKEDINFO info;
 	const UNICODE_STRING& cls;
 	const UNICODE_STRING& name;
 public:

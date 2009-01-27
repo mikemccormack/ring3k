@@ -34,16 +34,6 @@
 #include "debug.h"
 #include "queue.h"
 
-wmessage_ptr_tt::wmessage_ptr_tt( pointer_info_tt& pointer_info ) :
-	pi( pointer_info )
-{
-	pi.x = 0;
-	pi.count = 0;
-	pi.kernel_address = 0;
-	pi.adjust_info_ofs = 0;
-	pi.no_adjust = 0;
-}
-
 nccreate_message_tt::nccreate_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name ) :
 	create_message_tt( cs, cls, name )
 {
@@ -52,13 +42,18 @@ nccreate_message_tt::nccreate_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRI
 
 create_message_tt::create_message_tt( NTCREATESTRUCT& cs,
 			const UNICODE_STRING& _cls, const UNICODE_STRING& _name ) :
-	wmessage_ptr_tt( info ),
 	cls( _cls ),
 	name( _name )
 {
 	memset( &info, 0, sizeof info );
 
-	info.sz = sizeof info;
+	info.pi.x = 0;
+	info.pi.count = 0;
+	info.pi.kernel_address = 0;
+	info.pi.adjust_info_ofs = 0;
+	info.pi.no_adjust = 0;
+
+	info.pi.sz = sizeof info;
 	info.wininfo = NULL;
 	info.msg = WM_CREATE;
 	info.wparam = 0;
