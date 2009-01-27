@@ -92,6 +92,28 @@ void thread_message_queue_tt::post_quit_message( ULONG ret )
 BOOL thread_message_queue_tt::post_message(
 	HWND Window, UINT Message, WPARAM Wparam, LPARAM Lparam )
 {
+	msg_waiter_tt *waiter = waiter_list.head();
+	if (waiter)
+	{
+		MSG& msg = waiter->msg;
+		msg.hwnd = Window;
+		msg.message = Message;
+		msg.wParam = Wparam;
+		msg.lParam = Lparam;
+		msg.time = timeout_t::get_tick_count();
+		msg.pt.x = 0;
+		msg.pt.y = 0;
+
+		// remove from the list first
+		waiter_list.unlink( waiter );
+
+		// start the thread (might reschedule here )
+		waiter->t->start();
+
+		return TRUE;
+	}
+
+	// no waiter, so store the message
 	msg_tt* msg = new msg_tt( Window, Message, Wparam, Lparam );
 	if (!msg)
 		return FALSE;
@@ -101,29 +123,50 @@ BOOL thread_message_queue_tt::post_message(
 	return TRUE;
 }
 
+// return true if we copied a message
+bool thread_message_queue_tt::copy_msg( MSG& Message )
+{
+	if (get_quit_message( Message ))
+		return true;
+
+	msg_tt *m = msg_list.head();
+	if (!m)
+		return false;
+
+	msg_list.unlink( m );
+	Message.hwnd = m->hwnd;
+	Message.message = m->message;
+	Message.wParam = m->wparam;
+	Message.lParam = m->lparam;
+	Message.time = m->time;
+	Message.pt.x = 0;
+	Message.pt.y = 0;
+	delete m;
+
+	return true;
+}
+
+msg_waiter_tt::msg_waiter_tt( MSG& m):
+	msg( m )
+{
+	t = current;
+}
+
+
+// return true if we succeeded in copying a message
 BOOLEAN thread_message_queue_tt::get_message(
 	MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
 {
-	if (get_quit_message( Message ))
-		return FALSE;
-
-	msg_tt *m = msg_list.head();
-	if (m)
-	{
-		msg_list.unlink( m );
-		Message.hwnd = m->hwnd;
-		Message.message = m->message;
-		Message.wParam = m->wparam;
-		Message.lParam = m->lparam;
-		Message.time = m->time;
-		Message.pt.x = 0;
-		Message.pt.y = 0;
-		delete m;
+	if (copy_msg( Message ))
 		return TRUE;
-	}
 
+	// wait for a message
+	// a thread sending a message will restart us
+	msg_waiter_tt wait( Message );
+	waiter_list.append( &wait );
 	current->stop();
-	return TRUE;
+
+	return current->is_terminated();
 }
 
 BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
@@ -139,9 +182,10 @@ BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HWND Window, ULONG MinMessage, ULON
 
 	MSG msg;
 	memset( &msg, 0, sizeof msg );
-	BOOLEAN not_quit = queue->get_message( msg, Window, MinMessage, MaxMessage );
-	copy_to_user( Message, &msg, sizeof msg );
-	return not_quit;
+	if (queue->get_message( msg, Window, MinMessage, MaxMessage ))
+		copy_to_user( Message, &msg, sizeof msg );
+
+	return msg.message != WM_QUIT;
 }
 
 BOOLEAN NTAPI NtUserPostMessage( HWND Window, UINT Message, WPARAM Wparam, LPARAM Lparam )
