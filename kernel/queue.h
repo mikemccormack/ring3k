@@ -23,18 +23,39 @@
 
 #include "ntuser.h"
 
+class msg_tt;
+
+typedef list_anchor<msg_tt,0> msg_list_t;
+typedef list_iter<msg_tt,0> msg_iter_t;
+typedef list_element<msg_tt> msg_element_t;
+
+class msg_tt {
+public:
+	msg_element_t entry[1];
+	HWND hwnd;
+	UINT message;
+	WPARAM wparam;
+	LPARAM lparam;
+	DWORD time;
+public:
+	msg_tt( HWND _hwnd, UINT Message, WPARAM Wparam, LPARAM Lparam );
+};
+
 // derived from Wine's struct thread_input
 // see wine/server/queue.c (by Alexandre Julliard)
 class thread_message_queue_tt : public sync_object_t
 {
 	bool	quit_message;    // is there a pending quit message?
 	int	exit_code;       // exit code of pending quit message
-
+	msg_list_t msg_list;
 public:
 	thread_message_queue_tt();
+	~thread_message_queue_tt();
+	BOOL post_message( HWND Window, UINT Message, WPARAM Wparam, LPARAM Lparam );
 	void post_quit_message( ULONG exit_code );
 	bool get_quit_message( MSG &msg );
 	virtual BOOLEAN is_signalled( void );
+	BOOLEAN get_message( MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage);
 };
 
 #endif // __RING3K_QUEUE__

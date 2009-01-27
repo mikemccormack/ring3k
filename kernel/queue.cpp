@@ -35,25 +35,35 @@
 #include "mem.h"
 #include "debug.h"
 #include "object.inl"
+#include "list.h"
+#include "timer.h"
+#include "win.h"
+#include "queue.h"
 
-// derived from Wine's struct thread_input
-// see wine/server/queue.c (by Alexandre Julliard)
-class thread_message_queue_tt : public sync_object_t
+msg_tt::msg_tt( HWND _hwnd, UINT _message, WPARAM _wparam, LPARAM _lparam ) :
+	hwnd( _hwnd ),
+	message( _message ),
+	wparam( _wparam ),
+	lparam( _lparam )
 {
-	bool	quit_message;    // is there a pending quit message?
-	int	exit_code;       // exit code of pending quit message
-
-public:
-	thread_message_queue_tt();
-	void post_quit_message( ULONG exit_code );
-	bool get_quit_message( MSG &msg );
-	virtual BOOLEAN is_signalled( void );
-};
+	time = timeout_t::get_tick_count();
+}
 
 thread_message_queue_tt::thread_message_queue_tt() :
 	quit_message( 0 ),
 	exit_code( 0 )
 {
+}
+
+thread_message_queue_tt::~thread_message_queue_tt()
+{
+	msg_tt *msg;
+
+	while ((msg = msg_list.head()))
+	{
+		msg_list.unlink( msg );
+		delete msg;
+	}
 }
 
 bool thread_message_queue_tt::get_quit_message( MSG& msg )
@@ -79,22 +89,68 @@ void thread_message_queue_tt::post_quit_message( ULONG ret )
 	exit_code = ret;
 }
 
-BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HANDLE Window, ULONG MinMessage, ULONG MaxMessage)
+BOOL thread_message_queue_tt::post_message(
+	HWND Window, UINT Message, WPARAM Wparam, LPARAM Lparam )
 {
-	// no input queue...
-	thread_message_queue_tt* queue = current->queue;
-	if (!queue)
+	msg_tt* msg = new msg_tt( Window, Message, Wparam, Lparam );
+	if (!msg)
+		return FALSE;
+	msg_list.append( msg );
+
+	// FIXME: wake up a thread that is waiting
+	return TRUE;
+}
+
+BOOLEAN thread_message_queue_tt::get_message(
+	MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
+{
+	if (get_quit_message( Message ))
 		return FALSE;
 
-	MSG msg;
-	memset( &msg, 0, sizeof msg );
-	if (queue->get_quit_message( msg ))
+	msg_tt *m = msg_list.head();
+	if (m)
 	{
-		copy_to_user( Message, &msg, sizeof msg );
-		return FALSE;
+		msg_list.unlink( m );
+		Message.hwnd = m->hwnd;
+		Message.message = m->message;
+		Message.wParam = m->wparam;
+		Message.lParam = m->lparam;
+		Message.time = m->time;
+		Message.pt.x = 0;
+		Message.pt.y = 0;
+		delete m;
+		return TRUE;
 	}
 
 	current->stop();
 	return TRUE;
 }
 
+BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
+{
+	// no input queue...
+	thread_message_queue_tt* queue = current->queue;
+	if (!queue)
+		return FALSE;
+
+	NTSTATUS r = verify_for_write( Message, sizeof *Message );
+	if (r != STATUS_SUCCESS)
+		return FALSE;
+
+	MSG msg;
+	memset( &msg, 0, sizeof msg );
+	BOOLEAN not_quit = queue->get_message( msg, Window, MinMessage, MaxMessage );
+	copy_to_user( Message, &msg, sizeof msg );
+	return not_quit;
+}
+
+BOOLEAN NTAPI NtUserPostMessage( HWND Window, UINT Message, WPARAM Wparam, LPARAM Lparam )
+{
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return FALSE;
+
+	assert(win->thread != NULL);
+
+	return win->thread->queue->post_message( Window, Message, Wparam, Lparam );
+}

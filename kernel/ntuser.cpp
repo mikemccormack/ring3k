@@ -861,7 +861,6 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	//ULONG ShowMode,
 	BOOL UnicodeWindow)
 {
-	dprintf("\n");
 
 	NTSTATUS r;
 
@@ -906,7 +905,6 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	void *mem = user_shared_bitmap.alloc( sizeof *win );
 	if (!mem)
 		return 0;
-	memset( mem, 0, sizeof *win );
 
 	win = new(mem) window_tt( current, wndcls, window_name, Style, ExStyle, x, y, Width, Height, Instance );
 
@@ -1025,9 +1023,4 @@ ULONG NTAPI NtUserGetAsyncKeyState( ULONG Key )
 LRESULT NTAPI NtUserDispatchMessage( PMSG Message )
 {
 	return 0;
-}
-
-BOOLEAN NTAPI NtUserPostMessage( HANDLE Window, UINT Message, WPARAM Wparam, LPARAM Lparam )
-{
-	return TRUE;
 }

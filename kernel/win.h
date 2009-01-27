@@ -103,4 +103,6 @@ extern PVOID g_funcs[9];
 extern PVOID g_funcsW[20];
 extern PVOID g_funcsA[20];
 
+window_tt *window_from_handle( HANDLE handle );
+
 #endif // __RING3K_WIN_H__

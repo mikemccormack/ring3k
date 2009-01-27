@@ -470,6 +470,7 @@ void create_window( void )
 	void *instance;
 	MSG msg;
 	const int quit_magic = 0xdada;
+	BOOL r;
 
 	cls.Buffer = test_class_name;
 	cls.Length = sizeof test_class_name - 2;
@@ -501,18 +502,29 @@ void create_window( void )
 	check_msg( WM_NCCALCSIZE, &n );
 	check_msg( WM_CREATE, &n );
 
-	NtUserCallOneParam( quit_magic, NTUCOP_POSTQUITMESSAGE );
-
+	// clear the message
 	msg.hwnd = 0;
 	msg.message = 0;
 	msg.wParam = 0;
 	msg.lParam = 0;
-	while (NtUserGetMessage( &msg, 0, 0, 0 ))
-	{
-		ok( msg.hwnd == window, "window wrong %p\n", msg.hwnd );
-		NtUserDispatchMessage( &msg );
-	}
 
+	// check that the null message works
+	r = NtUserPostMessage( window, WM_NULL, 1, 1 );
+	ok( TRUE == r, "NtPostMessage failed\n");
+
+	r = NtUserGetMessage( &msg, 0, 0, 0 );
+	ok( r == TRUE, "posted message not received\n");
+	ok( msg.hwnd == window, "window wrong %p\n", msg.hwnd );
+	ok( msg.message == WM_NULL, "message wrong %08x\n", msg.message );
+	ok( msg.wParam == 1, "wParam wrong %08x\n", msg.wParam );
+	ok( msg.lParam == 1, "lParam wrong %08lx\n", msg.lParam );
+
+	// check that PostQuitMessage will work
+	r = NtUserCallOneParam( quit_magic, NTUCOP_POSTQUITMESSAGE );
+	ok( TRUE == r, "NtPostMessage failed\n");
+
+	r = NtUserGetMessage( &msg, 0, 0, 0 );
+	ok( r == FALSE, "quit message not received\n");
 	ok( msg.hwnd == 0, "window wrong %p\n", msg.hwnd );
 	ok( msg.message == WM_QUIT, "message wrong %08x\n", msg.message );
 	ok( msg.wParam == quit_magic, "wParam wrong %08x\n", msg.wParam );
