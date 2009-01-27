@@ -21,8 +21,6 @@
 #ifndef __NTGDI_H__
 #define __NTGDI_H__
 
-#include "wingdi.h"
-
 // from FengYuan's Windows Graphics Programming Section 3.2, page 144
 
 #define GDI_OBJECT_DC	  0x01
@@ -85,6 +83,7 @@ static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
 	return red | (green << 8) | (blue << 16);
 }
 
+#if 0
   /* Brush styles */
 #define BS_SOLID	0
 #define BS_NULL		1
@@ -113,6 +112,7 @@ static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
 #define DSTINVERT       0x550009
 #define BLACKNESS       0x000042
 #define WHITENESS       0xff0062
+#endif
 
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);
@@ -143,7 +143,7 @@ BOOLEAN NTAPI NtGdiRestoreDC(HGDIOBJ,int);
 int NTAPI     NtGdiSaveDC(HGDIOBJ);
 HGDIOBJ NTAPI NtGdiSelectBitmap(HGDIOBJ,HGDIOBJ);
 ULONG   NTAPI NtGdiSetDIBitsToDeviceInternal(HGDIOBJ,int,int,ULONG,ULONG,int,int,ULONG,ULONG,PVOID,PVOID,ULONG,ULONG,ULONG,ULONG,ULONG);
-BOOL    NTAPI NtGdiSetFontEnumeration(PVOID);
+ULONG   NTAPI NtGdiSetFontEnumeration(ULONG);
 BOOLEAN NTAPI NtGdiSetIcmMode(HANDLE,ULONG,ULONG);
 BOOLEAN NTAPI NtGdiSetPixel(HANDLE,INT,INT,COLORREF);
 

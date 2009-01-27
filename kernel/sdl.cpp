@@ -30,10 +30,9 @@
 #include "winternl.h"
 
 #include "ntcall.h"
-#include "ntgdi.h"
 #include "debug.h"
 #include "win32mgr.h"
-#include "ntuser.h"
+#include "ntwin32.h"
 #include "sdl.h"
 
 #if defined (HAVE_SDL) && defined (HAVE_SDL_SDL_H)

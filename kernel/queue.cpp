@@ -31,7 +31,7 @@
 
 #include "ntcall.h"
 #include "object.h"
-#include "ntuser.h"
+#include "ntwin32.h"
 #include "mem.h"
 #include "debug.h"
 #include "object.inl"
@@ -150,7 +150,8 @@ BOOLEAN NTAPI NtUserPostMessage( HWND Window, UINT Message, WPARAM Wparam, LPARA
 	if (!win)
 		return FALSE;
 
-	assert(win->thread != NULL);
+	thread_t*& thread = win->get_win_thread();
+	assert(thread != NULL);
 
-	return win->thread->queue->post_message( Window, Message, Wparam, Lparam );
+	return thread->queue->post_message( Window, Message, Wparam, Lparam );
 }

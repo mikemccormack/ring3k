@@ -32,8 +32,7 @@
 #include "ntcall.h"
 #include "section.h"
 #include "objdir.h"
-#include "ntuser.h"
-#include "ntgdi.h"
+#include "ntwin32.h"
 #include "win32mgr.h"
 #include "mem.h"
 #include "debug.h"
@@ -798,10 +797,10 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 }
 
 window_tt::window_tt( thread_t* t, wndcls_tt *_wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
-		 LONG x, LONG y, LONG width, LONG height, PVOID instance ) :
-	thread( t ),
-	parent( 0 )
+		 LONG x, LONG y, LONG width, LONG height, PVOID instance )
 {
+	parent = 0;
+	get_win_thread() = t;
 	self = this;
 	wndcls = _wndcls;
 	style = _style;
@@ -813,14 +812,15 @@ window_tt::window_tt( thread_t* t, wndcls_tt *_wndcls, unicode_string_t& _name, 
 	hInstance = instance;
 }
 
-void *window_tt::get_wininfo()
+PWND window_tt::get_wininfo()
 {
 	ULONG ofs = (BYTE*)this - (BYTE*)user_shared;
-	return (void*) (current->process->win32k_info->user_shared_mem + ofs);
+	return (PWND) (current->process->win32k_info->user_shared_mem + ofs);
 }
 
 NTSTATUS window_tt::send( message_tt& msg )
 {
+	thread_t*& thread = get_win_thread();
 	if (thread->is_terminated())
 		return STATUS_THREAD_IS_TERMINATING;
 
@@ -908,7 +908,7 @@ HANDLE NTAPI NtUserCreateWindowEx(
 
 	win = new(mem) window_tt( current, wndcls, window_name, Style, ExStyle, x, y, Width, Height, Instance );
 
-	win->handle = (HANDLE) alloc_user_handle( win, USER_HANDLE_WINDOW );
+	win->handle = (HWND) alloc_user_handle( win, USER_HANDLE_WINDOW );
 	win->wndproc = wndcls->get_wndproc();
 
 	// check set the offset

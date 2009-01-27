@@ -21,7 +21,7 @@
 #ifndef __RING3K_MESSAGE__
 #define __RING3K_MESSAGE__
 
-#include "ntuser.h"
+#include "ntwin32.h"
 #include "win.h"
 
 class message_tt
@@ -57,7 +57,6 @@ public:
 
 class create_message_tt : public wmessage_ptr_tt
 {
-	static const ULONG NTWIN32_CREATE_CALLBACK = 9;
 protected:
 	struct create_client_data : public pointer_info_tt
 	{
@@ -87,7 +86,6 @@ public:
 
 class getminmaxinfo_tt : public message_tt
 {
-	static const ULONG NTWIN32_MINMAX_CALLBACK = 17;
 	NTMINMAXPACKEDINFO info;
 public:
 	getminmaxinfo_tt();
@@ -99,7 +97,6 @@ public:
 
 class nccalcsize_message_tt : public message_tt
 {
-	static const ULONG NTWIN32_NCCALC_CALLBACK = 20;
 	NTNCCALCSIZEPACKEDINFO info;
 public:
 	nccalcsize_message_tt();
@@ -111,7 +108,6 @@ public:
 
 class basicmsg_tt : public message_tt
 {
-	static const ULONG NTWIN32_BASICMSG_CALLBACK = 2;
 protected:
 	NTSIMPLEMESSAGEPACKEDINFO info;
 public:

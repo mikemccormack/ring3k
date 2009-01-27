@@ -182,15 +182,6 @@ ULONG get_handle_upper(HANDLE handle)
 	return (((ULONG)handle)>>16);
 }
 
-typedef struct _gdi_handle_table_entry {
-	void *kernel_info;
-	ULONG ProcessId;
-	USHORT Upper;
-	BYTE Type;
-	BYTE Unknown;
-	void *user_info;
-} gdi_handle_table_entry;
-
 void test_text_metric( void )
 {
 	ULONG buf[8];
@@ -225,7 +216,7 @@ void test_text_metric( void )
 	ok( table[index].Upper == get_handle_upper( hdc ),
 		"handle mismatch\n");
 	ok( (table[index].ProcessId&~1) == (get_process_id()&~3),
-		"process id mismatch %08lx %08lx\n",
+		"process id mismatch %08x %08lx\n",
 		table[index].ProcessId, get_process_id());
 
 	ok( sizeof *table == 0x10, "sizeof table wrong\n");

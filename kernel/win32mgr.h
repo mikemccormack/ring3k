@@ -21,7 +21,7 @@
 #ifndef __WIN32K_MANAGER__
 #define __WIN32K_MANAGER__
 
-#include "ntuser.h"
+#include "ntwin32.h"
 
 class win32k_info_t
 {

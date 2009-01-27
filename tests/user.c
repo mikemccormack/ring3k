@@ -113,7 +113,7 @@ static inline void record_received( ULONG msg )
 
 void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 {
-	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
+	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	record_received( pack->msg );
 	switch (pack->msg)
 	{
@@ -131,7 +131,7 @@ HANDLE get_cached_window_handle(void);
 // magic numbers for everybody
 void getminmax_callback(NTMINMAXPACKEDINFO *pack)
 {
-	HANDLE window = *(pack->wininfo);
+	HANDLE window = pack->wininfo->handle;
 	//dprintf("wininfo = %p\n", pack->wininfo );
 	//dprintf("handle = %p\n", window );
 	//dprintf("cached = %p\n", get_cached_window_handle() );
@@ -141,7 +141,7 @@ void getminmax_callback(NTMINMAXPACKEDINFO *pack)
 	ok( pack->wparam == 0, "wparam wrong %08x\n", pack->wparam );
 	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
 	ok( pack->msg == WM_GETMINMAXINFO, "message wrong %08lx\n", pack->msg );
-	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
+	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	ok( pack->func != NULL, "func NULL\n" );
 
 	record_received( pack->msg );
@@ -153,7 +153,7 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 {
 	NTWINCALLBACKRETINFO ret;
 
-	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
+	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	ok( pack->func != NULL, "func NULL\n" );
 	record_received( pack->msg );
 
@@ -179,7 +179,7 @@ void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 	record_received( pack->msg );
 	ok( pack->func != NULL, "func NULL\n" );
 	ok( pack->msg == WM_NCCALCSIZE, "message wrong %08lx\n", pack->msg );
-	ok( pack->wininfo != NULL && *(pack->wininfo) != NULL, "*wininfo NULL\n" );
+	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	NtCallbackReturn( 0, 0, 0 );
 }
 
@@ -271,18 +271,11 @@ ULONG NTAPI testWndProc( HANDLE Window, UINT Message, UINT Wparam, ULONG Lparam 
 	}
 }
 
-struct menu_names
-{
-	LPSTR name_a;
-	LPWSTR name_w;
-	PUNICODE_STRING name_us;
-};
-
 WCHAR test_class_name[] = L"TESTCLS";
 
 void register_class( void )
 {
-	struct menu_names menu;
+	NTCLASSMENUNAMES menu;
 	UNICODE_STRING empty;
 	UNICODE_STRING name;
 	NTWNDCLASSEX wndcls;
@@ -416,49 +409,6 @@ void* kernel_to_user( void *kptr )
 	return (void*) ((ULONG)kptr - get_user_pointer_offset());
 }
 
-/* see http://winterdom.com/dev/ui/wnd.html */
-typedef struct _WND WND;
-
-struct _WND
-{
-      HWND        hWnd;
-      ULONG       unk1;
-      ULONG       unk2;
-      ULONG       unk3;
-      WND*        pSelf;
-      DWORD       dwFlags;
-      ULONG       unk6;
-      DWORD       dwStyleEx;
-      DWORD       dwStyle;
-      HINSTANCE   hInstance;
-      ULONG       unk10;
-      WND*        pNextWnd;
-      WND*        pParentWnd;
-      WND*        pFirstChild;
-      WND*        pOwnerWnd;
-      RECT        rcWnd;
-      RECT        rcClient;
-      PVOID       pWndProc;
-      PVOID       pWndClass;
-      ULONG       unk25;
-      ULONG       unk26;
-      ULONG       unk27;
-      ULONG       unk28;
-      union {
-         DWORD    dwWndID;
-         PVOID    pMenu;
-      } id;
-      ULONG       unk30;
-      ULONG       unk31;
-      ULONG       unk32;
-      WCHAR*      pText;
-      DWORD       dwWndBytes;
-      ULONG       unk35;
-      ULONG       unk36;
-      ULONG       wlUserData;
-      ULONG       wlWndExtra[1];
-};
-
 void create_window( void )
 {
 	USER32_UNICODE_STRING cls, title;
@@ -491,10 +441,10 @@ void create_window( void )
 	kernel_wndptr = check_user_handle( window, USER_HANDLE_WINDOW );
 	wndptr = kernel_to_user( kernel_wndptr );
 	//dprintf("wininfo = %p\n", wndptr );
-	ok( wndptr->pSelf == kernel_wndptr, "self pointer wrong\n");
-	ok( wndptr->hWnd == window, "window handle wrong\n");
-	ok( wndptr->dwStyle == (style | WS_CLIPSIBLINGS), "style wrong %08lx %08lx\n", wndptr->dwStyle, style);
-	ok( wndptr->dwStyleEx == WS_EX_WINDOWEDGE, "exstyle wrong %08lx %08lx\n", wndptr->dwStyleEx, exstyle);
+	ok( wndptr->self == kernel_wndptr, "self pointer wrong\n");
+	ok( wndptr->handle == window, "window handle wrong\n");
+	ok( wndptr->style == (style | WS_CLIPSIBLINGS), "style wrong %08lx %08lx\n", wndptr->style, style);
+	ok( wndptr->exstyle == WS_EX_WINDOWEDGE, "exstyle wrong %08lx %08lx\n", wndptr->exstyle, exstyle);
 	ok( wndptr->hInstance == instance, "instance wrong\n");
 
 	check_msg( WM_GETMINMAXINFO, &n );

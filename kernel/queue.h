@@ -21,7 +21,7 @@
 #ifndef __RING3K_QUEUE__
 #define __RING3K_QUEUE__
 
-#include "ntuser.h"
+#include "ntwin32.h"
 
 class msg_tt;
 

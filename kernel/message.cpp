@@ -29,7 +29,7 @@
 #include "winternl.h"
 
 #include "ntcall.h"
-#include "ntuser.h"
+#include "ntwin32.h"
 #include "message.h"
 #include "debug.h"
 #include "queue.h"

@@ -30,8 +30,7 @@
 
 #include "debug.h"
 #include "ntcall.h"
-#include "ntgdi.h"
-#include "ntuser.h"
+#include "ntwin32.h"
 
 typedef struct _ntcalldesc {
 	const char *name;

@@ -30,7 +30,7 @@
 #include "winternl.h"
 
 #include "ntcall.h"
-#include "ntgdi.h"
+#include "ntwin32.h"
 #include "mem.h"
 #include "section.h"
 #include "debug.h"
@@ -256,8 +256,6 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	return r;
 }
-
-static const ULONG NTWIN32_THREAD_INIT_CALLBACK = 74;
 
 NTSTATUS win32k_thread_init(thread_t *thread)
 {
@@ -988,7 +986,7 @@ HANDLE NTAPI NtGdiCreateDIBSection(
 	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
 }
 
-BOOL NTAPI NtGdiSetFontEnumeration(PVOID Unknown)
+ULONG NTAPI NtGdiSetFontEnumeration(ULONG Unknown)
 {
 	return 0;
 }

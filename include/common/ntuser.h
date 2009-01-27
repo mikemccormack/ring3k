@@ -21,10 +21,28 @@
 #ifndef __NTUSER_H__
 #define __NTUSER_H__
 
-#include <stdarg.h>
-#define __ms_va_list va_list
-typedef void *LPSECURITY_ATTRIBUTES;
-#include "winuser.h"
+#ifndef WINXP
+
+// Windows 2000
+#define NTWIN32_BASICMSG_CALLBACK 2
+#define NTWIN32_CREATE_CALLBACK 9
+#define NTWIN32_MINMAX_CALLBACK 17
+#define NTWIN32_NCCALC_CALLBACK 20
+#define NTWIN32_THREAD_INIT_CALLBACK 74
+#define NUM_USER32_CALLBACKS 90
+#define NUMBER_OF_USER_SHARED_SECTIONS 29
+
+#else
+
+// Windows XP
+#define NTWIN32_CREATE_CALLBACK 10
+#define NTWIN32_MINMAX_CALLBACK 18
+#define NTWIN32_NCCALC_CALLBACK 21
+#define NTWIN32_THREAD_INIT_CALLBACK 75
+#define NUM_USER32_CALLBACKS 98
+#define NUMBER_OF_USER_SHARED_SECTIONS 33
+
+#endif
 
 #define NUMBER_OF_USER_SHARED_SECTIONS 29
 
@@ -34,19 +52,26 @@ typedef struct USER_SHARED_MEMORY_INFO {
 } USER_SHARED_MEMORY_INFO, *PUSER_SHARED_MEMORY_INFO;
 
 typedef struct _USER_PROCESS_CONNECT_INFO {
-	ULONG Version;  // set by caller
-	ULONG Empty[2];
+	ULONG Version;
+	ULONG Unknown;
+	ULONG MinorVersion;
 	PVOID Ptr[4];
 	USER_SHARED_MEMORY_INFO SharedSection[NUMBER_OF_USER_SHARED_SECTIONS];
 } USER_PROCESS_CONNECT_INFO, *PUSER_PROCESS_CONNECT_INFO;
 
 #define NUMBER_OF_USER_SHARED_SECTIONS_XP 33
 typedef struct _USER_PROCESS_CONNECT_INFO_XP {
-	ULONG Version;  // set by caller
+	ULONG Version;
 	ULONG Empty[2];
 	PVOID Ptr[4];
 	USER_SHARED_MEMORY_INFO SharedSection[NUMBER_OF_USER_SHARED_SECTIONS_XP];
 } USER_PROCESS_CONNECT_INFO_XP, *PUSER_PROCESS_CONNECT_INFO_XP;
+
+typedef struct _NTWINCALLBACKRETINFO {
+	LRESULT val;
+	ULONG   size;
+	PVOID   buf;
+} NTWINCALLBACKRETINFO;
 
 typedef struct tagUSER32_UNICODE_STRING {
 	ULONG Length;
@@ -90,8 +115,71 @@ typedef struct tagNTCLASSMENUNAMES {
 	PUNICODE_STRING name_us;
 } NTCLASSMENUNAMES, *PNTCLASSMENUNAMES;
 
+// shared memory structure!!
+// see http://winterdom.com/dev/ui/wnd.html
+struct _WND;
+typedef struct _WND WND, *PWND;
+struct _WND {
+	HWND handle;
+	ULONG unk1;
+	ULONG unk2;
+	ULONG unk3;
+	PWND self;
+	ULONG dwFlags;
+	ULONG unk6;
+	ULONG exstyle;
+	ULONG style;
+	PVOID hInstance;
+	ULONG unk10;
+	PWND next;
+	PWND parent;
+	PWND first_child;
+	PWND owner;
+	RECT rcWnd;
+	RECT rcClient;
+	void* wndproc;
+	void* wndcls;
+	ULONG unk25;
+	ULONG unk26;
+	ULONG unk27;
+	ULONG unk28;
+	union {
+		ULONG dwWndID;
+		void* Menu;
+	} id;
+	ULONG unk30;
+	ULONG unk31;
+	ULONG unk32;
+	PWSTR pText;
+	ULONG dwWndBytes;
+	ULONG unk35;
+	ULONG unk36;
+	ULONG wlUserData;
+	ULONG wlWndExtra[1];
+};
+
+typedef struct _NTPACKEDPOINTERINFO {
+	ULONG	sz;
+	ULONG	x;
+	ULONG	count;
+	PVOID	kernel_address;
+	ULONG	adjust_info_ofs;
+	BOOL	no_adjust;
+} NTPACKEDPOINTERINFO;
+
+typedef struct _NTCREATEPACKEDINFO {
+	NTPACKEDPOINTERINFO pi;
+	PWND    wininfo;
+	ULONG   msg;
+	WPARAM  wparam;
+	BOOL    cs_nonnull;
+	NTCREATESTRUCT cs;
+	PVOID   wndproc;
+	ULONG   (CALLBACK *func)(PVOID,ULONG,WPARAM,NTCREATESTRUCT,PVOID);
+} NTCREATEPACKEDINFO;
+
 typedef struct _NTNCCALCSIZEPACKEDINFO {
-	PVOID	wininfo;
+	PWND	wininfo;
 	ULONG	msg;
 	BOOL	wparam;
 	PVOID	wndproc;
@@ -101,7 +189,7 @@ typedef struct _NTNCCALCSIZEPACKEDINFO {
 } NTNCCALCSIZEPACKEDINFO;
 
 typedef struct _NTMINMAXPACKEDINFO {
-	PVOID	wininfo;
+	PWND	wininfo;
 	ULONG	msg;
 	WPARAM	wparam;
 	MINMAXINFO minmax;
@@ -110,7 +198,7 @@ typedef struct _NTMINMAXPACKEDINFO {
 } NTMINMAXPACKEDINFO;
 
 typedef struct _NTSIMPLEMESSAGEPACKEDINFO {
-	PVOID	wininfo;
+	PWND	wininfo;
 	ULONG	msg;
 	WPARAM	wparam;
 	LPARAM	lparam;

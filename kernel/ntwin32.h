@@ -18,10 +18,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef __RING3K_TEST_NTWIN32_H__
-#define __RING3K_TEST_NTWIN32_H__
+#ifndef __RING3K_KERNEL_NTWIN32_H__
+#define __RING3K_KERNEL_NTWIN32_H__
 
 #include <stdarg.h>
+#define __ms_va_list va_list
+typedef void *LPSECURITY_ATTRIBUTES;
 #include "wingdi.h"
 #include "winuser.h"
 #include "ntgdi.h"
