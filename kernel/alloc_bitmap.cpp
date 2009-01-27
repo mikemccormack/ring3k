@@ -20,6 +20,13 @@
 
 #include "alloc_bitmap.h"
 
+#ifdef HAVE_VALGRIND_VALGRIND_H
+#include <valgrind/valgrind.h>
+#else
+#define VALGRIND_MALLOCLIKE_BLOCK( addr, sizeB, rzB, is_zeroed )
+#define VALGRIND_FREELIKE_BLOCK( start, rzB )
+#endif
+
 allocation_bitmap_t::allocation_bitmap_t() :
 	size(0),
 	array_size(0),
@@ -97,7 +104,9 @@ unsigned char* allocation_bitmap_t::alloc( size_t len )
 
 			// check that we allocated the bits correctly
 			assert( required == count_one_bits( i, required ) );
-			return &ptr[ i * allocation_granularity ];
+			unsigned char *ret = &ptr[ i * allocation_granularity ];
+			VALGRIND_MALLOCLIKE_BLOCK( ret, len, 0, 0 );
+			return ret;
 		}
 
 		i += free;
@@ -128,6 +137,8 @@ void allocation_bitmap_t::free( unsigned char *start, size_t len )
 
 	// mark the memory as being clear
 	clear_bits( ofs, required );
+
+	VALGRIND_FREELIKE_BLOCK( start, 0 );
 }
 
 void allocation_bitmap_t::get_info( size_t& total, size_t& used, size_t& free )
