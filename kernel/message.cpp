@@ -34,6 +34,26 @@
 #include "debug.h"
 #include "queue.h"
 
+template<class Pack>
+ULONG generic_message_tt<Pack>::get_size() const
+{
+	return sizeof info;
+}
+
+template<class Pack>
+NTSTATUS generic_message_tt<Pack>::copy_to_user( void *ptr ) const
+{
+	return ::copy_to_user( ptr, &info, sizeof info );
+}
+
+template<class Pack>
+void generic_message_tt<Pack>::set_window_info( window_tt *win )
+{
+	info.wininfo = win->get_wininfo();
+	info.wndproc = win->get_wndproc();
+	info.func = (typeof(info.func)) g_funcsW[17];
+}
+
 nccreate_message_tt::nccreate_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name ) :
 	create_message_tt( cs, cls, name )
 {
@@ -66,52 +86,15 @@ ULONG create_message_tt::get_callback_num() const
 	return NTWIN32_CREATE_CALLBACK;
 }
 
-NTSTATUS create_message_tt::copy_to_user( void *ptr ) const
-{
-	BYTE *p = (BYTE*) ptr;
-	NTSTATUS r;
-	r = ::copy_to_user( p, &info, sizeof info );
-	return r;
-}
-
-ULONG create_message_tt::get_size() const
-{
-	return sizeof info;
-}
-
-void create_message_tt::set_window_info( window_tt *win )
-{
-	info.wininfo = win->get_wininfo();
-	info.wndproc = win->get_wndproc();
-	info.func = (typeof(info.func)) g_funcsW[17];
-}
-
 getminmaxinfo_tt::getminmaxinfo_tt()
 {
 	memset( &info, 0, sizeof info );
 	info.msg = WM_GETMINMAXINFO;
 }
 
-ULONG getminmaxinfo_tt::get_size() const
-{
-	return sizeof info;
-}
-
-NTSTATUS getminmaxinfo_tt::copy_to_user( void *ptr ) const
-{
-	return ::copy_to_user( ptr, &info, sizeof info );
-}
-
 ULONG getminmaxinfo_tt::get_callback_num() const
 {
 	return NTWIN32_MINMAX_CALLBACK;
-}
-
-void getminmaxinfo_tt::set_window_info( window_tt *win )
-{
-	info.wininfo = win->get_wininfo();
-	info.wndproc = win->get_wndproc();
-	info.func = (typeof(info.func)) g_funcsW[17];
 }
 
 nccalcsize_message_tt::nccalcsize_message_tt()
@@ -120,50 +103,14 @@ nccalcsize_message_tt::nccalcsize_message_tt()
 	info.msg = WM_NCCALCSIZE;
 }
 
-ULONG nccalcsize_message_tt::get_size() const
-{
-	return sizeof info;
-}
-
-NTSTATUS nccalcsize_message_tt::copy_to_user( void *ptr ) const
-{
-	return ::copy_to_user( ptr, &info, sizeof info );
-}
-
 ULONG nccalcsize_message_tt::get_callback_num() const
 {
 	return NTWIN32_NCCALC_CALLBACK;
 }
 
-void nccalcsize_message_tt::set_window_info( window_tt *win )
-{
-	info.wininfo = win->get_wininfo();
-	info.wndproc = win->get_wndproc();
-	info.func = (typeof(info.func)) g_funcsW[17];
-	assert( info.func != NULL );
-}
-
-ULONG basicmsg_tt::get_size() const
-{
-	return sizeof info;
-}
-
-NTSTATUS basicmsg_tt::copy_to_user( void *ptr ) const
-{
-	return ::copy_to_user( ptr, &info, sizeof info );
-}
-
 ULONG basicmsg_tt::get_callback_num() const
 {
 	return NTWIN32_BASICMSG_CALLBACK;
-}
-
-void basicmsg_tt::set_window_info( window_tt *win )
-{
-	info.wininfo = win->get_wininfo();
-	info.wndproc = win->get_wndproc();
-	info.func = (typeof(info.func)) g_funcsW[17];
-	assert( info.func != NULL );
 }
 
 showwindowmsg_tt::showwindowmsg_tt( bool show )

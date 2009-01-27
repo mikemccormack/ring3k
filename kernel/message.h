@@ -1,7 +1,7 @@
 /*
  * nt loader
  *
- * Copyright 2006-2008 Mike McCormack
+ * Copyright 2006-2009 Mike McCormack
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,18 +34,25 @@ public:
 	virtual ~message_tt() {}
 };
 
-class create_message_tt : public message_tt
+template<class Pack> class generic_message_tt : public message_tt
+{
+public:
+	Pack info;
+public:
+	virtual ULONG get_size() const;
+	virtual NTSTATUS copy_to_user( void *ptr ) const;
+	virtual ULONG get_callback_num() const = 0;
+	virtual void set_window_info( window_tt *win );
+};
+
+class create_message_tt : public generic_message_tt<NTCREATEPACKEDINFO>
 {
 protected:
-	NTCREATEPACKEDINFO info;
 	const UNICODE_STRING& cls;
 	const UNICODE_STRING& name;
 public:
 	create_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name );
-	virtual ULONG get_size() const;
-	virtual NTSTATUS copy_to_user( void *ptr ) const;
 	virtual ULONG get_callback_num() const;
-	virtual void set_window_info( window_tt *win );
 };
 
 class nccreate_message_tt : public create_message_tt
@@ -54,37 +61,24 @@ public:
 	nccreate_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name );
 };
 
-class getminmaxinfo_tt : public message_tt
+class getminmaxinfo_tt : public generic_message_tt<NTMINMAXPACKEDINFO>
 {
-	NTMINMAXPACKEDINFO info;
 public:
 	getminmaxinfo_tt();
-	virtual ULONG get_size() const;
-	virtual NTSTATUS copy_to_user( void *ptr ) const;
 	virtual ULONG get_callback_num() const;
-	virtual void set_window_info( window_tt *win );
 };
 
-class nccalcsize_message_tt : public message_tt
+class nccalcsize_message_tt : public generic_message_tt<NTNCCALCSIZEPACKEDINFO>
 {
-	NTNCCALCSIZEPACKEDINFO info;
 public:
 	nccalcsize_message_tt();
-	virtual ULONG get_size() const;
-	virtual NTSTATUS copy_to_user( void *ptr ) const;
 	virtual ULONG get_callback_num() const;
-	virtual void set_window_info( window_tt *win );
 };
 
-class basicmsg_tt : public message_tt
+class basicmsg_tt : public generic_message_tt<NTSIMPLEMESSAGEPACKEDINFO>
 {
-protected:
-	NTSIMPLEMESSAGEPACKEDINFO info;
 public:
-	virtual ULONG get_size() const;
-	virtual NTSTATUS copy_to_user( void *ptr ) const;
 	virtual ULONG get_callback_num() const;
-	virtual void set_window_info( window_tt *win );
 };
 
 class showwindowmsg_tt : public basicmsg_tt
