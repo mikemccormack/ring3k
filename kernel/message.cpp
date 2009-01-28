@@ -140,7 +140,18 @@ winposchanging_tt::winposchanging_tt( WINDOWPOS& pos ) :
 {
 }
 
-appactmsg_tt::appactmsg_tt()
+appactmsg_tt::appactmsg_tt( UINT type )
 {
 	info.msg = WM_ACTIVATEAPP;
+	info.wparam = type;
+}
+
+ncactivate_tt::ncactivate_tt()
+{
+	info.msg = WM_NCACTIVATE;
+}
+
+activate_tt::activate_tt()
+{
+	info.msg = WM_ACTIVATE;
 }

@@ -398,9 +398,15 @@ void register_class( void )
 static inline void check_msg( HWND hwnd, ULONG msg, ULONG* n )
 {
 	ULONG val = received_msg[*n];
-	ok( hwnd == NULL || hwnd == received_hwnd[*n], "hwnd wrong\n");
+	ok( hwnd == received_hwnd[*n], "hwnd wrong\n");
 	ok( val == msg, "%ld sequence received %04lx != expected %04lx\n", *n, val, msg );
 	(*n)++;
+}
+
+static inline void maybe_skip( ULONG msg, ULONG *n )
+{
+	if (received_msg[*n] == msg)
+		(*n)++;
 }
 
 #define USER_HANDLE_WINDOW 1
@@ -508,7 +514,7 @@ void create_window( BOOL visible )
 		// first for the window being deactivated
 		// then for the window being activated
 		check_msg( window, WM_ACTIVATEAPP, &n );
-		check_msg( 0, WM_ACTIVATEAPP, &n );
+		maybe_skip( WM_ACTIVATEAPP, &n );
 		check_msg( window, WM_NCACTIVATE, &n );
 		check_msg( window, WM_ACTIVATE, &n );
 		check_msg( window, WM_SETFOCUS, &n );

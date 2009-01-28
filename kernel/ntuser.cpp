@@ -43,6 +43,7 @@
 #include "win.h"
 
 wndcls_list_tt wndcls_list;
+window_tt *active_window;
 
 ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
 {
@@ -954,11 +955,33 @@ HANDLE NTAPI NtUserCreateWindowEx(
 		winposchanging_tt poschanging( wp );
 		win->send( poschanging );
 
-		appactmsg_tt aa;
-		win->send( aa );
+		// send activate messages
+		win->activate();
 	}
 
 	return win->handle;
+}
+
+void window_tt::activate()
+{
+	if (active_window == this)
+		return;
+
+	if (active_window)
+	{
+		appactmsg_tt aa( WA_INACTIVE );
+		active_window->send( aa );
+	}
+
+	active_window = this;
+	appactmsg_tt aa( WA_ACTIVE );
+	send( aa );
+
+	ncactivate_tt ncact;
+	send( ncact );
+
+	activate_tt act;
+	send( act );
 }
 
 BOOLEAN NTAPI NtUserSetLogonNotifyWindow( HANDLE Window )

@@ -115,7 +115,21 @@ public:
 class appactmsg_tt : public basicmsg_tt
 {
 public:
-	appactmsg_tt();
+	appactmsg_tt( UINT type );
+};
+
+// WM_NCACTIVATE
+class ncactivate_tt : public basicmsg_tt
+{
+public:
+	ncactivate_tt();
+};
+
+// WM_ACTIVATE
+class activate_tt : public basicmsg_tt
+{
+public:
+	activate_tt();
 };
 
 #endif // __RING3K_MESSAGE__
