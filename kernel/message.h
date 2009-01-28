@@ -24,6 +24,8 @@
 #include "ntwin32.h"
 #include "win.h"
 
+// a message sent to a window via a callback
+// the message information needs to be copied to user space
 class message_tt
 {
 public:
@@ -34,17 +36,21 @@ public:
 	virtual ~message_tt() {}
 };
 
+// message with the piece of packed information to be sent
+// one fixed size piece of data to send named 'info'
 template<class Pack> class generic_message_tt : public message_tt
 {
 public:
 	Pack info;
 public:
+	generic_message_tt();
 	virtual ULONG get_size() const;
 	virtual NTSTATUS copy_to_user( void *ptr ) const;
 	virtual ULONG get_callback_num() const = 0;
 	virtual void set_window_info( window_tt *win );
 };
 
+// WM_CREATE and WM_NCCREATE
 class create_message_tt : public generic_message_tt<NTCREATEPACKEDINFO>
 {
 protected:
@@ -61,6 +67,7 @@ public:
 	nccreate_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name );
 };
 
+// WM_GETMINMAXINFO
 class getminmaxinfo_tt : public generic_message_tt<NTMINMAXPACKEDINFO>
 {
 public:
@@ -68,6 +75,7 @@ public:
 	virtual ULONG get_callback_num() const;
 };
 
+// WM_NCCALCSIZE
 class nccalcsize_message_tt : public generic_message_tt<NTNCCALCSIZEPACKEDINFO>
 {
 public:
@@ -75,6 +83,7 @@ public:
 	virtual ULONG get_callback_num() const;
 };
 
+// basic messages where lparam and wparam aren't pointers
 class basicmsg_tt : public generic_message_tt<NTSIMPLEMESSAGEPACKEDINFO>
 {
 public:
@@ -85,6 +94,28 @@ class showwindowmsg_tt : public basicmsg_tt
 {
 public:
 	showwindowmsg_tt( bool show );
+};
+
+// WM_WINDOWPOSCHANGING and WM_WINDOWPOSCHANGED
+class winposchange_tt : public generic_message_tt<NTPOSCHANGINGPACKEDINFO>
+{
+	WINDOWPOS& pos;
+public:
+	winposchange_tt( ULONG message, WINDOWPOS& _pos );
+	virtual ULONG get_callback_num() const;
+};
+
+class winposchanging_tt : public winposchange_tt
+{
+public:
+	winposchanging_tt( WINDOWPOS& _pos );
+};
+
+// WM_ACTIVATEAPP
+class appactmsg_tt : public basicmsg_tt
+{
+public:
+	appactmsg_tt();
 };
 
 #endif // __RING3K_MESSAGE__

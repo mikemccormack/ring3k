@@ -845,6 +845,15 @@ NTSTATUS window_tt::send( message_tt& msg )
 	return r;
 }
 
+BOOLEAN window_tt::show( INT Show )
+{
+	// send a WM_SHOWWINDOW message
+	showwindowmsg_tt sw( TRUE );
+	send( sw );
+
+	return TRUE;
+}
+
 HANDLE NTAPI NtUserCreateWindowEx(
 	ULONG ExStyle,
 	PUSER32_UNICODE_STRING ClassName,
@@ -936,6 +945,19 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	create_message_tt create( cs, wndcls_name, window_name );
 	win->send( create );
 
+	if (win->style & WS_VISIBLE)
+	{
+		win->show( SW_SHOW );
+
+		WINDOWPOS wp;
+		memset( &wp, 0, sizeof wp );
+		winposchanging_tt poschanging( wp );
+		win->send( poschanging );
+
+		appactmsg_tt aa;
+		win->send( aa );
+	}
+
 	return win->handle;
 }
 
@@ -986,11 +1008,7 @@ BOOLEAN NTAPI NtUserShowWindow( HANDLE Window, INT Show )
 	if (!win)
 		return FALSE;
 
-	// send a WM_SHOWWINDOW message
-	showwindowmsg_tt sw( TRUE );
-	win->send( sw );
-
-	return TRUE;
+	return win->show( Show );
 }
 
 UINT NTAPI NtUserSetTimer( HANDLE Window, UINT Identifier, UINT Elapse, PVOID TimerProc )

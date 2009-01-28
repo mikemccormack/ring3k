@@ -35,6 +35,12 @@
 #include "queue.h"
 
 template<class Pack>
+generic_message_tt<Pack>::generic_message_tt()
+{
+	memset( &info, 0, sizeof info );
+}
+
+template<class Pack>
 ULONG generic_message_tt<Pack>::get_size() const
 {
 	return sizeof info;
@@ -88,7 +94,6 @@ ULONG create_message_tt::get_callback_num() const
 
 getminmaxinfo_tt::getminmaxinfo_tt()
 {
-	memset( &info, 0, sizeof info );
 	info.msg = WM_GETMINMAXINFO;
 }
 
@@ -99,7 +104,6 @@ ULONG getminmaxinfo_tt::get_callback_num() const
 
 nccalcsize_message_tt::nccalcsize_message_tt()
 {
-	memset( &info, 0, sizeof info );
 	info.msg = WM_NCCALCSIZE;
 }
 
@@ -120,3 +124,23 @@ showwindowmsg_tt::showwindowmsg_tt( bool show )
 	info.lparam = 0;
 }
 
+winposchange_tt::winposchange_tt( ULONG message, WINDOWPOS& _pos ) :
+	pos( _pos )
+{
+	info.msg = message;
+}
+
+ULONG winposchange_tt::get_callback_num() const
+{
+	return NTWIN32_POSCHANGING_CALLBACK;
+}
+
+winposchanging_tt::winposchanging_tt( WINDOWPOS& pos ) :
+	winposchange_tt( WM_WINDOWPOSCHANGING, pos )
+{
+}
+
+appactmsg_tt::appactmsg_tt()
+{
+	info.msg = WM_ACTIVATEAPP;
+}
