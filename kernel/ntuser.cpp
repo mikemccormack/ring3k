@@ -957,6 +957,16 @@ HANDLE NTAPI NtUserCreateWindowEx(
 
 		// send activate messages
 		win->activate();
+
+		// painting probably should be done elsewhere
+		ncpaintmsg_tt ncpaint;
+		win->send( ncpaint );
+
+		erasebkgmsg_tt erase;
+		win->send( erase );
+
+		winposchanged_tt poschanged( wp );
+		win->send( poschanged );
 	}
 
 	return win->handle;

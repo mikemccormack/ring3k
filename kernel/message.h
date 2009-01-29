@@ -87,6 +87,8 @@ public:
 class basicmsg_tt : public generic_message_tt<NTSIMPLEMESSAGEPACKEDINFO>
 {
 public:
+	basicmsg_tt();
+	basicmsg_tt( INT message );
 	virtual ULONG get_callback_num() const;
 };
 
@@ -102,13 +104,21 @@ class winposchange_tt : public generic_message_tt<NTPOSCHANGINGPACKEDINFO>
 	WINDOWPOS& pos;
 public:
 	winposchange_tt( ULONG message, WINDOWPOS& _pos );
-	virtual ULONG get_callback_num() const;
+	virtual ULONG get_callback_num() const = 0;
 };
 
 class winposchanging_tt : public winposchange_tt
 {
 public:
 	winposchanging_tt( WINDOWPOS& _pos );
+	virtual ULONG get_callback_num() const;
+};
+
+class winposchanged_tt : public winposchange_tt
+{
+public:
+	winposchanged_tt( WINDOWPOS& _pos );
+	virtual ULONG get_callback_num() const;
 };
 
 // WM_ACTIVATEAPP
@@ -137,6 +147,18 @@ class setfocusmsg_tt : public basicmsg_tt
 {
 public:
 	setfocusmsg_tt();
+};
+
+class ncpaintmsg_tt : public basicmsg_tt
+{
+public:
+	ncpaintmsg_tt();
+};
+
+class erasebkgmsg_tt : public basicmsg_tt
+{
+public:
+	erasebkgmsg_tt();
 };
 
 #endif // __RING3K_MESSAGE__

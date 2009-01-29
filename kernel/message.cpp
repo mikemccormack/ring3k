@@ -112,6 +112,15 @@ ULONG nccalcsize_message_tt::get_callback_num() const
 	return NTWIN32_NCCALC_CALLBACK;
 }
 
+basicmsg_tt::basicmsg_tt()
+{
+}
+
+basicmsg_tt::basicmsg_tt( INT message )
+{
+	info.msg = message;
+}
+
 ULONG basicmsg_tt::get_callback_num() const
 {
 	return NTWIN32_BASICMSG_CALLBACK;
@@ -130,14 +139,26 @@ winposchange_tt::winposchange_tt( ULONG message, WINDOWPOS& _pos ) :
 	info.msg = message;
 }
 
-ULONG winposchange_tt::get_callback_num() const
+// comes BEFORE a window's position changes
+winposchanging_tt::winposchanging_tt( WINDOWPOS& pos ) :
+	winposchange_tt( WM_WINDOWPOSCHANGING, pos )
+{
+}
+
+ULONG winposchanging_tt::get_callback_num() const
 {
 	return NTWIN32_POSCHANGING_CALLBACK;
 }
 
-winposchanging_tt::winposchanging_tt( WINDOWPOS& pos ) :
-	winposchange_tt( WM_WINDOWPOSCHANGING, pos )
+// comes AFTER a window's position changes
+winposchanged_tt::winposchanged_tt( WINDOWPOS& pos ) :
+	winposchange_tt( WM_WINDOWPOSCHANGED, pos )
 {
+}
+
+ULONG winposchanged_tt::get_callback_num() const
+{
+	return NTWIN32_POSCHANGED_CALLBACK;
 }
 
 appactmsg_tt::appactmsg_tt( UINT type )
@@ -159,4 +180,14 @@ activate_tt::activate_tt()
 setfocusmsg_tt::setfocusmsg_tt()
 {
 	info.msg = WM_SETFOCUS;
+}
+
+ncpaintmsg_tt::ncpaintmsg_tt() :
+	basicmsg_tt( WM_NCPAINT )
+{
+}
+
+erasebkgmsg_tt::erasebkgmsg_tt() :
+	basicmsg_tt( WM_ERASEBKGND )
+{
 }
