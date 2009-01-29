@@ -1078,3 +1078,8 @@ LRESULT NTAPI NtUserDispatchMessage( PMSG Message )
 {
 	return 0;
 }
+
+BOOLEAN NTAPI NtUserInvalidateRect( HWND Window, const RECT* Rectangle, BOOLEAN Erase )
+{
+	return TRUE;
+}
