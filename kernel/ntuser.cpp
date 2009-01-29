@@ -982,6 +982,9 @@ void window_tt::activate()
 
 	activate_tt act;
 	send( act );
+
+	setfocusmsg_tt setfocus;
+	send( setfocus );
 }
 
 BOOLEAN NTAPI NtUserSetLogonNotifyWindow( HANDLE Window )

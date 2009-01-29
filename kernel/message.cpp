@@ -155,3 +155,8 @@ activate_tt::activate_tt()
 {
 	info.msg = WM_ACTIVATE;
 }
+
+setfocusmsg_tt::setfocusmsg_tt()
+{
+	info.msg = WM_SETFOCUS;
+}

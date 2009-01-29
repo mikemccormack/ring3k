@@ -132,4 +132,11 @@ public:
 	activate_tt();
 };
 
+// WM_SETFOCUS
+class setfocusmsg_tt : public basicmsg_tt
+{
+public:
+	setfocusmsg_tt();
+};
+
 #endif // __RING3K_MESSAGE__
