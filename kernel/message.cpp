@@ -191,3 +191,16 @@ erasebkgmsg_tt::erasebkgmsg_tt() :
 	basicmsg_tt( WM_ERASEBKGND )
 {
 }
+
+keyup_msg_tt::keyup_msg_tt( UINT key )
+{
+	info.msg = WM_KEYUP;
+	info.wparam = key;
+}
+
+keydown_msg_tt::keydown_msg_tt( UINT key )
+{
+	info.msg = WM_KEYDOWN;
+	info.wparam = key;
+}
+

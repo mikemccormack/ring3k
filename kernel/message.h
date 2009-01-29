@@ -161,4 +161,16 @@ public:
 	erasebkgmsg_tt();
 };
 
+class keyup_msg_tt : public basicmsg_tt
+{
+public:
+	keyup_msg_tt( UINT key );
+};
+
+class keydown_msg_tt : public basicmsg_tt
+{
+public:
+	keydown_msg_tt( UINT key );
+};
+
 #endif // __RING3K_MESSAGE__

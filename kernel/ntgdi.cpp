@@ -36,6 +36,8 @@
 #include "debug.h"
 #include "win32mgr.h"
 #include "sdl.h"
+#include "win.h"
+#include "message.h"
 
 // shared across all processes (in a window station)
 static section_t *gdi_ht_section;
@@ -121,6 +123,8 @@ win32k_info_t *win32k_manager_t::alloc_win32k_info()
 	return new win32k_info_t;
 }
 
+extern window_tt *active_window;
+
 void win32k_manager_t::send_input(INPUT* input)
 {
 	if (input->ki.wVk > 254)
@@ -131,6 +135,20 @@ void win32k_manager_t::send_input(INPUT* input)
 	else
 		val = 0x8000;
 	key_state[input->ki.wVk] = val;
+
+	if (active_window)
+	{
+		if (input->ki.dwFlags & KEYEVENTF_KEYUP)
+		{
+			keyup_msg_tt keydown( input->ki.wVk );
+			active_window->send( keydown );
+		}
+		else
+		{
+			keydown_msg_tt keyup( input->ki.wVk );
+			active_window->send( keyup );
+		}
+	}
 }
 
 ULONG win32k_manager_t::get_async_key_state( ULONG Key )
