@@ -133,3 +133,15 @@ test: all
 	@echo "Thread tracing tests"
 	for tc in $(TESTLIST) ; do echo $$tc ; ./runtest $$tc || exit 1 ; done
 
+help:
+	@echo "Available targets are:"
+	@echo
+	@echo " all        Build ring3k and tests (default)"
+	@echo " clean      Clean temporary files and executables"
+	@echo " distclean  Clean everything"
+	@echo " install    Install"
+	@echo " stat       Display some statistics about the project"
+	@echo " test       Build and run regression tests (requires win2k.iso)"
+	@echo " uninstall  Remove installed files"
+	@echo
+
