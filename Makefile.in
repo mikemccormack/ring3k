@@ -73,6 +73,9 @@ libmspack_dir:
 unpack_dir: libmspack_dir
 	cd unpack && make
 
+stat:
+	cd kernel && make stat
+
 clean:
 	$(RM) $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
 	cd libudis86 && make clean
