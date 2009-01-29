@@ -123,8 +123,6 @@ win32k_info_t *win32k_manager_t::alloc_win32k_info()
 	return new win32k_info_t;
 }
 
-extern window_tt *active_window;
-
 void win32k_manager_t::send_input(INPUT* input)
 {
 	if (input->ki.wVk > 254)

@@ -177,4 +177,7 @@ public:
 	virtual COLORREF get_pixel( INT x, INT y );
 };
 
+class window_tt;
+extern window_tt* active_window;
+
 #endif // __WIN32K_MANAGER__
