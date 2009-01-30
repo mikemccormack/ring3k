@@ -37,7 +37,7 @@
 #include "win32mgr.h"
 #include "sdl.h"
 #include "win.h"
-#include "message.h"
+#include "queue.h"
 
 // shared across all processes (in a window station)
 static section_t *gdi_ht_section;
@@ -134,18 +134,14 @@ void win32k_manager_t::send_input(INPUT* input)
 		val = 0x8000;
 	key_state[input->ki.wVk] = val;
 
+	// queue a message to the active window's thread's message queue
 	if (active_window)
 	{
-		if (input->ki.dwFlags & KEYEVENTF_KEYUP)
-		{
-			keyup_msg_tt keydown( input->ki.wVk );
-			active_window->send( keydown );
-		}
-		else
-		{
-			keydown_msg_tt keyup( input->ki.wVk );
-			active_window->send( keyup );
-		}
+		thread_t *t = active_window->get_win_thread();
+		assert(t != NULL);
+		thread_message_queue_tt *queue = t->queue;
+		UINT wm = (input->ki.dwFlags & KEYEVENTF_KEYUP) ? WM_KEYUP : WM_KEYDOWN;
+		queue->post_message( active_window->handle, wm, input->ki.wVk, 0 );
 	}
 }
 

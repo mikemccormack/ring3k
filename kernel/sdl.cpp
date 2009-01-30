@@ -249,19 +249,31 @@ bool win32k_sdl_t::check_events( bool wait )
 	if (!wait)
 		return false;
 
-	Uint32 interval = get_int_timeout( timeout );
-	SDL_TimerID id = SDL_AddTimer( interval, win32k_sdl_t::timeout_callback, 0 );
+	// wait for a timer, if there is one
+	SDL_TimerID id = 0;
+	Uint32 interval = 0;
+	if (timers_left)
+	{
+		interval = get_int_timeout( timeout );
+		id = SDL_AddTimer( interval, win32k_sdl_t::timeout_callback, 0 );
+	}
 
-	while (!quit && SDL_WaitEvent( &event ))
+	if (SDL_WaitEvent( &event ))
 	{
 		if (event.type == SDL_USEREVENT && event.user.code == 0)
 		{
 			// timer has expired, no need to cancel it
 			id = NULL;
-			break;
 		}
-
-		quit = handle_sdl_event( event );
+		else
+		{
+			quit = handle_sdl_event( event );
+		}
+	}
+	else
+	{
+		dprintf("SDL_WaitEvent returned error\n");
+		quit = true;
 	}
 
 	if (id != NULL)
