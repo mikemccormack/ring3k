@@ -580,8 +580,6 @@ int polled_winmain( void )
 	BOOL repaint, restart = TRUE;
 	ULONG count = 0;
 
-	init_window_station();
-
 	init_brushes();
 
 	while (1)
@@ -629,18 +627,23 @@ int polled_winmain( void )
 	return 0;
 }
 
+//#define FORCE_MESSAGE_LOOP
+
 int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Show )
 {
+	// running as winlogon.exe?
+	HWINSTA hwsta = GetProcessWindowStation();
+	if (!hwsta)
+		init_window_station();
+
+#ifndef FORCE_MESSAGE_LOOP
 	// a bit of a hack...
-	if (GetProcessWindowStation())
-	{
-		// running as normal windows program
-		return window_winmain( Instance );
-	}
-	else
-	{
-		// running as winlogon.exe
+	// the message loop doesn't yet work in ring3k... eew...
+	if (!hwsta)
 		return polled_winmain();
-	}
+#endif
+
+	// running as normal windows program
+	return window_winmain( Instance );
 }
 
