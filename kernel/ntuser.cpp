@@ -1086,3 +1086,8 @@ BOOLEAN NTAPI NtUserInvalidateRect( HWND Window, const RECT* Rectangle, BOOLEAN 
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtUserMessageCall( HWND Window, ULONG, ULONG, PVOID, ULONG, ULONG, ULONG)
+{
+	return TRUE;
+}
