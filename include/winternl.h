@@ -351,7 +351,10 @@ typedef struct _TEB
     HANDLE          CachedWindowHandle;         /* 6f4 */
     ULONG           GdiClientPID;               /* 6f4 */
     };
+    union {
+    HANDLE          CachedWindowPointer;        /* 6f8 */
     ULONG           GdiClientTID;               /* 6f8 */
+    };
     PVOID           GdiThreadLocaleInfo;        /* 6fc */
     PVOID           UserReserved[5];            /* 700 */
     PVOID           glDispachTable[280];        /* 714 */

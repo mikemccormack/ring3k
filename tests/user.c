@@ -95,6 +95,53 @@ void *callback_table[NUM_USER32_CALLBACKS] = {
 	cbt(80), cbt(81), cbt(82), cbt(83), cbt(84), cbt(85), cbt(86), cbt(87), cbt(88), cbt(89),
 };
 
+void* get_teb( void )
+{
+	void *p;
+	__asm__ ( "movl %%fs:0x18, %%eax\n\t" : "=a" (p) );
+	return p;
+}
+
+const int ofs_kernel_pointer_delta_in_teb = 0x6e8;
+
+ULONG get_user_pointer_offset(void)
+{
+	ULONG *teb = get_teb();
+	return teb[ofs_kernel_pointer_delta_in_teb/4];
+}
+
+const int ofs_peb_in_teb = 0x30;
+
+void* get_peb( void )
+{
+	void **p = get_teb();
+	return p[ofs_peb_in_teb/sizeof (*p)];
+}
+
+const int ofs_exe_base_in_peb = 0x08;
+
+void *get_exe_base( void )
+{
+	void** peb = get_peb();
+	return peb[ofs_exe_base_in_peb/4];
+}
+
+const int ofs_cached_window_handle_in_teb = 0x6f4;
+
+HANDLE get_cached_window_handle( void )
+{
+	void **p = get_teb();
+	return p[ofs_cached_window_handle_in_teb/sizeof (*p)];
+}
+
+const int ofs_cached_window_pointer_in_teb = 0x6f8;
+
+HANDLE get_cached_window_pointer( void )
+{
+	void **p = get_teb();
+	return p[ofs_cached_window_pointer_in_teb/sizeof (*p)];
+}
+
 // magic numbers for everybody
 void init_callback(void *arg)
 {
@@ -151,8 +198,10 @@ void getminmax_callback(NTMINMAXPACKEDINFO *pack)
 	HANDLE window = pack->wininfo->handle;
 	//dprintf("wininfo = %p\n", pack->wininfo );
 	//dprintf("handle = %p\n", window );
-	//dprintf("cached = %p\n", get_cached_window_handle() );
+	//dprintf("cached handle = %p\n", get_cached_window_handle() );
+	//dprintf("cached pointer = %p\n", get_cached_window_pointer() );
 	ok( get_cached_window_handle() == window, "cached handle mismatch\n");
+	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 	ok( pack->wininfo != NULL, "wininfo NULL\n" );
 	ok( window != NULL, "handle NULL\n" );
 	ok( pack->wparam == 0, "wparam wrong %08x\n", pack->wparam );
@@ -172,6 +221,8 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	ok( pack->func != NULL, "func NULL\n" );
+	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
+	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 	record_received( pack->wininfo->handle, pack->msg );
 
 	switch (pack->msg)
@@ -197,6 +248,8 @@ void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	record_received( pack->wininfo->handle, pack->msg );
 	ok( pack->msg == WM_NCCALCSIZE, "message wrong %08lx\n", pack->msg );
+	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
+	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 	NtCallbackReturn( 0, 0, 0 );
 }
 
@@ -207,6 +260,8 @@ void position_changing_callback( PNTPOSCHANGINGPACKEDINFO pack )
 	ok( pack->msg == WM_WINDOWPOSCHANGING, "message wrong %08lx\n", pack->msg );
 	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
 	ok( pack->func != NULL, "func NULL\n" );
+	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
+	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 	NtCallbackReturn( 0, 0, 0 );
 }
 
@@ -217,6 +272,8 @@ void position_changed_callback( PNTPOSCHANGINGPACKEDINFO pack )
 	ok( pack->msg == WM_WINDOWPOSCHANGED, "message wrong %08lx\n", pack->msg );
 	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
 	ok( pack->func != NULL, "func NULL\n" );
+	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
+	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 	NtCallbackReturn( 0, 0, 0 );
 }
 
@@ -241,45 +298,6 @@ void init_callbacks( void )
 		"movl 0x30(%%eax), %%eax\n\t"
 		"movl %%ebx, 0x2c(%%eax)\n\t"  // set PEB's KernelCallbackTable
 		: : "b" (&callback_table) : "eax" );
-}
-
-void* get_teb( void )
-{
-	void *p;
-	__asm__ ( "movl %%fs:0x18, %%eax\n\t" : "=a" (p) );
-	return p;
-}
-
-const int ofs_kernel_pointer_delta_in_teb = 0x6e8;
-
-ULONG get_user_pointer_offset(void)
-{
-	ULONG *teb = get_teb();
-	return teb[ofs_kernel_pointer_delta_in_teb/4];
-}
-
-const int ofs_peb_in_teb = 0x30;
-
-void* get_peb( void )
-{
-	void **p = get_teb();
-	return p[ofs_peb_in_teb/sizeof (*p)];
-}
-
-const int ofs_exe_base_in_peb = 0x08;
-
-void *get_exe_base( void )
-{
-	void** peb = get_peb();
-	return peb[ofs_exe_base_in_peb/4];
-}
-
-const int ofs_cached_window_handle_in_teb = 0x6f4;
-
-HANDLE get_cached_window_handle( void )
-{
-	void **p = get_teb();
-	return p[ofs_cached_window_handle_in_teb/sizeof (*p)];
 }
 
 USER_PROCESS_CONNECT_INFO user_info;
@@ -492,6 +510,8 @@ void create_window( BOOL visible )
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		0, 0, get_exe_base(), 0, 0x400 );
 	ok( window != 0, "window handle zero\n");
+	ok( get_cached_window_handle() == 0, "cached handle not clear\n");
+	ok( get_cached_window_pointer() == 0, "cached pointer not clear\n");
 
 	kernel_wndptr = check_user_handle( window, USER_HANDLE_WINDOW );
 	wndptr = kernel_to_user( kernel_wndptr );
@@ -535,6 +555,8 @@ void create_window( BOOL visible )
 	// check that the null message works
 	r = NtUserPostMessage( window, WM_NULL, 1, 1 );
 	ok( TRUE == r, "NtPostMessage failed\n");
+	ok( get_cached_window_handle() == 0, "cached handle not clear\n");
+	ok( get_cached_window_pointer() == 0, "cached pointer not clear\n");
 
 	r = NtUserGetMessage( &msg, 0, 0, 0 );
 	ok( r == TRUE, "posted message not received\n");
@@ -542,6 +564,8 @@ void create_window( BOOL visible )
 	ok( msg.message == WM_NULL, "message wrong %08x\n", msg.message );
 	ok( msg.wParam == 1, "wParam wrong %08x\n", msg.wParam );
 	ok( msg.lParam == 1, "lParam wrong %08lx\n", msg.lParam );
+	ok( get_cached_window_handle() == 0, "cached handle not clear\n");
+	ok( get_cached_window_pointer() == 0, "cached pointer not clear\n");
 
 	// check that PostQuitMessage will work
 	r = NtUserCallOneParam( quit_magic, NTUCOP_POSTQUITMESSAGE );
@@ -553,6 +577,8 @@ void create_window( BOOL visible )
 	ok( msg.message == WM_QUIT, "message wrong %08x\n", msg.message );
 	ok( msg.wParam == quit_magic, "wParam wrong %08x\n", msg.wParam );
 	ok( msg.lParam == 0, "lParam wrong %08lx\n", msg.lParam );
+	ok( get_cached_window_handle() == 0, "cached handle not clear\n");
+	ok( get_cached_window_pointer() == 0, "cached pointer not clear\n");
 }
 
 void test_window()

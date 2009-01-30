@@ -827,6 +827,7 @@ NTSTATUS window_tt::send( message_tt& msg )
 
 	PTEB teb = thread->get_teb();
 	teb->CachedWindowHandle = handle;
+	teb->CachedWindowPointer = get_wininfo();
 
 	msg.set_window_info( this );
 
@@ -842,6 +843,8 @@ NTSTATUS window_tt::send( message_tt& msg )
 	}
 
 	thread->pop( msg.get_size() );
+	teb->CachedWindowHandle = 0;
+	teb->CachedWindowPointer = 0;
 
 	return r;
 }
