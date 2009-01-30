@@ -408,6 +408,14 @@ BOOLEAN NtPostQuitMessage( ULONG ret )
 	return TRUE;
 }
 
+PVOID NtGetWindowPointer( HWND window )
+{
+	window_tt *win = window_from_handle( window );
+	if (!win)
+		return 0;
+	return win->get_wininfo();
+}
+
 ULONG NTAPI NtUserCallOneParam(ULONG Param, ULONG Index)
 {
 	dprintf("%lu (%08lx)\n", Index, Param);
@@ -439,8 +447,8 @@ ULONG NTAPI NtUserCallOneParam(ULONG Param, ULONG Index)
 		return TRUE;
 	case 0x22: // LoadLocalFonts, used by LoadRemoteFonts
 		return TRUE;
-	case 0x23: // ?
-		return TRUE;
+	case NTUCOP_GETWNDPTR: // get the window pointer
+		return (ULONG) NtGetWindowPointer( (HWND) Param );
 	case 0x24: // MessageBeep
 		return TRUE;
 	case 0x25: // used by SoftModalMessageBox

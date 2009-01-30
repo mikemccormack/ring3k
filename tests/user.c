@@ -484,7 +484,7 @@ void create_window( BOOL visible )
 	WCHAR title_str[] = L"test window";
 	HANDLE window;
 	ULONG n = 0;
-	WND *wndptr, *kernel_wndptr;
+	WND *wndptr, *kernel_wndptr, *ptr;
 	ULONG style, exstyle;
 	void *instance;
 	MSG msg;
@@ -545,6 +545,10 @@ void create_window( BOOL visible )
 		check_msg( window, WM_MOVE, &n );
 	}
 	ok( sequence == n, "got %ld != %ld messages\n", sequence, n);
+
+	// check the window handle -> pointer translation
+	ptr = (PWND) NtUserCallOneParam( window, NTUCOP_GETWNDPTR );
+	ok( wndptr == ptr, "NTUCOP_GETWNDPTR return wrong\n");
 
 	// clear the message
 	msg.hwnd = 0;
