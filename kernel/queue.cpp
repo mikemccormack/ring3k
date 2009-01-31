@@ -185,6 +185,18 @@ BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HWND Window, ULONG MinMessage, ULON
 	if (queue->get_message( msg, Window, MinMessage, MaxMessage ))
 		copy_to_user( Message, &msg, sizeof msg );
 
+	if (option_trace)
+	{
+		fprintf(stderr, "%04lx: %s\n", current->trace_id(), __FUNCTION__);
+		fprintf(stderr, " msg.hwnd    = %p\n", msg.hwnd);
+		fprintf(stderr, " msg.message = %08x\n", msg.message);
+		fprintf(stderr, " msg.wParam  = %08x\n", msg.wParam);
+		fprintf(stderr, " msg.lParam  = %08lx\n", msg.lParam);
+		fprintf(stderr, " msg.time    = %08lx\n", msg.time);
+		fprintf(stderr, " msg.pt.x    = %08lx\n", msg.pt.x);
+		fprintf(stderr, " msg.pt.y    = %08lx\n", msg.pt.y);
+	}
+
 	return msg.message != WM_QUIT;
 }
 
