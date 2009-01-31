@@ -118,6 +118,10 @@ win32k_info_t::win32k_info_t() :
 	memset( &stock_object, 0, sizeof stock_object );
 }
 
+win32k_info_t::~win32k_info_t()
+{
+}
+
 win32k_info_t *win32k_manager_t::alloc_win32k_info()
 {
 	return new win32k_info_t;

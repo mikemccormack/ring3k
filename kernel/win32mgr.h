@@ -27,6 +27,7 @@ class win32k_info_t
 {
 public:
 	win32k_info_t();
+	~win32k_info_t();
 	// address that device context shared memory is mapped to
 	BYTE* dc_shared_mem;
 	BYTE* user_shared_mem;

@@ -42,6 +42,7 @@
 #include "timer.h"
 #include "file.h"
 #include "unicode.h"
+#include "win32mgr.h"
 
 void copy_ustring_to_block( void* addr, ULONG *ofs, UNICODE_STRING *ustr, LPCWSTR str )
 {
@@ -353,6 +354,8 @@ process_t::process_t() :
 
 process_t::~process_t()
 {
+	if (win32k_info)
+		delete win32k_info;
 	processes.unlink( this );
 	exception_port = 0;
 }
