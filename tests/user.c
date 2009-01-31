@@ -547,7 +547,7 @@ void create_window( BOOL visible )
 	ok( sequence == n, "got %ld != %ld messages\n", sequence, n);
 
 	// check the window handle -> pointer translation
-	ptr = (PWND) NtUserCallOneParam( window, NTUCOP_GETWNDPTR );
+	ptr = (PWND) NtUserCallOneParam( (ULONG) window, NTUCOP_GETWNDPTR );
 	ok( wndptr == ptr, "NTUCOP_GETWNDPTR return wrong\n");
 
 	// clear the message
