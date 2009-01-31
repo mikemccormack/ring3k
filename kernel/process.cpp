@@ -365,6 +365,8 @@ void process_t::terminate( NTSTATUS status )
 	notify_watchers();
 	// now release the process...
 	handle_table.free_all_handles();
+	if (win32k_info)
+		free_user32_handles( this );
 	ExitStatus = status;
 	delete vm;
 	vm = NULL;

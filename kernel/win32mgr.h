@@ -180,5 +180,6 @@ public:
 
 class window_tt;
 extern window_tt* active_window;
+void free_user32_handles( process_t *p );
 
 #endif // __WIN32K_MANAGER__

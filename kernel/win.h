@@ -53,9 +53,12 @@ public:
 
 struct window_tt : public WND
 {
-public:
+	// no virtual functions here, binary compatible with user side WND struct
+	void* operator new(size_t sz);
+	void operator delete(void *p);
 	window_tt( thread_t* t, wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
 		 LONG x, LONG y, LONG width, LONG height, PVOID instance );
+	~window_tt();
 	NTSTATUS send( message_tt& msg );
 	void *get_wndproc() { return wndproc; }
 	PWND get_wininfo();

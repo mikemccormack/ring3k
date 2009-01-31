@@ -133,19 +133,68 @@ void init_user_handle_table()
 	}
 }
 
-ULONG alloc_user_handle( void* obj, ULONG type )
+ULONG alloc_user_handle( void* obj, ULONG type, process_t *owner )
 {
+	assert( type != 0 );
 	ULONG ret = next_user_handle;
 	ULONG next = user_handle_table[ret].next_free;
+	assert( next != ret );
 	assert( user_handle_table[ret].type == 0 );
 	assert( user_handle_table[ret].owner == 0 );
 	assert( next <= MAX_USER_HANDLES );
 	user_handle_table[ret].object = obj;
 	user_handle_table[ret].type = type;
-	user_handle_table[ret].owner = obj;
+	user_handle_table[ret].owner = (void*) owner;
 	next_user_handle = next;
 	check_max_window_handle( ret );
 	return (user_handle_table[ret].highpart << 16) | ret;
+}
+
+void free_user_handle( HANDLE handle )
+{
+	UINT n = (UINT) handle;
+	USHORT lowpart = n&0xffff;
+
+	dprintf("freeing handle %08x\n", n);
+	user_handle_table[lowpart].type = 0;
+	user_handle_table[lowpart].owner = 0;
+	user_handle_table[lowpart].object = 0;
+
+	// update the free handle list
+	user_handle_table[lowpart].next_free = next_user_handle;
+	next_user_handle = lowpart;
+
+	// FIXME: maybe decrease max_window_handle?
+}
+
+void delete_user_object( ULONG i )
+{
+	user_handle_entry_t *entry = user_handle_table+i;
+	dprintf("deleting user handle %ld\n", i);
+	assert(entry->object != NULL);
+	switch (entry->type)
+	{
+	case USER_HANDLE_WINDOW:
+		delete (window_tt*) entry->object;
+		break;
+	default:
+		dprintf("object %ld (%p), type = %08x owner = %p\n",
+			i, entry->object, entry->type, entry->owner);
+		assert(0);
+	}
+}
+
+void free_user32_handles( process_t *p )
+{
+	ULONG i;
+	assert( p != NULL );
+	if (!user_handle_table)
+		return;
+	for (i=0; i<user_shared->max_window_handle; i++)
+	{
+		if (p == (process_t*) user_handle_table[i].owner)
+			delete_user_object( i );
+	}
 }
 
 void* user_obj_from_handle( HANDLE handle, ULONG type )
@@ -155,6 +204,8 @@ void* user_obj_from_handle( HANDLE handle, ULONG type )
 	//USHORT highpart = (n>>16);
 
 	if (lowpart == 0 || lowpart > user_shared->max_window_handle)
+		return NULL;
+	if (type != user_handle_table[lowpart].type)
 		return NULL;
 	//FIXME: check high part and type
 	//if (user_handle_table[].highpart != highpart)
@@ -805,6 +856,18 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 	return copy_wstr_from_user( str.Buffer, str.Length );
 }
 
+void* window_tt::operator new(size_t sz)
+{
+	dprintf("allocating window\n");
+	assert( sz == sizeof (window_tt));
+	return user_shared_bitmap.alloc( sz );
+}
+
+void window_tt::operator delete(void *p)
+{
+	user_shared_bitmap.free( (unsigned char*) p, sizeof (window_tt) );
+}
+
 window_tt::window_tt( thread_t* t, wndcls_tt *_wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
 		 LONG x, LONG y, LONG width, LONG height, PVOID instance )
 {
@@ -819,6 +882,17 @@ window_tt::window_tt( thread_t* t, wndcls_tt *_wndcls, unicode_string_t& _name, 
 	rcWnd.right = x + width;
 	rcWnd.bottom = y + height;
 	hInstance = instance;
+}
+
+window_tt::~window_tt()
+{
+	free_user_handle( handle );
+	dprintf("active window = %p this = %p\n", active_window, this);
+	if (active_window == this)
+	{
+		dprintf("cleared active window handle\n");
+		active_window = 0;
+	}
 }
 
 PWND window_tt::get_wininfo()
@@ -922,14 +996,14 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	cs.lpszClass = NULL;
 	cs.dwExStyle = ExStyle;
 
+	// allocate a window
 	window_tt *win;
-	void *mem = user_shared_bitmap.alloc( sizeof *win );
-	if (!mem)
-		return 0;
+	win = new window_tt( current, wndcls, window_name, Style, ExStyle, x, y, Width, Height, Instance );
+	dprintf("new window %p\n", win);
+	if (!win)
+		return NULL;
 
-	win = new(mem) window_tt( current, wndcls, window_name, Style, ExStyle, x, y, Width, Height, Instance );
-
-	win->handle = (HWND) alloc_user_handle( win, USER_HANDLE_WINDOW );
+	win->handle = (HWND) alloc_user_handle( win, USER_HANDLE_WINDOW, current->process );
 	win->wndproc = wndcls->get_wndproc();
 
 	// check set the offset

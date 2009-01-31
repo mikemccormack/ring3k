@@ -589,7 +589,7 @@ void test_window()
 {
 	register_class();
 	create_window( FALSE );
-	//create_window( TRUE );
+	create_window( TRUE );
 }
 
 void NtProcessStartup( void )
