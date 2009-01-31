@@ -978,6 +978,12 @@ HANDLE NTAPI NtUserCreateWindowEx(
 
 		winposchanged_tt poschanged( wp );
 		win->send( poschanged );
+
+		sizemsg_tt size;
+		win->send( size );
+
+		movemsg_tt move;
+		win->send( move );
 	}
 
 	return win->handle;

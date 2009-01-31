@@ -173,4 +173,16 @@ public:
 	keydown_msg_tt( UINT key );
 };
 
+class sizemsg_tt : public basicmsg_tt
+{
+public:
+	sizemsg_tt();
+};
+
+class movemsg_tt : public basicmsg_tt
+{
+public:
+	movemsg_tt();
+};
+
 #endif // __RING3K_MESSAGE__

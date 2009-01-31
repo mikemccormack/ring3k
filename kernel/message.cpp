@@ -204,3 +204,12 @@ keydown_msg_tt::keydown_msg_tt( UINT key )
 	info.wparam = key;
 }
 
+sizemsg_tt::sizemsg_tt() :
+	basicmsg_tt( WM_SIZE )
+{
+}
+
+movemsg_tt::movemsg_tt() :
+	basicmsg_tt( WM_MOVE )
+{
+}
