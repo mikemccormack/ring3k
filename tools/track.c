@@ -1,7 +1,7 @@
 /*
  * Winlogon replacement - Mouse demo
  *
- * Copyright 2006-2008 Mike McCormack
+ * Copyright 2006-2009 Mike McCormack
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,6 +42,7 @@ void do_paint( HWND hwnd )
 
 void do_leftbuttondown( HWND hwnd )
 {
+	dprintf("track: left button down");
 	mouse_color >>= 8;
 	if (!mouse_color)
 		mouse_color = 0xff0000;
@@ -49,6 +50,7 @@ void do_leftbuttondown( HWND hwnd )
 
 void do_mousemove( HWND hwnd, INT x, INT y )
 {
+	dprintf("track: mouse move");
 	HDC hdc = GetDC( hwnd );
 	HBRUSH brush, old_brush;
 	brush = CreateSolidBrush( mouse_color );
@@ -58,9 +60,9 @@ void do_mousemove( HWND hwnd, INT x, INT y )
 	ReleaseDC( hwnd, hdc );
 }
 
-LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+LRESULT CALLBACK track_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-	dprintf("minitris_wndproc %p %08x %08x %08lx", hwnd, msg, wparam, lparam);
+	dprintf("track: wndproc %p %08x %08x %08lx", hwnd, msg, wparam, lparam);
 	switch (msg)
 	{
 	case WM_PAINT:
@@ -86,7 +88,7 @@ int window_winmain( HINSTANCE Instance )
 	HWND hwnd;
 
 	wc.style = 0;
-	wc.lpfnWndProc = minitris_wndproc;
+	wc.lpfnWndProc = track_wndproc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = Instance;
@@ -110,12 +112,12 @@ int window_winmain( HINSTANCE Instance )
 		return 0;
 	}
 
-	dprintf("Before GetMessage");
+	dprintf("track: Before GetMessage");
 	while (GetMessage( &msg, 0, 0, 0 ))
 	{
-		dprintf("msg %08lx %p %08x %08lx", msg.message, msg.hwnd, msg.wParam, msg.lParam);
+		dprintf("track: msg %08lx %p %08x %08lx", msg.message, msg.hwnd, msg.wParam, msg.lParam);
 		DispatchMessage( &msg );
-		dprintf("dispatched message");
+		dprintf("track: dispatched message");
 	}
 
 	return 0;
