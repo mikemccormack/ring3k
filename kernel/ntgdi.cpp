@@ -129,24 +129,84 @@ win32k_info_t *win32k_manager_t::alloc_win32k_info()
 
 void win32k_manager_t::send_input(INPUT* input)
 {
-	if (input->ki.wVk > 254)
-		return;
-	ULONG val;
-	if (input->ki.dwFlags & KEYEVENTF_KEYUP)
-		val = 0;
-	else
-		val = 0x8000;
-	key_state[input->ki.wVk] = val;
+	thread_message_queue_tt *queue = 0;
+	ULONG pos;
 
-	// queue a message to the active window's thread's message queue
 	if (active_window)
 	{
 		thread_t *t = active_window->get_win_thread();
 		assert(t != NULL);
-		thread_message_queue_tt *queue = t->queue;
-		UINT wm = (input->ki.dwFlags & KEYEVENTF_KEYUP) ? WM_KEYUP : WM_KEYDOWN;
-		queue->post_message( active_window->handle, wm, input->ki.wVk, 0 );
+		queue = t->queue;
 	}
+
+	dprintf("active window = %p\n", active_window);
+
+	// keyboard activity
+	switch (input->type)
+	{
+	case INPUT_KEYBOARD:
+		// check for dud keycodes
+		assert (input->ki.wVk <= 254);
+
+		if (input->ki.dwFlags & KEYEVENTF_KEYUP)
+		{
+			key_state[input->ki.wVk] = 0;
+			if (queue)
+				queue->post_message( active_window->handle, WM_KEYUP, input->ki.wVk, 0 );
+		}
+		else
+		{
+			key_state[input->ki.wVk] = 0x8000;
+			if (queue)
+				queue->post_message( active_window->handle, WM_KEYDOWN, input->ki.wVk, 0 );
+		}
+
+		break;
+
+	case INPUT_MOUSE:
+		// FIXME: need to send a WM_NCHITTEST to figure out whether to send NC messages or not
+		pos = MAKELPARAM(input->mi.dy, input->mi.dx);
+		if (input->mi.dwFlags & MOUSEEVENTF_LEFTDOWN)
+		{
+			if (queue)
+				queue->post_message( active_window->handle, WM_LBUTTONDOWN, 0, pos );
+		}
+
+		if (input->mi.dwFlags & MOUSEEVENTF_LEFTUP)
+		{
+			if (queue)
+				queue->post_message( active_window->handle, WM_LBUTTONUP, 0, pos );
+		}
+
+		if (input->mi.dwFlags & MOUSEEVENTF_RIGHTDOWN)
+		{
+			if (queue)
+				queue->post_message( active_window->handle, WM_RBUTTONDOWN, 0, pos );
+		}
+
+		if (input->mi.dwFlags & MOUSEEVENTF_RIGHTUP)
+		{
+			if (queue)
+				queue->post_message( active_window->handle, WM_RBUTTONUP, 0, pos );
+		}
+
+		if (input->mi.dwFlags & MOUSEEVENTF_MIDDLEDOWN)
+		{
+			if (queue)
+				queue->post_message( active_window->handle, WM_MBUTTONDOWN, 0, pos );
+		}
+
+		if (input->mi.dwFlags & MOUSEEVENTF_MIDDLEUP)
+		{
+			if (queue)
+				queue->post_message( active_window->handle, WM_MBUTTONUP, 0, pos );
+		}
+
+		break;
+	default:
+		dprintf("unknown input %ld\n", input->type);
+	}
+
 }
 
 ULONG win32k_manager_t::get_async_key_state( ULONG Key )

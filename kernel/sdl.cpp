@@ -62,6 +62,7 @@ protected:
 	static Uint32 timeout_callback( Uint32 interval, void *arg );
 	bool handle_sdl_event( SDL_Event& event );
 	WORD sdl_keysum_to_vkey( SDLKey sym );
+	ULONG get_mouse_button( Uint8 button, bool up );
 };
 
 win32k_sdl_t::win32k_sdl_t()
@@ -193,31 +194,76 @@ WORD win32k_sdl_t::sdl_keysum_to_vkey( SDLKey sym )
 	mk(DOWN)
 	mk(LEFT)
 	mk(RIGHT)
-	mk(ESCAPE)
+	//mk(ESCAPE)
+	case SDLK_ESCAPE:
+		dprintf("escape!\n");
+		return VK_ESCAPE;
 #undef mk
 	default:
 		dprintf("%d unhandled\n", sym);
+		return 0;
 	}
-	return (WORD) sym;
+}
+
+ULONG win32k_sdl_t::get_mouse_button( Uint8 button, bool up )
+{
+	switch (button)
+	{
+	case SDL_BUTTON_LEFT:
+		return up ? MOUSEEVENTF_LEFTUP : MOUSEEVENTF_LEFTDOWN;
+	case SDL_BUTTON_RIGHT:
+		return up ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_RIGHTDOWN;
+	case SDL_BUTTON_MIDDLE:
+		return up ? MOUSEEVENTF_MIDDLEUP : MOUSEEVENTF_MIDDLEDOWN;
+	default:
+		dprintf("unknown mouse button %d\n", button );
+		return 0;
+	}
 }
 
 bool win32k_sdl_t::handle_sdl_event( SDL_Event& event )
 {
 	INPUT input;
-	DWORD flags = 0;
+
 	switch (event.type)
 	{
 	case SDL_QUIT:
 		return true;
-	case SDL_KEYUP:
-		flags |= KEYEVENTF_KEYUP;
-		// fall through
+
 	case SDL_KEYDOWN:
+	case SDL_KEYUP:
+		dprintf("got SDL keyboard event\n");
+		input.type = INPUT_KEYBOARD;
 		input.ki.time = timeout_t::get_tick_count();
 		input.ki.wVk = sdl_keysum_to_vkey( event.key.keysym.sym );
 		input.ki.wScan = event.key.keysym.scancode;
-		input.ki.dwFlags = flags;
+		input.ki.dwFlags = (event.type == SDL_KEYUP) ? KEYEVENTF_KEYUP : 0;
 		input.ki.dwExtraInfo = 0;
+		send_input( &input );
+		break;
+
+	case SDL_MOUSEBUTTONDOWN:
+	case SDL_MOUSEBUTTONUP:
+		dprintf("got SDL mouse button event\n");
+		input.type = INPUT_MOUSE;
+		input.mi.dx = event.button.x;
+		input.mi.dy = event.button.y;
+		input.mi.mouseData = 0;
+		input.mi.dwFlags = get_mouse_button( event.button.button, event.type == SDL_MOUSEBUTTONUP );
+		input.mi.time = timeout_t::get_tick_count();
+		input.mi.dwExtraInfo = 0;
+		send_input( &input );
+		break;
+
+	case SDL_MOUSEMOTION:
+		dprintf("got SDL mouse motion event\n");
+		input.type = INPUT_MOUSE;
+		input.mi.dx = event.motion.x;
+		input.mi.dy = event.motion.y;
+		input.mi.mouseData = 0;
+		input.mi.dwFlags = MOUSEEVENTF_MOVE;
+		input.mi.time = timeout_t::get_tick_count();
+		input.mi.dwExtraInfo = 0;
 		send_input( &input );
 		break;
 	}
@@ -286,7 +332,7 @@ BOOL win32k_sdl_t::init()
 	if ( SDL_WasInit(SDL_INIT_VIDEO) )
 		return TRUE;
 
-	if ( SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0 )
+	if ( SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_NOPARACHUTE) < 0 )
 		return FALSE;
 
 	screen = set_mode();
