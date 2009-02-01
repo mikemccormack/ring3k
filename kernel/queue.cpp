@@ -166,7 +166,7 @@ BOOLEAN thread_message_queue_tt::get_message(
 	waiter_list.append( &wait );
 	current->stop();
 
-	return current->is_terminated();
+	return !current->is_terminated();
 }
 
 BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
