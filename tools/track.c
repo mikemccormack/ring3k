@@ -23,6 +23,16 @@
 
 int mouse_color = 0;
 
+void dprintf( const char *format, ... )
+{
+	char str[0x100];
+	va_list va;
+	va_start( va, format );
+	vsprintf( str, format, va );
+	va_end( va );
+	OutputDebugString( str );
+}
+
 void do_paint( HWND hwnd )
 {
 	PAINTSTRUCT ps;
@@ -50,9 +60,7 @@ void do_mousemove( HWND hwnd, INT x, INT y )
 
 LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-	char str[80];
-	sprintf(str, "minitris_wndproc %p %08x %08x %08lx", hwnd, msg, wparam, lparam);
-	OutputDebugString( str );
+	dprintf("minitris_wndproc %p %08x %08x %08lx", hwnd, msg, wparam, lparam);
 	switch (msg)
 	{
 	case WM_PAINT:
@@ -102,12 +110,12 @@ int window_winmain( HINSTANCE Instance )
 		return 0;
 	}
 
-	OutputDebugString("Before GetMessage");
+	dprintf("Before GetMessage");
 	while (GetMessage( &msg, 0, 0, 0 ))
 	{
-		OutputDebugString("dispatching message");
+		dprintf("msg %08lx %p %08x %08lx", msg.message, msg.hwnd, msg.wParam, msg.lParam);
 		DispatchMessage( &msg );
-		OutputDebugString("dispatched message");
+		dprintf("dispatched message");
 	}
 
 	return 0;
