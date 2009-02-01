@@ -165,7 +165,7 @@ void win32k_manager_t::send_input(INPUT* input)
 
 	case INPUT_MOUSE:
 		// FIXME: need to send a WM_NCHITTEST to figure out whether to send NC messages or not
-		pos = MAKELPARAM(input->mi.dy, input->mi.dx);
+		pos = MAKELPARAM(input->mi.dx, input->mi.dy);
 		if (input->mi.dwFlags & MOUSEEVENTF_LEFTDOWN)
 		{
 			if (queue)
@@ -200,6 +200,12 @@ void win32k_manager_t::send_input(INPUT* input)
 		{
 			if (queue)
 				queue->post_message( active_window->handle, WM_MBUTTONUP, 0, pos );
+		}
+
+		if (input->mi.dwFlags & MOUSEEVENTF_MOVE)
+		{
+			if (queue)
+				queue->post_message( active_window->handle, WM_MOUSEMOVE, 0, pos );
 		}
 
 		break;

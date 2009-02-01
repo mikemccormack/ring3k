@@ -1033,6 +1033,7 @@ HANDLE NTAPI NtUserCreateWindowEx(
 
 	if (win->style & WS_VISIBLE)
 	{
+		dprintf("Window has WS_VISIBLE\n");
 		win->show( SW_SHOW );
 
 		WINDOWPOS wp;
