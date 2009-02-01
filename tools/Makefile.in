@@ -29,7 +29,8 @@ SOURCE = \
 	minitris.c \
 	pixels.c \
 	qdf.c \
-	startcmd.c
+	startcmd.c \
+	track.c
 
 .PHONY: all clean
 
@@ -61,6 +62,9 @@ pixels.exe: pixels.c
 	$(CC) $(CFLAGS) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
 
 minitris.exe: minitris.c
+	$(CC) $(CFLAGS) -o $@ $< -lgdi32 -luser32 -Wl,--subsystem=windows
+
+track.exe: track.c
 	$(CC) $(CFLAGS) -o $@ $< -lgdi32 -luser32 -Wl,--subsystem=windows
 
 clean:
