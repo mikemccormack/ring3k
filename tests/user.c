@@ -478,14 +478,15 @@ void* kernel_to_user( void *kptr )
 	return (void*) ((ULONG)kptr - get_user_pointer_offset());
 }
 
-void create_window( BOOL visible )
+// argument selects a set of window styles
+void test_create_window( ULONG style )
 {
 	USER32_UNICODE_STRING cls, title;
 	WCHAR title_str[] = L"test window";
 	HANDLE window;
 	ULONG n = 0;
 	WND *wndptr, *kernel_wndptr, *ptr;
-	ULONG style, exstyle;
+	ULONG exstyle;
 	void *instance;
 	MSG msg;
 	const int quit_magic = 0xdada;
@@ -502,9 +503,7 @@ void create_window( BOOL visible )
 	title.MaximumLength = sizeof title_str;
 
 	instance = get_exe_base();
-	style = WS_CAPTION |WS_SYSMENU |WS_GROUP;
-	if (visible)
-		style |= WS_VISIBLE;
+
 	exstyle = 0x80000000;
 	window = NtUserCreateWindowEx(exstyle, &cls, &title, style,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -526,7 +525,7 @@ void create_window( BOOL visible )
 	check_msg( window, WM_NCCREATE, &n );
 	check_msg( window, WM_NCCALCSIZE, &n );
 	check_msg( window, WM_CREATE, &n );
-	if (visible)
+	if (style & WS_VISIBLE)
 	{
 		check_msg( window, WM_SHOWWINDOW, &n );
 		check_msg( window, WM_WINDOWPOSCHANGING, &n );
@@ -588,8 +587,8 @@ void create_window( BOOL visible )
 void test_window()
 {
 	register_class();
-	create_window( FALSE );
-	create_window( TRUE );
+	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP );
+	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP | WS_VISIBLE );
 }
 
 void NtProcessStartup( void )
