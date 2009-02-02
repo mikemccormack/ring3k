@@ -198,6 +198,55 @@ ULONG unicode_string_t::utf8_to_wchar( const unsigned char *str, ULONG len, WCHA
 	return n;
 }
 
+ULONG unicode_string_t::wchar_to_utf8( char *str, ULONG max )
+{
+	ULONG n = 0;
+	for (ULONG i=0; i<Length/2; i++)
+	{
+		WCHAR ch = Buffer[i];
+		unsigned char ch1, ch2, ch3;
+		int needed;
+
+		// calculate the UTF-8 characters needed
+		if (ch < 0x80)
+		{
+			ch1 = ch;
+			ch2 = 0;
+			ch3 = 0;
+			needed = 1;
+		}
+		else if (ch < 0xfff)
+		{
+			ch1 = 0xc0 | (ch&0x3f);
+			ch2 = 0x80 | ((ch>>6)&0x3f);
+			ch3 = 0;
+			needed = 2;
+		}
+		else
+		{
+			ch1 = 0xe0 | (ch&0x3f);
+			ch2 = 0x80 | ((ch>>6)&0x3f);
+			ch3 = 0x80 | ((ch>>12)&0x0f);
+			needed = 3;
+		}
+
+		// don't overflow
+		if ((n + needed) >= max)
+			break;
+
+		// store the characters
+		str[n++] = ch1;
+		if (ch2)
+			str[n++] = ch2;
+		if (ch3)
+			str[n++] = ch3;
+	}
+
+	// always store a null
+	str[n] = 0;
+	return n;
+}
+
 NTSTATUS unicode_string_t::copy( const char *str )
 {
 	const unsigned char *ustr = reinterpret_cast<const unsigned char*>(str);
