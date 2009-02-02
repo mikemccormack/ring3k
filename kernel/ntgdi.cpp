@@ -1250,3 +1250,17 @@ HANDLE NTAPI NtGdiCreateCompatibleBitmap(HANDLE DeviceContext, int width, int he
 {
 	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
 }
+
+int NTAPI NtGdiGetAppClipBox( HANDLE handle, RECT* rectangle )
+{
+	RECT tmp;
+	tmp.top = 0;
+	tmp.left = 0;
+	tmp.right = 100;
+	tmp.bottom = 100;
+	NTSTATUS r = copy_to_user( rectangle, &tmp, sizeof tmp );
+	if (r < STATUS_SUCCESS)
+		return ERROR;
+
+	return SIMPLEREGION;
+}
