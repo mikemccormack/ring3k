@@ -478,6 +478,13 @@ void* kernel_to_user( void *kptr )
 	return (void*) ((ULONG)kptr - get_user_pointer_offset());
 }
 
+void check_classinfo( PCLASSINFO kernel_clsptr )
+{
+	PCLASSINFO cls = kernel_to_user( kernel_clsptr );
+	//dprintf("classinfo = %p (%p)\n", cls, kernel_clsptr );
+	ok( cls->pSelf == kernel_clsptr, "self pointer wrong\n");
+}
+
 // argument selects a set of window styles
 void test_create_window( ULONG style )
 {
@@ -520,6 +527,8 @@ void test_create_window( ULONG style )
 	ok( wndptr->style == (style | WS_CLIPSIBLINGS), "style wrong %08lx %08lx\n", wndptr->style, style);
 	ok( wndptr->exstyle == WS_EX_WINDOWEDGE, "exstyle wrong %08lx %08lx\n", wndptr->exstyle, exstyle);
 	ok( wndptr->hInstance == instance, "instance wrong\n");
+
+	check_classinfo( wndptr->wndcls );
 
 	check_msg( window, WM_GETMINMAXINFO, &n );
 	check_msg( window, WM_NCCREATE, &n );

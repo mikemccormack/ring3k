@@ -673,6 +673,7 @@ wndcls_tt::wndcls_tt( NTWNDCLASSEX& ClassInfo, const UNICODE_STRING& ClassName, 
 {
 	memset( this, 0, sizeof (WNDCLASS) );
 	atomWindowType = a;
+	pSelf = this;
 }
 
 wndcls_tt* wndcls_tt::from_name( const UNICODE_STRING& wndcls_name )
