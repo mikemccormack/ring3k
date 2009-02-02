@@ -121,6 +121,33 @@ typedef struct tagNTCLASSMENUNAMES {
 
 // shared memory structure!!
 // see http://winterdom.com/dev/ui/wnd.html
+struct _CLASSINFO;
+typedef struct _CLASSINFO CLASSINFO, *PCLASSINFO;
+
+struct _CLASSINFO
+{
+	DWORD		unk1;
+	ATOM		atomWindowType;
+	WORD		unk2;
+	DWORD		unk3;
+	DWORD		unk4;
+	DWORD		unk5;
+	DWORD		unk6;
+	DWORD		unk7;
+	DWORD		unk8;
+	CLASSINFO*	pSelf;
+	DWORD		unk10;
+	DWORD		unk11;
+	DWORD		dwStyle;
+	DWORD		unk13;
+	DWORD		unk14;
+	DWORD		dwClassBytes;
+	HINSTANCE	hInstance;
+};
+
+struct _WNDMENU;
+typedef struct _WNDMENU WNDMENU, *PWNDMENU;
+
 struct _WND;
 typedef struct _WND WND, *PWND;
 struct _WND {
@@ -142,14 +169,14 @@ struct _WND {
 	RECT rcWnd;
 	RECT rcClient;
 	void* wndproc;
-	void* wndcls;
+	CLASSINFO* wndcls;
 	ULONG unk25;
 	ULONG unk26;
 	ULONG unk27;
 	ULONG unk28;
 	union {
 		ULONG dwWndID;
-		void* Menu;
+		WNDMENU* Menu;
 	} id;
 	ULONG unk30;
 	ULONG unk31;

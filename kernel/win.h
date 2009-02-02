@@ -31,20 +31,22 @@ typedef list_anchor<wndcls_tt, 0> wndcls_list_tt;
 typedef list_element<wndcls_tt> wndcls_entry_tt;
 typedef list_iter<wndcls_tt, 0> wndcls_iter_tt;
 
-class wndcls_tt
+class wndcls_tt : public CLASSINFO
 {
+	// FIXME: all these have to go
 	friend class list_anchor<wndcls_tt, 0>;
 	friend class list_iter<wndcls_tt, 0>;
 	wndcls_entry_tt entry[1];
 	unicode_string_t name;
 	unicode_string_t menu;
 	NTWNDCLASSEX info;
-	ATOM atom;
 	ULONG refcount;
 public:
+	void* operator new(size_t sz);
+	void operator delete(void *p);
 	wndcls_tt( NTWNDCLASSEX& ClassInfo, const UNICODE_STRING& ClassName, const UNICODE_STRING& MenuName, ATOM a );
 	static wndcls_tt* from_name( const UNICODE_STRING& wndcls_name );
-	ATOM get_atom() const {return atom;}
+	ATOM get_atom() const {return atomWindowType;}
 	const unicode_string_t& get_name() const {return name;}
 	void addref() {refcount++;}
 	void release() {refcount--;}

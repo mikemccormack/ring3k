@@ -653,13 +653,26 @@ BOOLEAN NTAPI NtUserGetIconInfo(
 	return TRUE;
 }
 
+void* wndcls_tt::operator new(size_t sz)
+{
+	dprintf("allocating window\n");
+	assert( sz == sizeof (wndcls_tt));
+	return user_shared_bitmap.alloc( sz );
+}
+
+void wndcls_tt::operator delete(void *p)
+{
+	user_shared_bitmap.free( (unsigned char*) p, sizeof (wndcls_tt) );
+}
+
 wndcls_tt::wndcls_tt( NTWNDCLASSEX& ClassInfo, const UNICODE_STRING& ClassName, const UNICODE_STRING& MenuName, ATOM a ) :
 	name( ClassName ),
 	menu( MenuName ),
 	info( ClassInfo ),
-	atom( a ),
 	refcount( 0 )
 {
+	memset( this, 0, sizeof (WNDCLASS) );
+	atomWindowType = a;
 }
 
 wndcls_tt* wndcls_tt::from_name( const UNICODE_STRING& wndcls_name )
