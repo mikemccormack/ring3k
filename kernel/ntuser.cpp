@@ -558,6 +558,27 @@ ULONG NTAPI NtUserCallTwoParam(ULONG Param2, ULONG Param1, ULONG Index)
 	case 0x57:  // ValidateRgn
 		dprintf("ValidateRgn (%08lx, %08lx)\n", Param1, Param2);
 		break;
+	case 0x59: // GetMonitorInfo
+		dprintf("GetMonitorInfo (%08lx, %08lx)\n", Param1, Param2);
+		break;
+	case 0x5b:  // RegisterLogonProcess
+		dprintf("RegisterLogonProcess (%08lx, %08lx)\n", Param1, Param2);
+		break;
+	case 0x5c:  // RegisterSystemThread
+		dprintf("RegisterSystemThread (%08lx, %08lx)\n", Param1, Param2);
+		break;
+	case 0x5e:  // SetCaretPos
+		dprintf("SetCaretPos (%08lx, %08lx)\n", Param1, Param2);
+		break;
+	case 0x5f:  // SetCursorPos
+		dprintf("SetCursorPos (%08lx, %08lx)\n", Param1, Param2);
+		break;
+	case 0x60:  // UnhookWindowsHook
+		dprintf("UnhookWindowsHook (%08lx, %08lx)\n", Param1, Param2);
+		break;
+	case 0x61:  // UserRegisterWowHandlers
+		dprintf("UserRegisterWowHandlers (%08lx, %08lx)\n", Param1, Param2);
+		break;
 	default:
 		dprintf("%lu (%08lx, %08lx)\n", Index, Param1, Param2);
 		break;
