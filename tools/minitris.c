@@ -455,6 +455,17 @@ void do_paint( HWND hwnd )
 	EndPaint( hwnd, &ps );
 }
 
+LRESULT do_erasebackground( HWND hwnd, HDC hdc )
+{
+	RECT rect;
+	// summarized from Wine's DefWndProc
+	HBRUSH hbr = (HBRUSH)GetClassLongPtrW( hwnd, GCLP_HBRBACKGROUND );
+	if (!hbr) return 0;
+	GetClipBox( hdc, &rect );
+	FillRect( hdc, &rect, hbr );
+	return 1;
+}
+
 LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	char str[80];
@@ -462,6 +473,10 @@ LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 	OutputDebugString( str );
 	switch (msg)
 	{
+	case WM_NCCREATE:
+		return TRUE;
+	case WM_CREATE:
+		return 0;
 	case WM_SIZE:
 		do_size( hwnd, block_size * board_width, block_size * board_height + 5 );
 		break;
@@ -478,8 +493,13 @@ LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 		do_timer();
 		InvalidateRect( hwnd, 0, 0 );
 		break;
+	case WM_ERASEBKGND:
+		return do_erasebackground( hwnd, (HDC) wparam );
 	}
-	return DefWindowProc(hwnd, msg, wparam, lparam);
+
+	// avoid the obfuscation of calling back into user32
+	// return DefWindowProc(hwnd, msg, wparam, lparam);
+	return 0;
 }
 
 void init_brushes( void )
