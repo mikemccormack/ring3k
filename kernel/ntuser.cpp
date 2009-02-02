@@ -771,7 +771,7 @@ HANDLE NTAPI NtUserCreateDesktop(
 	ULONG x3,
 	ACCESS_MASK DesiredAccess)
 {
-	dprintf("\n");
+	static int desktop = 0xf00d2001;
 
 	// print out the name
 	object_attributes_t oa;
@@ -781,8 +781,9 @@ HANDLE NTAPI NtUserCreateDesktop(
 		return 0;
 
 	dprintf("name = %pus\n", oa.ObjectName );
+	dprintf("root = %p\n", oa.RootDirectory );
 
-	return (HANDLE) 0xf00d2001;
+	return (HANDLE) desktop++;
 }
 
 BOOLEAN NTAPI NtUserSetProcessWindowStation(HANDLE WindowStation)
