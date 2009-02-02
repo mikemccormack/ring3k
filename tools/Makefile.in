@@ -23,6 +23,7 @@ bindir = ${prefix}/bin
 datadir = ${prefix}/data
 
 SOURCE = \
+	ccmd.c \
 	console.c \
 	dumphandles.c \
 	hello.c \
@@ -65,6 +66,9 @@ minitris.exe: minitris.c
 	$(CC) $(CFLAGS) -o $@ $< -lgdi32 -luser32 -Wl,--subsystem=windows
 
 track.exe: track.c
+	$(CC) $(CFLAGS) -o $@ $< -lgdi32 -luser32 -Wl,--subsystem=windows
+
+ccmd.exe: ccmd.c
 	$(CC) $(CFLAGS) -o $@ $< -lgdi32 -luser32 -Wl,--subsystem=windows
 
 clean:
