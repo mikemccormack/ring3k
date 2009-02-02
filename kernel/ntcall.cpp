@@ -21,6 +21,7 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -65,7 +66,9 @@ NTSTATUS NTAPI NtRaiseHardError(
 	if (NumberOfArguments>32)
 		return STATUS_INVALID_PARAMETER;
 
-	dprintf("hard error:\n");
+	// set color to white on blue - appologies for the lame hack ;)
+	fprintf(stderr, "\x1b[37;44m");
+	fprintf(stderr, "Hard error (Blue screen of death!):\n");
 	for (i=0; i<NumberOfArguments; i++)
 	{
 		void *arg;
@@ -76,19 +79,23 @@ NTSTATUS NTAPI NtRaiseHardError(
 
 		if (StringArgumentsMask & (1<<i))
 		{
+			char buffer[0x100];
 			unicode_string_t us;
 
 			r = us.copy_from_user( (UNICODE_STRING*) arg );
 			if (r < STATUS_SUCCESS)
 				break;
 
-			dprintf("arg[%ld]: %pus\n", i, &us);
+			us.wchar_to_utf8( buffer, sizeof buffer );
+			fprintf(stderr, "arg[%ld]: %s\n", i, buffer);
 		}
 		else
-			dprintf("arg[%ld]: %08lx\n", i, (ULONG)arg);
+			fprintf(stderr, "arg[%ld]: %08lx\n", i, (ULONG)arg);
 	}
+	// restore the color
+	fprintf(stderr, "\x1b[0m");
 
-	debugger();
+	exit(1);
 
 	return STATUS_SUCCESS;
 }
