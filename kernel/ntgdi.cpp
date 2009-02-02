@@ -1264,3 +1264,8 @@ int NTAPI NtGdiGetAppClipBox( HANDLE handle, RECT* rectangle )
 
 	return SIMPLEREGION;
 }
+
+BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG, PVOID, ULONG, ULONG)
+{
+	return TRUE;
+}
