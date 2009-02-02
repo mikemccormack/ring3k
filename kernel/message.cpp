@@ -187,9 +187,10 @@ ncpaintmsg_tt::ncpaintmsg_tt() :
 {
 }
 
-erasebkgmsg_tt::erasebkgmsg_tt() :
+erasebkgmsg_tt::erasebkgmsg_tt( HANDLE dc ) :
 	basicmsg_tt( WM_ERASEBKGND )
 {
+	info.wparam = (WPARAM) dc;
 }
 
 keyup_msg_tt::keyup_msg_tt( UINT key )

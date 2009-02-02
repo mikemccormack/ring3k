@@ -1084,7 +1084,8 @@ HANDLE NTAPI NtUserCreateWindowEx(
 		ncpaintmsg_tt ncpaint;
 		win->send( ncpaint );
 
-		erasebkgmsg_tt erase;
+		HGDIOBJ dc = win32k_manager->alloc_screen_dc();
+		erasebkgmsg_tt erase( dc );
 		win->send( erase );
 
 		winposchanged_tt poschanged( wp );

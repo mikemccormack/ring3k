@@ -180,9 +180,11 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 	case WM_NCACTIVATE:
 	case WM_SETFOCUS:
 	case WM_NCPAINT:
-	case WM_ERASEBKGND:
 	case WM_SIZE:
 	case WM_MOVE:
+		break;
+	case WM_ERASEBKGND:
+		ok( pack->wparam != 0, "hdc was null\n");
 		break;
 	default:
 		dprintf("msg %04lx\n", pack->msg );

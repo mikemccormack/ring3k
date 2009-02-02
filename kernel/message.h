@@ -158,7 +158,7 @@ public:
 class erasebkgmsg_tt : public basicmsg_tt
 {
 public:
-	erasebkgmsg_tt();
+	erasebkgmsg_tt( HANDLE dc );
 };
 
 class keyup_msg_tt : public basicmsg_tt
