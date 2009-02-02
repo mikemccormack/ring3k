@@ -400,6 +400,16 @@ BOOL do_space( void )
 	return TRUE;
 }
 
+void dprintf( const char *format, ... )
+{
+	char str[0x100];
+	va_list va;
+	va_start( va, format );
+	vsprintf( str, format, va );
+	va_end( va );
+	OutputDebugString( str );
+}
+
 BOOL do_keydown( ULONG vkey )
 {
 	if (game_over && vkey != VK_ESCAPE)
@@ -460,17 +470,18 @@ LRESULT do_erasebackground( HWND hwnd, HDC hdc )
 	RECT rect;
 	// summarized from Wine's DefWndProc
 	HBRUSH hbr = (HBRUSH)GetClassLongPtrW( hwnd, GCLP_HBRBACKGROUND );
+	dprintf("minitris: %s %p %p", __FUNCTION__, hwnd, hdc );
 	if (!hbr) return 0;
 	GetClipBox( hdc, &rect );
+	dprintf("minitris: %s box: %d,%d-%d,%d", __FUNCTION__,
+		rect.left, rect.top, rect.right, rect.bottom );
 	FillRect( hdc, &rect, hbr );
 	return 1;
 }
 
 LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-	char str[80];
-	sprintf(str, "minitris_wndproc %p %08x %08x %08lx", hwnd, msg, wparam, lparam);
-	OutputDebugString( str );
+	dprintf("minitris: wndproc %p %08x %08x %08lx", hwnd, msg, wparam, lparam);
 	switch (msg)
 	{
 	case WM_NCCREATE:
