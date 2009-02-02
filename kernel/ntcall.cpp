@@ -49,6 +49,19 @@ NTSTATUS verify_for_write( void *dest, size_t len )
 	return current->verify_for_write( dest, len );
 }
 
+// print with white on blue - appologies for the lame hack ;)
+void color_print( const char* format, ... )
+{
+	va_list va;
+	va_start( va, format);
+	// set to blue
+	fprintf(stderr, "\x1b[37;44m");
+	vfprintf(stderr, format, va );
+	// restore the color
+	fprintf(stderr, "\x1b[0m\n");
+	va_end( va );
+}
+
 NTSTATUS NTAPI NtRaiseHardError(
 	NTSTATUS Status,
 	ULONG NumberOfArguments,
@@ -66,9 +79,7 @@ NTSTATUS NTAPI NtRaiseHardError(
 	if (NumberOfArguments>32)
 		return STATUS_INVALID_PARAMETER;
 
-	// set color to white on blue - appologies for the lame hack ;)
-	fprintf(stderr, "\x1b[37;44m");
-	fprintf(stderr, "Hard error (Blue screen of death!):\n");
+	color_print(" Blue screen of death! ");
 	for (i=0; i<NumberOfArguments; i++)
 	{
 		void *arg;
@@ -87,13 +98,11 @@ NTSTATUS NTAPI NtRaiseHardError(
 				break;
 
 			us.wchar_to_utf8( buffer, sizeof buffer );
-			fprintf(stderr, "arg[%ld]: %s\n", i, buffer);
+			color_print(" %s ", buffer);
 		}
 		else
-			fprintf(stderr, "arg[%ld]: %08lx\n", i, (ULONG)arg);
+			color_print(" %08lx ", (ULONG)arg);
 	}
-	// restore the color
-	fprintf(stderr, "\x1b[0m");
 
 	exit(1);
 
