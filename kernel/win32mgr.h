@@ -56,6 +56,7 @@ public:
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
+	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
 	win32k_info_t* alloc_win32k_info();
 	virtual void send_input( INPUT* input );
 	ULONG get_async_key_state( ULONG Key );
@@ -154,6 +155,7 @@ public:
 	virtual HANDLE select_bitmap( bitmap_t *bitmap );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t* src, INT xSrc, INT ySrc, ULONG rop );
 	virtual COLORREF get_pixel( INT x, INT y ) = 0;
+	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
 };
 
 class memory_device_context_t : public device_context_t
@@ -165,6 +167,7 @@ public:
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual COLORREF get_pixel( INT x, INT y );
+	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 };
 
 class screen_device_context_t : public device_context_t
@@ -176,6 +179,7 @@ public:
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual COLORREF get_pixel( INT x, INT y );
+	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 };
 
 class window_tt;

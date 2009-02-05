@@ -232,6 +232,7 @@ public:
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
+	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 };
 
 BOOL win32k_null_t::init()
@@ -260,6 +261,11 @@ BOOL win32k_null_t::exttextout( INT x, INT y, UINT options,
 }
 
 BOOL win32k_null_t::bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop )
+{
+	return TRUE;
+}
+
+BOOL win32k_null_t::polypatblt( ULONG Rop, PRECT rect )
 {
 	return TRUE;
 }
@@ -603,6 +609,11 @@ BOOL screen_device_context_t::rectangle(INT left, INT top, INT right, INT bottom
 	return win32k_manager->rectangle( left, top, right, bottom, brush );
 }
 
+BOOL screen_device_context_t::polypatblt( ULONG Rop, PRECT rect )
+{
+	return win32k_manager->polypatblt( Rop, rect );
+}
+
 screen_device_context_t::screen_device_context_t( ULONG n ) :
 	device_context_t( n )
 {
@@ -655,7 +666,11 @@ COLORREF memory_device_context_t::get_pixel( INT x, INT y )
 BOOL memory_device_context_t::exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text )
 {
-	dprintf("\n");
+	return TRUE;
+}
+
+BOOL memory_device_context_t::polypatblt( ULONG Rop, PRECT rect )
+{
 	return TRUE;
 }
 
@@ -1265,7 +1280,18 @@ int NTAPI NtGdiGetAppClipBox( HANDLE handle, RECT* rectangle )
 	return SIMPLEREGION;
 }
 
-BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG, PVOID, ULONG, ULONG)
+BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG Rop, PRECT Rectangle, ULONG, ULONG)
 {
-	return TRUE;
+	device_context_t* dc = dc_from_handle( handle );
+	if (!dc)
+		return FALSE;
+
+	// copy the rectangle
+	RECT rect;
+	NTSTATUS r;
+	r = copy_from_user( &rect, Rectangle, sizeof rect );
+	if (r != STATUS_SUCCESS)
+		return FALSE;
+
+	return dc->polypatblt( Rop, &rect );
 }
