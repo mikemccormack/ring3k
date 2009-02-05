@@ -621,8 +621,11 @@ HANDLE NTAPI NtUserFindExistingCursorIcon(PUNICODE_STRING Library, PUNICODE_STRI
 
 HANDLE NTAPI NtUserGetDC(HANDLE Window)
 {
-	dprintf("%p\n", Window);
-	return win32k_manager->alloc_screen_dc();
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return FALSE;
+
+	return win->get_dc();
 }
 
 HGDIOBJ NtUserSelectPalette(HGDIOBJ hdc, HPALETTE palette, BOOLEAN force_bg)
@@ -1018,26 +1021,22 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	ExStyle |= WS_EX_WINDOWEDGE;
 	ExStyle &= ~0x80000000;
 
-	NTCREATESTRUCT cs;
-
-	cs.lpCreateParams = Param;
-	cs.hInstance = Instance;
-	cs.hMenu = Menu;
-	cs.cy = Width;
-	cs.cx = Height;
-	cs.x = x;
-	cs.y = y;
-	cs.style = Style;
-	cs.lpszName = NULL;
-	cs.lpszClass = NULL;
-	cs.dwExStyle = ExStyle;
-
 	// allocate a window
 	window_tt *win;
 	win = new window_tt( current, wndcls, window_name, Style, ExStyle, x, y, Width, Height, Instance );
 	dprintf("new window %p\n", win);
 	if (!win)
 		return NULL;
+
+	if (x == CW_USEDEFAULT)
+		x = 0;
+	if (y == CW_USEDEFAULT)
+		y = 0;
+
+	if (Width == CW_USEDEFAULT)
+		Width = 100;
+	if (Height == CW_USEDEFAULT)
+		Height = 100;
 
 	win->handle = (HWND) alloc_user_handle( win, USER_HANDLE_WINDOW, current->process );
 	win->wndproc = wndcls->get_wndproc();
@@ -1055,9 +1054,31 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	getminmaxinfo_tt minmax;
 	win->send( minmax );
 
+	NTCREATESTRUCT cs;
+
+	cs.lpCreateParams = Param;
+	cs.hInstance = Instance;
+	cs.hMenu = Menu;
+	cs.cy = Width;
+	cs.cx = Height;
+	cs.x = x;
+	cs.y = y;
+	cs.style = Style;
+	cs.lpszName = NULL;
+	cs.lpszClass = NULL;
+	cs.dwExStyle = ExStyle;
+
 	// send WM_NCCREATE
 	nccreate_message_tt nccreate( cs, wndcls_name, window_name );
 	win->send( nccreate );
+
+	win->rcWnd.left = x;
+	win->rcWnd.top = y;
+	win->rcWnd.right = x + Width;
+	win->rcWnd.bottom = y + Height;
+
+	// FIXME: not correct
+	win->rcClient = win->rcWnd;
 
 	// send WM_NCCALCSIZE
 	nccalcsize_message_tt nccalcsize;
@@ -1084,8 +1105,7 @@ HANDLE NTAPI NtUserCreateWindowEx(
 		ncpaintmsg_tt ncpaint;
 		win->send( ncpaint );
 
-		HGDIOBJ dc = win32k_manager->alloc_screen_dc();
-		erasebkgmsg_tt erase( dc );
+		erasebkgmsg_tt erase( win->get_dc() );
 		win->send( erase );
 
 		winposchanged_tt poschanged( wp );
@@ -1099,6 +1119,16 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	}
 
 	return win->handle;
+}
+
+HGDIOBJ window_tt::get_dc()
+{
+	device_context_t *dc = win32k_manager->alloc_screen_dc_ptr();
+	if (!dc)
+		return 0;
+
+	dc->set_bounds_rect( rcClient );
+	return dc->get_handle();
 }
 
 void window_tt::activate()

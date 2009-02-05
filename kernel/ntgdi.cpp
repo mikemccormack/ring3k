@@ -475,10 +475,15 @@ public:
 	device_context_t* alloc(ULONG n) { return new screen_device_context_t(n); }
 };
 
+device_context_t* win32k_manager_t::alloc_screen_dc_ptr()
+{
+	static screen_device_context_factory_t factory;
+	return device_context_t::alloc( &factory );
+}
+
 HGDIOBJ win32k_manager_t::alloc_screen_dc()
 {
-	screen_device_context_factory_t factory;
-	device_context_t* dc = device_context_t::alloc( &factory );
+	device_context_t* dc = alloc_screen_dc_ptr();
 	if (!dc)
 		return NULL;
 	return dc->get_handle();
@@ -615,7 +620,8 @@ BOOL screen_device_context_t::polypatblt( ULONG Rop, PRECT rect )
 }
 
 screen_device_context_t::screen_device_context_t( ULONG n ) :
-	device_context_t( n )
+	device_context_t( n ),
+	win( 0 )
 {
 }
 
@@ -1268,12 +1274,11 @@ HANDLE NTAPI NtGdiCreateCompatibleBitmap(HANDLE DeviceContext, int width, int he
 
 int NTAPI NtGdiGetAppClipBox( HANDLE handle, RECT* rectangle )
 {
-	RECT tmp;
-	tmp.top = 0;
-	tmp.left = 0;
-	tmp.right = 100;
-	tmp.bottom = 100;
-	NTSTATUS r = copy_to_user( rectangle, &tmp, sizeof tmp );
+	device_context_t* dc = dc_from_handle( handle );
+	if (!dc)
+		return FALSE;
+
+	NTSTATUS r = copy_to_user( rectangle, &dc->get_bounds_rect(), sizeof *rectangle );
 	if (r < STATUS_SUCCESS)
 		return ERROR;
 

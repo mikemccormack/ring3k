@@ -51,6 +51,7 @@ public:
 	virtual void fini() = 0;
 	HGDIOBJ alloc_compatible_dc();
 	HGDIOBJ alloc_screen_dc();
+	device_context_t* alloc_screen_dc_ptr();
 	BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
@@ -127,6 +128,7 @@ class device_context_t : public gdi_object_t
 {
 	ULONG dc_index;
 	bitmap_t* selected_bitmap;
+	RECT BoundsRect;
 public:
 	static const ULONG max_device_contexts = 0x100;
 	static const ULONG dc_size = 0x100;
@@ -148,6 +150,8 @@ public:
 	virtual BOOL release();
 	brush_t* get_selected_brush();
 	bitmap_t* get_selected_bitmap();
+	void set_bounds_rect( RECT& r ) {BoundsRect = r;}
+	RECT& get_bounds_rect() {return BoundsRect;}
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options,
@@ -170,8 +174,12 @@ public:
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 };
 
+class window_tt;
+
 class screen_device_context_t : public device_context_t
 {
+public:
+	window_tt *win;
 public:
 	screen_device_context_t( ULONG n );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );

@@ -67,6 +67,7 @@ struct window_tt : public WND
 	thread_t* &get_win_thread() {return (thread_t*&)unk1; }
 	BOOLEAN show( INT Show );
 	void activate();
+	HGDIOBJ get_dc();
 };
 
 // system wide callback functions registered with kernel by user32.dll
