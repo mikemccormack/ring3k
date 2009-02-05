@@ -77,6 +77,7 @@ CPP_SOURCES = \
 	section.cpp \
 	semaphore.cpp \
 	skas.cpp \
+	spy.cpp \
 	symlink.cpp \
 	syscall.cpp \
 	thread.cpp \

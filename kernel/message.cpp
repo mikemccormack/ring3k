@@ -33,6 +33,7 @@
 #include "message.h"
 #include "debug.h"
 #include "queue.h"
+#include "spy.h"
 
 template<class Pack>
 generic_message_tt<Pack>::generic_message_tt()
@@ -58,6 +59,12 @@ void generic_message_tt<Pack>::set_window_info( window_tt *win )
 	info.wininfo = win->get_wininfo();
 	info.wndproc = win->get_wndproc();
 	info.func = (typeof(info.func)) g_funcsW[17];
+}
+
+template<class Pack>
+const char *generic_message_tt<Pack>::description()
+{
+	return get_message_name( info.msg );
 }
 
 nccreate_message_tt::nccreate_message_tt( NTCREATESTRUCT& cs, const UNICODE_STRING& cls, const UNICODE_STRING& name ) :

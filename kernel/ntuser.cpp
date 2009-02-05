@@ -953,6 +953,8 @@ NTSTATUS window_tt::send( message_tt& msg )
 	teb->CachedWindowHandle = handle;
 	teb->CachedWindowPointer = get_wininfo();
 
+	dprintf("sending %s\n", msg.description());
+
 	msg.set_window_info( this );
 
 	void *address = thread->push( msg.get_size() );

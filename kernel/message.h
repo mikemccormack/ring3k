@@ -33,6 +33,7 @@ public:
 	virtual NTSTATUS copy_to_user( void *ptr ) const = 0;
 	virtual ULONG get_callback_num() const = 0;
 	virtual void set_window_info( window_tt *win ) = 0;
+	virtual const char *description() = 0;
 	virtual ~message_tt() {}
 };
 
@@ -48,6 +49,7 @@ public:
 	virtual NTSTATUS copy_to_user( void *ptr ) const;
 	virtual ULONG get_callback_num() const = 0;
 	virtual void set_window_info( window_tt *win );
+	virtual const char *description();
 };
 
 // WM_CREATE and WM_NCCREATE
