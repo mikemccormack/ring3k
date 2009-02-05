@@ -621,6 +621,9 @@ HANDLE NTAPI NtUserFindExistingCursorIcon(PUNICODE_STRING Library, PUNICODE_STRI
 
 HANDLE NTAPI NtUserGetDC(HANDLE Window)
 {
+	if (!Window)
+		return win32k_manager->alloc_screen_dc();
+
 	window_tt *win = window_from_handle( Window );
 	if (!win)
 		return FALSE;
