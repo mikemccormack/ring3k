@@ -1310,3 +1310,8 @@ HRGN NTAPI NtGdiGetRgnBox(HRGN Region, PRECT Rect)
 {
 	return 0;
 }
+
+int NTAPI NtGdiCombineRgn( HRGN Dest, HRGN Source1, HRGN Source2, int CombineMode )
+{
+	return 0;
+}

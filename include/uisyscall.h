@@ -42,7 +42,7 @@ NUL(NtGdiClearBitmapAttributes), // 2
 NUL(NtGdiClearBrushAttributes), // 2
 #endif
 NUL(NtGdiColorCorrectPalette),
-NUL(NtGdiCombineRgn),
+IMP(NtGdiCombineRgn, 4),
 NUL(NtGdiCombineTransform),
 IMP(NtGdiComputeXformCoefficients, 1),
 NUL(NtGdiConsoleTextOut),
