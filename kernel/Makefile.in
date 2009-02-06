@@ -73,6 +73,7 @@ CPP_SOURCES = \
 	queue.cpp \
 	random.cpp \
 	reg.cpp \
+	region.cpp \
 	sdl.cpp \
 	section.cpp \
 	semaphore.cpp \
