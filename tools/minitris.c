@@ -418,18 +418,26 @@ BOOL do_keydown( ULONG vkey )
 	switch (vkey)
 	{
 	case VK_ESCAPE:
+		dprintf("escape key pressed");
 		PostQuitMessage(0);
 		break;
 	case VK_DOWN:
+		dprintf("down key pressed");
 		return move_down();
 	case VK_UP:
+		dprintf("up key pressed");
 		return do_rotate();
 	case VK_LEFT:
+		dprintf("left key pressed");
 		return move_left();
 	case VK_RIGHT:
+		dprintf("right key pressed");
 		return move_right();
 	case VK_SPACE:
+		dprintf("space key pressed");
 		return do_space();
+	default:
+		dprintf("keydown event %d", vkey);
 	}
 	return FALSE;
 }
@@ -658,7 +666,28 @@ int polled_winmain( void )
 	return 0;
 }
 
-//#define FORCE_MESSAGE_LOOP
+BOOL is_polled(void)
+{
+	HKEY hkey;
+	LONG r;
+	DWORD type = 0, val = 0, sz;
+
+	r = RegOpenKey( HKEY_LOCAL_MACHINE, "Software\\Minitris", &hkey );
+	if (r != ERROR_SUCCESS)
+		return FALSE;
+
+	sz = sizeof val;
+	r = RegQueryValueEx( hkey, "polled", NULL, &type, (LPBYTE) &val, &sz );
+	if (r != ERROR_SUCCESS)
+		return FALSE;
+
+	RegCloseKey( hkey );
+
+	if (type != REG_DWORD)
+		return FALSE;
+
+	return val;
+}
 
 int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Show )
 {
@@ -667,12 +696,11 @@ int APIENTRY WinMain( HINSTANCE Instance, HINSTANCE Prev, LPSTR CmdLine, int Sho
 	if (!hwsta)
 		init_window_station();
 
-#ifndef FORCE_MESSAGE_LOOP
 	// a bit of a hack...
 	// the message loop doesn't yet work in ring3k... eew...
-	if (!hwsta)
+
+	if (is_polled())
 		return polled_winmain();
-#endif
 
 	// running as normal windows program
 	return window_winmain( Instance );
