@@ -153,5 +153,6 @@ ULONG   NTAPI NtGdiSetDIBitsToDeviceInternal(HGDIOBJ,int,int,ULONG,ULONG,int,int
 ULONG   NTAPI NtGdiSetFontEnumeration(ULONG);
 BOOLEAN NTAPI NtGdiSetIcmMode(HANDLE,ULONG,ULONG);
 BOOLEAN NTAPI NtGdiSetPixel(HANDLE,INT,INT,COLORREF);
+BOOL    NTAPI NtGdiSetRectRgn(HRGN,int,int,int,int);
 
 #endif // __NTGDI_H__

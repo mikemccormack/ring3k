@@ -1301,12 +1301,12 @@ BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG Rop, PRECT Rectangle, ULONG,
 	return dc->polypatblt( Rop, &rect );
 }
 
-HRGN NTAPI NtGdiCreateRectRgn(int left, int top, int right, int bottom)
+HRGN NTAPI NtGdiCreateRectRgn( int left, int top, int right, int bottom )
 {
 	return 0;
 }
 
-HRGN NTAPI NtGdiGetRgnBox(HRGN Region, PRECT Rect)
+HRGN NTAPI NtGdiGetRgnBox( HRGN Region, PRECT Rect )
 {
 	return 0;
 }
@@ -1322,6 +1322,11 @@ BOOL NTAPI NtGdiEqualRgn( HRGN Source1, HRGN Source2 )
 }
 
 int NTAPI NtGdiOffsetRgn( HRGN Region, int x, int y )
+{
+	return 0;
+}
+
+BOOL NTAPI NtGdiSetRectRgn( HRGN Region, int left, int top, int right, int bottom )
 {
 	return 0;
 }
