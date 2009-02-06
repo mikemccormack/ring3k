@@ -39,6 +39,7 @@
 #include "timer.h"
 #include "win.h"
 #include "queue.h"
+#include "spy.h"
 
 msg_tt::msg_tt( HWND _hwnd, UINT _message, WPARAM _wparam, LPARAM _lparam ) :
 	hwnd( _hwnd ),
@@ -189,7 +190,7 @@ BOOLEAN NTAPI NtUserGetMessage(PMSG Message, HWND Window, ULONG MinMessage, ULON
 	{
 		fprintf(stderr, "%04lx: %s\n", current->trace_id(), __FUNCTION__);
 		fprintf(stderr, " msg.hwnd    = %p\n", msg.hwnd);
-		fprintf(stderr, " msg.message = %08x\n", msg.message);
+		fprintf(stderr, " msg.message = %08x (%s)\n", msg.message, get_message_name(msg.message));
 		fprintf(stderr, " msg.wParam  = %08x\n", msg.wParam);
 		fprintf(stderr, " msg.lParam  = %08lx\n", msg.lParam);
 		fprintf(stderr, " msg.time    = %08lx\n", msg.time);
