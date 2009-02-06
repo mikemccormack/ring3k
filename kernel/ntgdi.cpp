@@ -1315,3 +1315,13 @@ int NTAPI NtGdiCombineRgn( HRGN Dest, HRGN Source1, HRGN Source2, int CombineMod
 {
 	return 0;
 }
+
+BOOL NTAPI NtGdiEqualRgn( HRGN Source1, HRGN Source2 )
+{
+	return 0;
+}
+
+int NTAPI NtGdiOffsetRgn( HRGN Region, int x, int y )
+{
+	return 0;
+}
