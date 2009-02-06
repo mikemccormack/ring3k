@@ -1301,9 +1301,37 @@ BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG Rop, PRECT Rectangle, ULONG,
 	return dc->polypatblt( Rop, &rect );
 }
 
+class region_tt : public gdi_object_t
+{
+public:
+	region_tt();
+	static region_tt* alloc();
+};
+
+region_tt::region_tt()
+{
+}
+
+region_tt* region_tt::alloc()
+{
+	region_tt* region = new region_tt;
+	if (!region)
+		return NULL;
+	region->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_REGION, 0, region );
+	if (!region->handle)
+	{
+		delete region;
+		return 0;
+	}
+	return region;
+}
+
 HRGN NTAPI NtGdiCreateRectRgn( int left, int top, int right, int bottom )
 {
-	return 0;
+	region_tt* region = region_tt::alloc();
+	if (!region)
+		return 0;
+	return (HRGN) region->get_handle();
 }
 
 HRGN NTAPI NtGdiCreateEllipticRgn( int left, int top, int right, int bottom )

@@ -636,6 +636,22 @@ void test_solid_brush( void )
 	//ok( get_user_info( brush ) == NULL, "user_info not null\n");
 }
 
+void test_region( void )
+{
+	HRGN region;
+	ULONG type;
+	BOOL r;
+
+	region = NtGdiCreateRectRgn( 0, 0, 0, 0 );
+	ok( region != 0, "region was null");
+
+	type = get_handle_type( region );
+	ok( type == GDI_OBJECT_REGION, "region wrong handle type %ld\n", type );
+
+	r = NtGdiDeleteObjectApp( region );
+	ok( r == TRUE, "delete failed\n");
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -648,5 +664,6 @@ void NtProcessStartup( void )
 	test_get_dc();
 	test_stock_brush();
 	test_solid_brush();
+	test_region();
 	log_fini();
 }
