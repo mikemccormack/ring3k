@@ -1300,3 +1300,8 @@ BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG Rop, PRECT Rectangle, ULONG,
 
 	return dc->polypatblt( Rop, &rect );
 }
+
+HRGN NTAPI NtGdiCreateRectRgn(int left, int top, int right, int bottom)
+{
+	return 0;
+}
