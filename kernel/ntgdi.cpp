@@ -1305,3 +1305,8 @@ HRGN NTAPI NtGdiCreateRectRgn(int left, int top, int right, int bottom)
 {
 	return 0;
 }
+
+HRGN NTAPI NtGdiGetRgnBox(HRGN Region, PRECT Rect)
+{
+	return 0;
+}
