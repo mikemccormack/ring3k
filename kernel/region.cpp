@@ -165,6 +165,7 @@ public:
 	INT get_region_type();
 	BOOL rect_equal( PRECT r1, PRECT r2 );
 	BOOL equal( region_tt *other );
+	INT offset( INT x, INT y );
 };
 
 region_tt::region_tt()
@@ -266,6 +267,26 @@ BOOL region_tt::equal( region_tt *other )
 	return TRUE;
 }
 
+INT region_tt::offset( INT x, INT y )
+{
+	int nbox = rgn->numRects;
+	RECT *pbox = rgn->rects;
+
+	while (nbox--)
+	{
+		pbox->left += x;
+		pbox->right += x;
+		pbox->top += y;
+		pbox->bottom += y;
+		pbox++;
+	}
+	rgn->extents.left += x;
+	rgn->extents.right += x;
+	rgn->extents.top += y;
+	rgn->extents.bottom += y;
+	return get_region_type();
+}
+
 HRGN NTAPI NtGdiCreateRectRgn( int left, int top, int right, int bottom )
 {
 	region_tt* region = region_tt::alloc( RGN_DEFAULT_RECTS );
@@ -320,7 +341,7 @@ int NTAPI NtGdiOffsetRgn( HRGN Region, int x, int y )
 	region_tt* region = region_from_handle( Region );
 	if (!region)
 		return ERROR;
-	return 0;
+	return region->offset( x, y );
 }
 
 BOOL NTAPI NtGdiSetRectRgn( HRGN Region, int left, int top, int right, int bottom )

@@ -674,6 +674,20 @@ void test_region( void )
 
 	r = NtGdiEqualRgn( region, region );
 	ok( r == TRUE, "NtGdiEqualRgn failed %d\n", r);
+
+	r = NtGdiOffsetRgn( region, 1, 2 );
+	ok( r == SIMPLEREGION, "NtGdiOffsetRgn failed %d\n", r);
+
+	r = NtGdiGetRgnBox( region, &rect );
+	ok( r == SIMPLEREGION, "Region type wrong %d\n", r );
+
+	ok( rect.left == 10, "left wrong (%ld)\n", rect.left);
+	ok( rect.top == 12, "top wrong (%ld)\n", rect.top);
+	ok( rect.right == 20, "right wrong (%ld)\n", rect.right);
+	ok( rect.bottom == 22, "bottom wrong (%ld)\n", rect.bottom);
+
+	r = NtGdiDeleteObjectApp( region );
+	ok( r == TRUE, "delete failed\n");
 }
 
 void NtProcessStartup( void )
