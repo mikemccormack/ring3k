@@ -21,9 +21,6 @@
 #include "config.h"
 
 #include <stdarg.h>
-#include <stdio.h>
-#include <assert.h>
-
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
 #include "windef.h"
@@ -31,13 +28,8 @@
 
 #include "ntcall.h"
 #include "ntwin32.h"
-#include "mem.h"
-#include "section.h"
 #include "debug.h"
 #include "win32mgr.h"
-#include "sdl.h"
-#include "win.h"
-#include "queue.h"
 
 class region_tt : public gdi_object_t
 {
