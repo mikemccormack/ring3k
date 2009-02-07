@@ -352,3 +352,8 @@ BOOL NTAPI NtGdiSetRectRgn( HRGN Region, int left, int top, int right, int botto
 	region->set_rect( left, top, right, bottom );
 	return TRUE;
 }
+
+ULONG NTAPI NtGdiGetRegionData( HRGN Region, ULONG Count, PRGNDATA Data )
+{
+	return 0;
+}
