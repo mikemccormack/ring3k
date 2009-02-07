@@ -640,8 +640,8 @@ void test_region( void )
 {
 	HRGN region;
 	ULONG type;
-	int r;
 	RECT rect;
+	int r;
 
 	region = NtGdiCreateRectRgn( 0, 0, 0, 0 );
 	ok( region != 0, "region was null");
@@ -669,7 +669,7 @@ void test_region( void )
 	r = NtGdiEqualRgn( 0, region );
 	ok( r == FALSE, "NtGdiEqualRgn failed %d\n", r);
 
-	r = NtGdiEqualRgn( 0, region );
+	r = NtGdiEqualRgn( region, 0 );
 	ok( r == FALSE, "NtGdiEqualRgn failed %d\n", r);
 
 	r = NtGdiEqualRgn( region, region );
@@ -678,6 +678,9 @@ void test_region( void )
 	r = NtGdiOffsetRgn( region, 1, 2 );
 	ok( r == SIMPLEREGION, "NtGdiOffsetRgn failed %d\n", r);
 
+	r = NtGdiOffsetRgn( 0, 1, 2 );
+	ok( r == ERROR, "NtGdiOffsetRgn failed %d\n", r);
+
 	r = NtGdiGetRgnBox( region, &rect );
 	ok( r == SIMPLEREGION, "Region type wrong %d\n", r );
 
@@ -685,6 +688,15 @@ void test_region( void )
 	ok( rect.top == 12, "top wrong (%ld)\n", rect.top);
 	ok( rect.right == 20, "right wrong (%ld)\n", rect.right);
 	ok( rect.bottom == 22, "bottom wrong (%ld)\n", rect.bottom);
+
+	r = NtGdiGetRgnBox( 0, 0 );
+	ok( r == ERROR, "Region type wrong %d\n", r );
+
+	r = NtGdiGetRgnBox( region, 0 );
+	ok( r == ERROR, "Region type wrong %d\n", r );
+
+	r = NtGdiGetRgnBox( 0, &rect );
+	ok( r == ERROR, "Region type wrong %d\n", r );
 
 	r = NtGdiDeleteObjectApp( region );
 	ok( r == TRUE, "delete failed\n");
