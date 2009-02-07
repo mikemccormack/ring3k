@@ -43,8 +43,6 @@
 static section_t *gdi_ht_section;
 static void *gdi_handle_table = 0;
 
-gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle);
-
 class ntgdishm_tracer : public block_tracer
 {
 public:

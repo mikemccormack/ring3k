@@ -194,5 +194,7 @@ class window_tt;
 extern window_tt* active_window;
 void free_user32_handles( process_t *p );
 HGDIOBJ alloc_gdi_handle( BOOL stock, ULONG type, void *user_info, gdi_object_t* obj );
+gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle);
+
 
 #endif // __WIN32K_MANAGER__

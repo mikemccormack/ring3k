@@ -640,13 +640,28 @@ void test_region( void )
 {
 	HRGN region;
 	ULONG type;
-	BOOL r;
+	int r;
+	RECT rect;
 
 	region = NtGdiCreateRectRgn( 0, 0, 0, 0 );
 	ok( region != 0, "region was null");
 
 	type = get_handle_type( region );
 	ok( type == GDI_OBJECT_REGION, "region wrong handle type %ld\n", type );
+
+	r = NtGdiSetRectRgn( 0, 0, 0, 0, 0 );
+	ok( r == FALSE, "NtGdiSetRectRgn failed\n");
+
+	r = NtGdiSetRectRgn( region, 9, 10, 19, 20 );
+	ok( r == TRUE, "NtGdiSetRectRgn failed\n");
+
+	r = NtGdiGetRgnBox( region, &rect );
+	ok( r == SIMPLEREGION, "Region type wrong %d\n", r );
+
+	ok( rect.left == 9, "left wrong (%ld)\n", rect.left);
+	ok( rect.top == 10, "top wrong (%ld)\n", rect.top);
+	ok( rect.right == 19, "right wrong (%ld)\n", rect.right);
+	ok( rect.bottom == 20, "bottom wrong (%ld)\n", rect.bottom);
 
 	r = NtGdiDeleteObjectApp( region );
 	ok( r == TRUE, "delete failed\n");
