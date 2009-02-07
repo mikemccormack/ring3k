@@ -636,8 +636,16 @@ void test_solid_brush( void )
 	//ok( get_user_info( brush ) == NULL, "user_info not null\n");
 }
 
+BOOL rect_equal( PRECT rect, INT left, INT top, INT right, INT bottom )
+{
+	return rect->left == left && rect->top == top &&
+		rect->right == right && rect->bottom == bottom;
+}
+
 void test_region( void )
 {
+	char buffer[0x100];
+	RGNDATA *data;
 	HRGN region;
 	ULONG type;
 	RECT rect;
@@ -658,10 +666,7 @@ void test_region( void )
 	r = NtGdiGetRgnBox( region, &rect );
 	ok( r == SIMPLEREGION, "Region type wrong %d\n", r );
 
-	ok( rect.left == 9, "left wrong (%ld)\n", rect.left);
-	ok( rect.top == 10, "top wrong (%ld)\n", rect.top);
-	ok( rect.right == 19, "right wrong (%ld)\n", rect.right);
-	ok( rect.bottom == 20, "bottom wrong (%ld)\n", rect.bottom);
+	ok( rect_equal( &rect, 9, 10, 19, 20 ), "rect wrong\n");
 
 	r = NtGdiEqualRgn( 0, 0 );
 	ok( r == ERROR, "NtGdiEqualRgn failed %d\n", r);
@@ -684,10 +689,7 @@ void test_region( void )
 	r = NtGdiGetRgnBox( region, &rect );
 	ok( r == SIMPLEREGION, "Region type wrong %d\n", r );
 
-	ok( rect.left == 10, "left wrong (%ld)\n", rect.left);
-	ok( rect.top == 12, "top wrong (%ld)\n", rect.top);
-	ok( rect.right == 20, "right wrong (%ld)\n", rect.right);
-	ok( rect.bottom == 22, "bottom wrong (%ld)\n", rect.bottom);
+	ok( rect_equal( &rect, 10, 12, 20, 22 ), "rect wrong\n");
 
 	r = NtGdiGetRgnBox( 0, 0 );
 	ok( r == ERROR, "Region type wrong %d\n", r );
@@ -697,6 +699,15 @@ void test_region( void )
 
 	r = NtGdiGetRgnBox( 0, &rect );
 	ok( r == ERROR, "Region type wrong %d\n", r );
+
+	data = (RGNDATA*) buffer;
+	r = NtGdiGetRegionData( region, sizeof buffer, data );
+	ok( r == 0x30, "size wrong %d\n", r );
+
+	ok( data->rdh.dwSize == 0x20, "dwSize wrong %ld\n", data->rdh.dwSize );
+	ok( data->rdh.iType == NULLREGION, "iType wrong %ld\n", data->rdh.iType );
+	ok( data->rdh.nCount == 1, "nCount wrong %ld\n", data->rdh.nCount );
+	ok( rect_equal( &data->rdh.rcBound, 10, 12, 20, 22 ), "rect wrong\n");
 
 	r = NtGdiDeleteObjectApp( region );
 	ok( r == TRUE, "delete failed\n");

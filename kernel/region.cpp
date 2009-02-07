@@ -162,10 +162,13 @@ public:
 	static region_tt* alloc( INT n );
 	void set_rect( int left, int top, int right, int bottom );
 	INT get_region_box( RECT* rect );
-	INT get_region_type();
+	INT get_region_type() const;
 	BOOL rect_equal( PRECT r1, PRECT r2 );
 	BOOL equal( region_tt *other );
 	INT offset( INT x, INT y );
+	INT get_num_rects() const;
+	PRECT get_rects() const;
+	void get_bounds_rect( RECT& rcBounds ) const;
 };
 
 region_tt::region_tt()
@@ -220,7 +223,7 @@ void region_tt::set_rect( int left, int top, int right, int bottom )
 	EMPTY_REGION(rgn);
 }
 
-INT region_tt::get_region_type()
+INT region_tt::get_region_type() const
 {
 	switch(rgn->numRects)
 	{
@@ -228,6 +231,21 @@ INT region_tt::get_region_type()
 	case 1:  return SIMPLEREGION;
 	default: return COMPLEXREGION;
 	}
+}
+
+INT region_tt::get_num_rects() const
+{
+	return rgn->numRects;
+}
+
+PRECT region_tt::get_rects() const
+{
+	return rgn->rects;
+}
+
+void region_tt::get_bounds_rect( RECT& rcBounds ) const
+{
+	rcBounds = rgn->extents;
 }
 
 INT region_tt::get_region_box( RECT* rect )
@@ -355,5 +373,35 @@ BOOL NTAPI NtGdiSetRectRgn( HRGN Region, int left, int top, int right, int botto
 
 ULONG NTAPI NtGdiGetRegionData( HRGN Region, ULONG Count, PRGNDATA Data )
 {
-	return 0;
+	region_tt* region = region_from_handle( Region );
+	if (!region)
+		return ERROR;
+
+	ULONG size = region->get_num_rects() * sizeof(RECT);
+	if (Count < (size + sizeof(RGNDATAHEADER)) || Data == NULL)
+	{
+		if (Data)	/* buffer is too small, signal it by return 0 */
+			return 0;
+		else		/* user requested buffer size with rgndata NULL */
+			return size + sizeof(RGNDATAHEADER);
+	}
+
+	RGNDATAHEADER rdh;
+
+	rdh.dwSize = sizeof(RGNDATAHEADER);
+	rdh.iType = RDH_RECTANGLES;
+	rdh.nCount = region->get_num_rects();
+	rdh.nRgnSize = size;
+	region->get_bounds_rect( rdh.rcBound );
+
+	NTSTATUS r;
+	r = copy_to_user( Data, &rdh, sizeof rdh );
+	if (r < STATUS_SUCCESS)
+		return ERROR;
+
+	r = copy_to_user( Data->Buffer, region->get_rects(), size );
+	if (r < STATUS_SUCCESS)
+		return ERROR;
+
+	return size + sizeof(RGNDATAHEADER);
 }
