@@ -663,8 +663,17 @@ void test_region( void )
 	ok( rect.right == 19, "right wrong (%ld)\n", rect.right);
 	ok( rect.bottom == 20, "bottom wrong (%ld)\n", rect.bottom);
 
-	r = NtGdiDeleteObjectApp( region );
-	ok( r == TRUE, "delete failed\n");
+	r = NtGdiEqualRgn( 0, 0 );
+	ok( r == ERROR, "NtGdiEqualRgn failed %d\n", r);
+
+	r = NtGdiEqualRgn( 0, region );
+	ok( r == FALSE, "NtGdiEqualRgn failed %d\n", r);
+
+	r = NtGdiEqualRgn( 0, region );
+	ok( r == FALSE, "NtGdiEqualRgn failed %d\n", r);
+
+	r = NtGdiEqualRgn( region, region );
+	ok( r == TRUE, "NtGdiEqualRgn failed %d\n", r);
 }
 
 void NtProcessStartup( void )

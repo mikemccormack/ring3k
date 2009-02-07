@@ -163,6 +163,8 @@ public:
 	void set_rect( int left, int top, int right, int bottom );
 	INT get_region_box( RECT* rect );
 	INT get_region_type();
+	BOOL rect_equal( PRECT r1, PRECT r2 );
+	BOOL equal( region_tt *other );
 };
 
 region_tt::region_tt()
@@ -238,6 +240,32 @@ INT region_tt::get_region_box( RECT* rect )
 	return get_region_type();
 }
 
+BOOL region_tt::rect_equal( PRECT r1, PRECT r2 )
+{
+	return (r1->left == r2->left) &&
+		(r1->right == r2->right) &&
+		(r1->top == r2->top) &&
+		(r1->bottom == r2->bottom);
+}
+
+BOOL region_tt::equal( region_tt *other )
+{
+	if (rgn->numRects != other->rgn->numRects)
+		return FALSE;
+
+	if (rgn->numRects == 0)
+		return TRUE;
+
+	if (!rect_equal( &rgn->extents, &other->rgn->extents ))
+		return FALSE;
+
+	for (int i = 0; i < rgn->numRects; i++ )
+		if (!rect_equal(&rgn->rects[i], &other->rgn->rects[i]))
+			return FALSE;
+
+	return TRUE;
+}
+
 HRGN NTAPI NtGdiCreateRectRgn( int left, int top, int right, int bottom )
 {
 	region_tt* region = region_tt::alloc( RGN_DEFAULT_RECTS );
@@ -276,7 +304,15 @@ int NTAPI NtGdiCombineRgn( HRGN Dest, HRGN Source1, HRGN Source2, int CombineMod
 
 BOOL NTAPI NtGdiEqualRgn( HRGN Source1, HRGN Source2 )
 {
-	return 0;
+	region_tt* rgn1 = region_from_handle( Source1 );
+	if (!rgn1)
+		return ERROR;
+
+	region_tt* rgn2 = region_from_handle( Source2 );
+	if (!rgn2)
+		return ERROR;
+
+	return rgn1->equal( rgn2 );
 }
 
 int NTAPI NtGdiOffsetRgn( HRGN Region, int x, int y )
