@@ -172,6 +172,10 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 {
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	record_received( pack->wininfo->handle, pack->msg );
+	NTWINCALLBACKRETINFO ret;
+	ret.val = 0;
+	ret.size = 0;
+	ret.buf = 0;
 	switch (pack->msg)
 	{
 	case WM_SHOWWINDOW:
@@ -185,11 +189,13 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 		break;
 	case WM_ERASEBKGND:
 		ok( pack->wparam != 0, "hdc was null\n");
+		ret.val = 1;
 		break;
 	default:
 		dprintf("msg %04lx\n", pack->msg );
 		break;
 	}
+	NtCallbackReturn( &ret, sizeof ret, 0 );
 }
 
 HANDLE get_cached_window_handle(void);
@@ -197,6 +203,7 @@ HANDLE get_cached_window_handle(void);
 // magic numbers for everybody
 void getminmax_callback(NTMINMAXPACKEDINFO *pack)
 {
+	NTWINCALLBACKRETINFO ret;
 	HANDLE window = pack->wininfo->handle;
 	//dprintf("wininfo = %p\n", pack->wininfo );
 	//dprintf("handle = %p\n", window );
@@ -214,7 +221,11 @@ void getminmax_callback(NTMINMAXPACKEDINFO *pack)
 
 	record_received( pack->wininfo->handle, pack->msg );
 
-	NtCallbackReturn( 0, 0, 0 );
+	ret.val = 0;
+	ret.size = sizeof pack->minmax;
+	ret.buf = &pack->minmax;
+
+	NtCallbackReturn( &ret, sizeof ret, 0 );
 }
 
 void create_callback( NTCREATEPACKEDINFO *pack )
@@ -246,17 +257,26 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 
 void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 {
+	NTWINCALLBACKRETINFO ret;
+
 	ok( pack->func != NULL, "func NULL\n" );
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	record_received( pack->wininfo->handle, pack->msg );
 	ok( pack->msg == WM_NCCALCSIZE, "message wrong %08lx\n", pack->msg );
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
-	NtCallbackReturn( 0, 0, 0 );
+
+	ret.val = 0;
+	ret.size = sizeof pack->params + sizeof pack->winpos;
+	ret.buf = &pack->params;
+
+	NtCallbackReturn( &ret, sizeof ret, 0 );
 }
 
 void position_changing_callback( PNTPOSCHANGINGPACKEDINFO pack )
 {
+	NTWINCALLBACKRETINFO ret;
+
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	record_received( pack->wininfo->handle, pack->msg );
 	ok( pack->msg == WM_WINDOWPOSCHANGING, "message wrong %08lx\n", pack->msg );
@@ -264,11 +284,18 @@ void position_changing_callback( PNTPOSCHANGINGPACKEDINFO pack )
 	ok( pack->func != NULL, "func NULL\n" );
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
-	NtCallbackReturn( 0, 0, 0 );
+
+	ret.val = 0;
+	ret.size = sizeof pack->winpos;
+	ret.buf = &pack->winpos;
+
+	NtCallbackReturn( &ret, sizeof ret, 0 );
 }
 
 void position_changed_callback( PNTPOSCHANGINGPACKEDINFO pack )
 {
+	NTWINCALLBACKRETINFO ret;
+
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	record_received( pack->wininfo->handle, pack->msg );
 	ok( pack->msg == WM_WINDOWPOSCHANGED, "message wrong %08lx\n", pack->msg );
@@ -276,7 +303,12 @@ void position_changed_callback( PNTPOSCHANGINGPACKEDINFO pack )
 	ok( pack->func != NULL, "func NULL\n" );
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
-	NtCallbackReturn( 0, 0, 0 );
+
+	ret.val = 0;
+	ret.size = 0;
+	ret.buf = 0;
+
+	NtCallbackReturn( &ret, sizeof ret, 0 );
 }
 
 void stub_callback( BYTE *data )
@@ -555,6 +587,9 @@ void test_create_window( ULONG style )
 		check_msg( window, WM_MOVE, &n );
 	}
 	ok( sequence == n, "got %ld != %ld messages\n", sequence, n);
+
+	r = NtUserPeekMessage( window, 0, 0, 0, 0 );
+	ok( FALSE == r, "NtUserPeekMessage indicates messages remaining\n");
 
 	// check the window handle -> pointer translation
 	ptr = (PWND) NtUserCallOneParam( (ULONG) window, NTUCOP_GETWNDPTR );
