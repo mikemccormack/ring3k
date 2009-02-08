@@ -69,10 +69,15 @@ class gdi_object_t
 {
 protected:
 	HGDIOBJ handle;
+	ULONG refcount;
+protected:
+	gdi_object_t();
 public:
 	HGDIOBJ get_handle() {return handle;}
 	virtual ~gdi_object_t() {};
 	virtual BOOL release();
+	void select() { refcount++; }
+	void deselect() { refcount--; }
 	static HGDIOBJ alloc( BOOL stock, ULONG type );
 	void *get_shared_mem();
 };

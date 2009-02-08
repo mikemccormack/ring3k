@@ -83,8 +83,16 @@ void ntgdishm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 
 static ntgdishm_tracer ntgdishm_trace;
 
+gdi_object_t::gdi_object_t() :
+	handle( 0 ),
+	refcount( 0 )
+{
+}
+
 BOOL gdi_object_t::release()
 {
+	if (refcount)
+		return FALSE;
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
 	assert( entry );
 	assert( entry->kernel_info == this );
@@ -583,8 +591,10 @@ HANDLE device_context_t::select_bitmap( bitmap_t *bitmap )
 {
 	bitmap_t* old = selected_bitmap;
 	selected_bitmap = bitmap;
+	bitmap->select();
 	if (!old)
 		return NULL;
+	old->deselect();
 	return old->get_handle();
 }
 
