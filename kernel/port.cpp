@@ -49,6 +49,7 @@ protected:
 	message_entry_t entry[1];
 public:
 	void *operator new(size_t n, size_t len);
+	void operator delete(void* ptr);
 	explicit message_t();
 	bool is_linked() { return entry[0].is_linked(); }
 	~message_t();
@@ -124,6 +125,11 @@ static int unique_message_id = 0x101;
 void *message_t::operator new(size_t msg_size, size_t extra)
 {
 	return new unsigned char[msg_size + extra];
+}
+
+void message_t::operator delete(void* ptr)
+{
+	delete[] (unsigned char*) ptr;
 }
 
 message_t::message_t() :
