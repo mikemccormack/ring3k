@@ -570,12 +570,12 @@ int window_winmain( HINSTANCE Instance )
 	new_block();
 	SetTimer( hwnd, 0, interval, 0 );
 	PostMessage( hwnd, WM_NULL, 0, 0 );
-	OutputDebugString("Before GetMessage");
+	dprintf("Before GetMessage");
 	while (GetMessage( &msg, 0, 0, 0 ))
 	{
-		OutputDebugString("dispatching message");
+		dprintf("dispatching message");
 		DispatchMessage( &msg );
-		OutputDebugString("dispatched message");
+		dprintf("dispatched message");
 	}
 
 	DeleteObject( brushes[1] );
