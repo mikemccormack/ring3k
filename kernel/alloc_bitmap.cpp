@@ -213,5 +213,5 @@ void allocation_bitmap_t::test()
 
 	// free the memory
 	delete abm;
-	delete test_buffer;
+	delete[] test_buffer;
 }
