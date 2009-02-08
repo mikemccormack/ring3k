@@ -513,7 +513,7 @@ NUL(NtUserOpenDesktop),
 NUL(NtUserOpenInputDesktop),
 NUL(NtUserOpenWindowStation),
 NUL(NtUserPaintDesktop),
-NUL(NtUserPeekMessage),
+IMP(NtUserPeekMessage, 5),
 IMP(NtUserPostMessage, 4),
 NUL(NtUserPostThreadMessage),
 #ifdef SYSCALL_WINXP
