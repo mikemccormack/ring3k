@@ -1,7 +1,11 @@
 /*
- * nt loader
+ * message queues
  *
- * Copyright 2006-2008 Mike McCormack
+ * Based on wine/server/queue.c
+ * Copyright (C) 2000 Alexandre Julliard
+ *
+ * Modifications for ring3k
+ * Copyright 2006-2009 Mike McCormack
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
