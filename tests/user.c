@@ -1,7 +1,7 @@
 /*
  * native test suite
  *
- * Copyright 2008 Mike McCormack
+ * Copyright 2008-2009 Mike McCormack
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -153,6 +153,13 @@ ULONG sequence;
 ULONG received_msg[MAX_RECEIVED_MESSAGES];
 HWND received_hwnd[MAX_RECEIVED_MESSAGES];
 
+#define TEST_XPOS 110
+#define TEST_YPOS 120
+#define TEST_WIDTH 230
+#define TEST_HEIGHT 240
+
+CREATESTRUCTW test_cs;
+
 void clear_msg_sequence(void)
 {
 	memset( &received_msg, 0, sizeof received_msg );
@@ -237,6 +244,13 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 	record_received( pack->wininfo->handle, pack->msg );
+
+	ok(pack->cs.cx == test_cs.cx, "width wrong %d\n", pack->cs.cx);
+	ok(pack->cs.cy == test_cs.cy, "height wrong %d\n", pack->cs.cy);
+	ok(pack->cs.x == test_cs.x, "x pos wrong %d\n", pack->cs.x);
+	ok(pack->cs.y == test_cs.y, "y pos wrong %d\n", pack->cs.y);
+	ok(pack->cs.style == test_cs.style, "style wrong %08lx\n", pack->cs.style);
+	ok(pack->cs.dwExStyle == test_cs.dwExStyle, "exstyle wrong %08lx\n", pack->cs.dwExStyle);
 
 	switch (pack->msg)
 	{
@@ -527,8 +541,6 @@ void test_create_window( ULONG style )
 	HANDLE window;
 	ULONG n = 0;
 	WND *wndptr, *kernel_wndptr, *ptr;
-	ULONG exstyle;
-	void *instance;
 	MSG msg;
 	const int quit_magic = 0xdada;
 	BOOL r;
@@ -543,24 +555,38 @@ void test_create_window( ULONG style )
 	title.Length = sizeof title_str - 2;
 	title.MaximumLength = sizeof title_str;
 
-	instance = get_exe_base();
+	test_cs.lpCreateParams = 0;
+	test_cs.hInstance = get_exe_base();
+	test_cs.hwndParent = 0;
+	test_cs.hMenu = 0;
+	test_cs.x = TEST_XPOS;
+	test_cs.y = TEST_YPOS;
+	test_cs.cx = TEST_WIDTH;
+	test_cs.cy = TEST_HEIGHT;
+	test_cs.style = style;
+	test_cs.dwExStyle = WS_EX_WINDOWEDGE;	// set by NtUserCreateWindowEx
 
-	exstyle = 0x80000000;
-	window = NtUserCreateWindowEx(exstyle, &cls, &title, style,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		0, 0, get_exe_base(), 0, 0x400 );
+	window = NtUserCreateWindowEx(0x80000000, &cls, &title, test_cs.style,
+		test_cs.x, test_cs.y, test_cs.cx, test_cs.cy,
+		test_cs.hwndParent, test_cs.hMenu, test_cs.hInstance, test_cs.lpCreateParams, 0x400 );
 	ok( window != 0, "window handle zero\n");
 	ok( get_cached_window_handle() == 0, "cached handle not clear\n");
 	ok( get_cached_window_pointer() == 0, "cached pointer not clear\n");
+
+	style |= WS_CLIPSIBLINGS;
 
 	kernel_wndptr = check_user_handle( window, USER_HANDLE_WINDOW );
 	wndptr = kernel_to_user( kernel_wndptr );
 	//dprintf("wininfo = %p\n", wndptr );
 	ok( wndptr->self == kernel_wndptr, "self pointer wrong\n");
 	ok( wndptr->handle == window, "window handle wrong\n");
-	ok( wndptr->style == (style | WS_CLIPSIBLINGS), "style wrong %08lx %08lx\n", wndptr->style, style);
-	ok( wndptr->exstyle == WS_EX_WINDOWEDGE, "exstyle wrong %08lx %08lx\n", wndptr->exstyle, exstyle);
-	ok( wndptr->hInstance == instance, "instance wrong\n");
+	ok( wndptr->style == style, "style wrong %08lx %08lx\n", wndptr->style, style);
+	ok( wndptr->exstyle == test_cs.dwExStyle, "exstyle wrong %08lx %08lx\n", wndptr->exstyle, test_cs.dwExStyle);
+	ok( wndptr->hInstance == test_cs.hInstance, "instance wrong\n");
+	ok( wndptr->rcWnd.left == test_cs.x, "x position wrong\n");
+	ok( wndptr->rcWnd.top == test_cs.y, "y position wrong\n");
+	ok( (wndptr->rcWnd.right - wndptr->rcWnd.left) == test_cs.cx, "width wrong\n");
+	ok( (wndptr->rcWnd.bottom - wndptr->rcWnd.top) == test_cs.cy, "height wrong\n");
 
 	check_classinfo( wndptr->wndcls );
 
@@ -587,6 +613,9 @@ void test_create_window( ULONG style )
 		check_msg( window, WM_MOVE, &n );
 	}
 	ok( sequence == n, "got %ld != %ld messages\n", sequence, n);
+
+	r = NtUserInvalidateRect( window, 0, 0 );
+	ok( TRUE == r, "NtUserInvalidateRect failed\n");
 
 	r = NtUserPeekMessage( window, 0, 0, 0, 0 );
 	ok( FALSE == r, "NtUserPeekMessage indicates messages remaining\n");

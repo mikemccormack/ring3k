@@ -1022,7 +1022,6 @@ HANDLE NTAPI NtUserCreateWindowEx(
 		return 0;
 
 	// tweak the styles
-	Style |= WS_CLIPSIBLINGS;
 	ExStyle |= WS_EX_WINDOWEDGE;
 	ExStyle &= ~0x80000000;
 
@@ -1064,8 +1063,8 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	cs.lpCreateParams = Param;
 	cs.hInstance = Instance;
 	cs.hMenu = Menu;
-	cs.cy = Width;
-	cs.cx = Height;
+	cs.cx = Width;
+	cs.cy = Height;
 	cs.x = x;
 	cs.y = y;
 	cs.style = Style;
@@ -1088,6 +1087,8 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	// send WM_NCCALCSIZE
 	nccalcsize_message_tt nccalcsize;
 	win->send( nccalcsize );
+
+	win->style |= WS_CLIPSIBLINGS;
 
 	// send WM_CREATE
 	create_message_tt create( cs, wndcls_name, window_name );
