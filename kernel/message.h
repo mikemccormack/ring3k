@@ -178,13 +178,13 @@ public:
 class sizemsg_tt : public basicmsg_tt
 {
 public:
-	sizemsg_tt();
+	sizemsg_tt( INT cx, INT cy );
 };
 
 class movemsg_tt : public basicmsg_tt
 {
 public:
-	movemsg_tt();
+	movemsg_tt( INT x, INT y );
 };
 
 #endif // __RING3K_MESSAGE__

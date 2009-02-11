@@ -212,12 +212,14 @@ keydown_msg_tt::keydown_msg_tt( UINT key )
 	info.wparam = key;
 }
 
-sizemsg_tt::sizemsg_tt() :
+sizemsg_tt::sizemsg_tt( INT cx, INT cy ) :
 	basicmsg_tt( WM_SIZE )
 {
+	info.lparam = MAKELONG( cx, cy );
 }
 
-movemsg_tt::movemsg_tt() :
+movemsg_tt::movemsg_tt( INT x, INT y ) :
 	basicmsg_tt( WM_MOVE )
 {
+	info.lparam = MAKELONG( x, y );
 }

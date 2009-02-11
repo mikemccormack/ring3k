@@ -191,8 +191,14 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 	case WM_NCACTIVATE:
 	case WM_SETFOCUS:
 	case WM_NCPAINT:
+		break;
 	case WM_SIZE:
+		ok( LOWORD( pack->lparam ) == test_cs.cx, "width wrong\n");
+		ok( HIWORD( pack->lparam ) == test_cs.cy, "height wrong\n");
+		break;
 	case WM_MOVE:
+		ok( LOWORD( pack->lparam ) == test_cs.x, "x wrong\n");
+		ok( HIWORD( pack->lparam ) == test_cs.y, "y wrong\n");
 		break;
 	case WM_ERASEBKGND:
 		ok( pack->wparam != 0, "hdc was null\n");

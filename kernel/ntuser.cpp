@@ -1117,10 +1117,11 @@ HANDLE NTAPI NtUserCreateWindowEx(
 		winposchanged_tt poschanged( wp );
 		win->send( poschanged );
 
-		sizemsg_tt size;
+		sizemsg_tt size( win->rcWnd.right - win->rcWnd.left,
+				win->rcWnd.bottom - win->rcWnd.top );
 		win->send( size );
 
-		movemsg_tt move;
+		movemsg_tt move( win->rcWnd.left, win->rcWnd.top );
 		win->send( move );
 	}
 
