@@ -178,7 +178,11 @@ static inline void record_received( HWND hwnd, ULONG msg )
 void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 {
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
+	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
+	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 	record_received( pack->wininfo->handle, pack->msg );
+	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
+
 	NTWINCALLBACKRETINFO ret;
 	ret.val = 0;
 	ret.size = 0;
@@ -249,6 +253,7 @@ void create_callback( NTCREATEPACKEDINFO *pack )
 	ok( pack->func != NULL, "func NULL\n" );
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
+	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
 	record_received( pack->wininfo->handle, pack->msg );
 
 	ok(pack->cs.cx == test_cs.cx, "width wrong %d\n", pack->cs.cx);
@@ -283,6 +288,7 @@ void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	record_received( pack->wininfo->handle, pack->msg );
 	ok( pack->msg == WM_NCCALCSIZE, "message wrong %08lx\n", pack->msg );
+	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 
