@@ -1081,7 +1081,7 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	win->rcWnd.right = x + Width;
 	win->rcWnd.bottom = y + Height;
 
-	// FIXME: not correct
+	// FIXME: not always correct
 	win->rcClient = win->rcWnd;
 
 	// send WM_NCCALCSIZE

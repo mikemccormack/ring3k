@@ -556,6 +556,7 @@ void test_create_window( ULONG style )
 	MSG msg;
 	const int quit_magic = 0xdada;
 	BOOL r;
+	ULONG cx, cy;
 
 	clear_msg_sequence();
 
@@ -595,10 +596,22 @@ void test_create_window( ULONG style )
 	ok( wndptr->style == style, "style wrong %08lx %08lx\n", wndptr->style, style);
 	ok( wndptr->exstyle == test_cs.dwExStyle, "exstyle wrong %08lx %08lx\n", wndptr->exstyle, test_cs.dwExStyle);
 	ok( wndptr->hInstance == test_cs.hInstance, "instance wrong\n");
-	ok( wndptr->rcWnd.left == test_cs.x, "x position wrong\n");
-	ok( wndptr->rcWnd.top == test_cs.y, "y position wrong\n");
-	ok( (wndptr->rcWnd.right - wndptr->rcWnd.left) == test_cs.cx, "width wrong\n");
-	ok( (wndptr->rcWnd.bottom - wndptr->rcWnd.top) == test_cs.cy, "height wrong\n");
+
+	// check window rectangle
+	ok( wndptr->rcWnd.left == test_cs.x, "x position wrong %ld\n", wndptr->rcWnd.left);
+	ok( wndptr->rcWnd.top == test_cs.y, "y position wrong %ld\n", wndptr->rcWnd.top);
+	cx = wndptr->rcWnd.right - wndptr->rcWnd.left;
+	cy = wndptr->rcWnd.bottom - wndptr->rcWnd.top;
+	ok( cx == test_cs.cx, "width wrong %ld\n", cx);
+	ok( cy == test_cs.cy, "height wrong %ld\n", cy);
+
+	// check client rectangle
+	ok( wndptr->rcClient.left == test_cs.x, "x position wrong %ld\n", wndptr->rcClient.left );
+	ok( wndptr->rcClient.top == test_cs.y, "y position wrong %ld\n", wndptr->rcClient.top);
+	cx = wndptr->rcClient.right - wndptr->rcClient.left;
+	cy = wndptr->rcClient.bottom - wndptr->rcClient.top;
+	ok( cx == test_cs.cx, "width wrong %ld\n", cx);
+	ok( cy == test_cs.cy, "height wrong %ld\n", cy);
 
 	check_classinfo( wndptr->wndcls );
 
