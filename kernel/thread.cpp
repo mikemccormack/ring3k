@@ -597,6 +597,16 @@ NTSTATUS thread_impl_t::user_callback_return( PVOID Result, ULONG ResultLength, 
 {
 	if (!callback_frame)
 		return STATUS_UNSUCCESSFUL;
+	if (Result && ResultLength == 12)
+	{
+		ULONG retvals[3];
+		NTSTATUS r = copy_from_user( retvals, Result, sizeof retvals );
+		if (r >= STATUS_SUCCESS)
+		{
+			dprintf("Result = %08lx %08lx %08lx\n",
+				retvals[0], retvals[1], retvals[2]);
+		}
+	}
 	callback_frame->do_return( Status, ResultLength, Result );
 	return STATUS_SUCCESS;
 }
@@ -1831,7 +1841,6 @@ NTSTATUS NTAPI NtCallbackReturn(
 	ULONG ResultLength,
 	NTSTATUS Status)
 {
-	dprintf("%p %lu %08lx\n", Result, ResultLength, Status);
 	thread_impl_t *thread = dynamic_cast<thread_impl_t*>( current );
 	assert( thread );
 	return thread->user_callback_return(Result, ResultLength, Status);
