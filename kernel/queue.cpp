@@ -217,7 +217,7 @@ BOOLEAN NTAPI NtUserPostMessage( HWND Window, UINT Message, WPARAM Wparam, LPARA
 	return thread->queue->post_message( Window, Message, Wparam, Lparam );
 }
 
-BOOLEAN NTAPI NtUserPeekMessage( HWND Window, UINT Message, UINT Wparam, UINT Lparam, UINT Remove)
+BOOLEAN NTAPI NtUserPeekMessage( PMSG Message, HWND Window, UINT MaxMessage, UINT MinMessage, UINT Remove)
 {
-	return FALSE;
+	return TRUE;
 }
