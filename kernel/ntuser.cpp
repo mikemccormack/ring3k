@@ -1254,3 +1254,8 @@ BOOLEAN NTAPI NtUserMessageCall( HWND Window, ULONG, ULONG, PVOID, ULONG, ULONG,
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtUserDestroyWindow( HWND Window )
+{
+	return TRUE;
+}
