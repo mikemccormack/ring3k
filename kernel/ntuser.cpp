@@ -1259,3 +1259,8 @@ BOOLEAN NTAPI NtUserDestroyWindow( HWND Window )
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtUserValidateRect( HWND Window, PRECT Rect )
+{
+	return TRUE;
+}

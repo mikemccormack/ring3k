@@ -642,7 +642,7 @@ NUL(NtUserSetLayeredWindowAttributes),
 IMP(NtUserUpdatePerUserSystemParameters, 2),
 NUL(NtUserUserHandleGrantAccess),
 NUL(NtUserValidateHandleSecure),
-NUL(NtUserValidateRect),
+IMP(NtUserValidateRect, 2),
 #ifdef SYSCALL_WINXP
 NUL(NtUserValidateTimerCallback), // 3
 #endif

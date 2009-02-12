@@ -296,5 +296,6 @@ BOOLEAN NTAPI  NtUserSetWindowStationUser(HANDLE,PVOID,ULONG,ULONG);
 BOOLEAN NTAPI  NtUserShowWindow(HANDLE,INT);
 BOOLEAN NTAPI  NtUserSystemParametersInfo(ULONG,ULONG,ULONG,ULONG);
 BOOLEAN NTAPI  NtUserUpdatePerUserSystemParameters(ULONG,ULONG);
+BOOLEAN NTAPI  NtUserValidateRect(HWND,PRECT);
 
 #endif // __NTUSER_H__
