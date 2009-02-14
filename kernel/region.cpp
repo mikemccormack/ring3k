@@ -169,8 +169,14 @@ public:
 	INT get_num_rects() const;
 	PRECT get_rects() const;
 	void get_bounds_rect( RECT& rcBounds ) const;
-	BOOL point_in_rect( RECT& rect, int x, int y );
+	BOOL point_in_rect( const RECT& rect, int x, int y );
 	BOOL contains_point( int x, int y );
+	BOOL overlaps_rect( const RECT& overlap );
+	BOOL rects_overlap( const RECT& r1, const RECT& r2 );
+	static void dump_rect( const RECT& rect )
+	{
+		dprintf("%ld,%ld-%ld,%ld\n", rect.left, rect.top, rect.right, rect.bottom);
+	}
 };
 
 region_tt::region_tt()
@@ -223,6 +229,21 @@ void region_tt::set_rect( int left, int top, int right, int bottom )
     }
     else
 	EMPTY_REGION(rgn);
+}
+
+template<typename T> static inline void swap( T& a, T& b )
+{
+	T x = a;
+	a = b;
+	b = x;
+}
+
+static inline void fix_rectangle( RECT& rect )
+{
+	if (rect.left > rect.right)
+		swap( rect.left, rect.right );
+	if (rect.top > rect.bottom)
+		swap( rect.top, rect.bottom );
 }
 
 INT region_tt::get_region_type() const
@@ -307,7 +328,7 @@ INT region_tt::offset( INT x, INT y )
 	return get_region_type();
 }
 
-BOOL region_tt::point_in_rect( RECT& rect, int x, int y )
+BOOL region_tt::point_in_rect( const RECT& rect, int x, int y )
 {
 	return (rect.top <= y) && (rect.bottom > y) &&
 		(rect.left <= x) && (rect.right > x);
@@ -323,6 +344,29 @@ BOOL region_tt::contains_point( int x, int y )
 
 	for (int i = 0; i < rgn->numRects; i++)
 		if (point_in_rect(rgn->rects[i], x, y))
+			return TRUE;
+
+	return FALSE;
+}
+
+BOOL region_tt::rects_overlap( const RECT& r1, const RECT& r2 )
+{
+	dump_rect(r1);
+	dump_rect(r2);
+	return (r1.right > r2.left) && (r1.left < r2.right) &&
+		(r1.bottom > r2.top) && (r1.top < r2.bottom);
+}
+
+BOOL region_tt::overlaps_rect( const RECT& rect )
+{
+	if (rgn->numRects == 0)
+		return FALSE;
+
+	if (!rects_overlap( rgn->extents, rect ))
+		return FALSE;
+
+	for (int i = 0; i < rgn->numRects; i++)
+		if (rects_overlap(rgn->rects[i], rect))
 			return TRUE;
 
 	return FALSE;
@@ -436,4 +480,21 @@ BOOLEAN NTAPI NtGdiPtInRegion( HRGN Region, int x, int y )
 		return ERROR;
 
 	return region->contains_point( x, y );
+}
+
+BOOLEAN NTAPI NtGdiRectInRegion( HRGN Region, const RECT *rect )
+{
+	region_tt* region = region_from_handle( Region );
+	if (!region)
+		return ERROR;
+
+	RECT overlap;
+	NTSTATUS r;
+	r = copy_from_user( &overlap, rect, sizeof *rect );
+	if (r < STATUS_SUCCESS)
+		return ERROR;
+
+	fix_rectangle( overlap );
+
+	return region->overlaps_rect( overlap );
 }

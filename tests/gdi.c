@@ -642,6 +642,14 @@ BOOL rect_equal( PRECT rect, INT left, INT top, INT right, INT bottom )
 		rect->right == right && rect->bottom == bottom;
 }
 
+void set_rect( PRECT rect, INT left, INT top, INT right, INT bottom )
+{
+	rect->left = left;
+	rect->top = top;
+	rect->right = right;
+	rect->bottom = bottom;
+}
+
 void test_region( void )
 {
 	char buffer[0x100];
@@ -729,6 +737,48 @@ void test_region( void )
 
 	r = NtGdiPtInRegion( region, 15, 15 );
 	ok( r == TRUE, "return wrong\n");
+
+	set_rect( &rect, 0, 0, 0, 0 );
+	r = NtGdiRectInRegion( 0, 0 );
+	ok( r == FALSE, "return wrong\n");
+
+	r = NtGdiRectInRegion( 0, &rect );
+	ok( r == FALSE, "return wrong\n");
+
+	r = NtGdiRectInRegion( region, 0 );
+	ok( r == FALSE, "return wrong\n");
+
+	set_rect( &rect, 0, 0, 0, 0 );
+	r = NtGdiRectInRegion( region, &rect );
+	ok( r == FALSE, "return wrong\n");
+
+	set_rect( &rect, 0, 0, 15, 15 );
+	r = NtGdiRectInRegion( region, &rect );
+	ok( r == TRUE, "return wrong\n");
+
+	set_rect( &rect, 15, 15, 0, 0 );
+	r = NtGdiRectInRegion( region, &rect );
+	ok( r == TRUE, "return wrong\n");
+
+	set_rect( &rect, 15, 15, 15, 15 );
+	r = NtGdiRectInRegion( region, &rect );
+	ok( r == TRUE, "return wrong\n");
+
+	set_rect( &rect, 9, 11, 10, 12 );
+	r = NtGdiRectInRegion( region, &rect );
+	ok( r == FALSE, "return wrong\n");
+
+	set_rect( &rect, 19, 21, 20, 22 );
+	r = NtGdiRectInRegion( region, &rect );
+	ok( r == TRUE, "return wrong\n");
+
+	set_rect( &rect, 19, 22, 20, 22 );
+	r = NtGdiRectInRegion( region, &rect );
+	ok( r == FALSE, "return wrong\n");
+
+	set_rect( &rect, 40, 40, 40, 40 );
+	r = NtGdiRectInRegion( region, &rect );
+	ok( r == FALSE, "return wrong\n");
 
 	r = NtGdiDeleteObjectApp( region );
 	ok( r == TRUE, "delete failed\n");
