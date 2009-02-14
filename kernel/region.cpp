@@ -108,42 +108,14 @@ SOFTWARE.
 #include "ntwin32.h"
 #include "debug.h"
 #include "win32mgr.h"
+#include "region.h"
 
-#define TRACE dprintf
+static const int RGN_DEFAULT_RECTS = 2;
 
-#define RGN_DEFAULT_RECTS	2
-
-class region_tt : public gdi_object_t
+void region_tt::dump_rect( const RECT& rect )
 {
-	INT size;
-	INT numRects;
-	RECT *rects;
-	RECT extents;
-
-public:
-	region_tt( INT n );
-	~region_tt();
-	static region_tt* alloc( INT n );
-	void set_rect( int left, int top, int right, int bottom );
-	INT get_region_box( RECT* rect );
-	INT get_region_type() const;
-	BOOL rect_equal( PRECT r1, PRECT r2 );
-	BOOL equal( region_tt *other );
-	void offset_rect( RECT& rect, INT x, INT y );
-	INT offset( INT x, INT y );
-	INT get_num_rects() const;
-	PRECT get_rects() const;
-	void get_bounds_rect( RECT& rcBounds ) const;
-	BOOL point_in_rect( const RECT& rect, int x, int y );
-	BOOL contains_point( int x, int y );
-	BOOL overlaps_rect( const RECT& overlap );
-	BOOL rects_overlap( const RECT& r1, const RECT& r2 );
-	static void dump_rect( const RECT& rect )
-	{
-		dprintf("%ld,%ld-%ld,%ld\n", rect.left, rect.top, rect.right, rect.bottom);
-	}
-	void empty_region();
-};
+	dprintf("%ld,%ld-%ld,%ld\n", rect.left, rect.top, rect.right, rect.bottom);
+}
 
 region_tt::region_tt( INT n )
 {
@@ -208,9 +180,6 @@ static inline void fix_rectangle( RECT& rect )
 
 void region_tt::set_rect( int left, int top, int right, int bottom )
 {
-	if (left > right) { INT tmp = left; left = right; right = tmp; }
-	if (top > bottom) { INT tmp = top; top = bottom; bottom = tmp; }
-
 	if ((left != right) && (top != bottom))
 	{
 		extents.left = left;
@@ -258,7 +227,7 @@ INT region_tt::get_region_box( RECT* rect )
 	rect->top = extents.top;
 	rect->right = extents.right;
 	rect->bottom = extents.bottom;
-	TRACE("%p (%ld,%ld-%ld,%ld)\n", get_handle(),
+	dprintf("%p (%ld,%ld-%ld,%ld)\n", get_handle(),
 		rect->left, rect->top, rect->right, rect->bottom);
 	return get_region_type();
 }
