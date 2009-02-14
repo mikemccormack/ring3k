@@ -113,51 +113,15 @@ SOFTWARE.
 
 #define RGN_DEFAULT_RECTS	2
 
-struct WINEREGION {
-    INT size;
-    INT numRects;
-    RECT *rects;
-    RECT extents;
-};
-
-static inline void EMPTY_REGION(WINEREGION *pReg) {
-    (pReg)->numRects = 0;
-    (pReg)->extents.left = (pReg)->extents.top = 0;
-    (pReg)->extents.right = (pReg)->extents.bottom = 0;
-}
-
-/***********************************************************************
- *            REGION_AllocWineRegion
- *            Create a new empty WINEREGION.
- */
-static WINEREGION *REGION_AllocWineRegion( INT n )
-{
-    WINEREGION *pReg;
-
-    if ((pReg = new WINEREGION))
-    {
-        if ((pReg->rects = new RECT[n]))
-        {
-            pReg->size = n;
-            EMPTY_REGION(pReg);
-            return pReg;
-        }
-        delete pReg;
-    }
-    return NULL;
-}
-
-static void REGION_DestroyWineRegion( WINEREGION* pReg )
-{
-    delete[] pReg->rects;
-    delete pReg;
-}
-
 class region_tt : public gdi_object_t
 {
-	WINEREGION *rgn;
+	INT size;
+	INT numRects;
+	RECT *rects;
+	RECT extents;
+
 public:
-	region_tt();
+	region_tt( INT n );
 	~region_tt();
 	static region_tt* alloc( INT n );
 	void set_rect( int left, int top, int right, int bottom );
@@ -165,6 +129,7 @@ public:
 	INT get_region_type() const;
 	BOOL rect_equal( PRECT r1, PRECT r2 );
 	BOOL equal( region_tt *other );
+	void offset_rect( RECT& rect, INT x, INT y );
 	INT offset( INT x, INT y );
 	INT get_num_rects() const;
 	PRECT get_rects() const;
@@ -177,23 +142,35 @@ public:
 	{
 		dprintf("%ld,%ld-%ld,%ld\n", rect.left, rect.top, rect.right, rect.bottom);
 	}
+	void empty_region();
 };
 
-region_tt::region_tt()
+region_tt::region_tt( INT n )
 {
+	size = n;
+	rects = new RECT[n];
+	empty_region();
 }
 
 region_tt::~region_tt()
 {
-	REGION_DestroyWineRegion( rgn );
+	delete[] rects;
+}
+
+void region_tt::empty_region()
+{
+	numRects = 0;
+	extents.left = 0;
+	extents.top = 0;
+	extents.right = 0;
+	extents.bottom = 0;
 }
 
 region_tt* region_tt::alloc( INT n )
 {
-	region_tt* region = new region_tt;
+	region_tt* region = new region_tt( n );
 	if (!region)
 		return NULL;
-	region->rgn = REGION_AllocWineRegion( n );
 	region->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_REGION, 0, region );
 	if (!region->handle)
 	{
@@ -214,23 +191,6 @@ region_tt* region_from_handle( HGDIOBJ handle )
 	return (region_tt*) entry->kernel_info;
 }
 
-void region_tt::set_rect( int left, int top, int right, int bottom )
-{
-    if (left > right) { INT tmp = left; left = right; right = tmp; }
-    if (top > bottom) { INT tmp = top; top = bottom; bottom = tmp; }
-
-    if((left != right) && (top != bottom))
-    {
-        rgn->rects->left = rgn->extents.left = left;
-        rgn->rects->top = rgn->extents.top = top;
-        rgn->rects->right = rgn->extents.right = right;
-        rgn->rects->bottom = rgn->extents.bottom = bottom;
-        rgn->numRects = 1;
-    }
-    else
-	EMPTY_REGION(rgn);
-}
-
 template<typename T> static inline void swap( T& a, T& b )
 {
 	T x = a;
@@ -246,9 +206,30 @@ static inline void fix_rectangle( RECT& rect )
 		swap( rect.top, rect.bottom );
 }
 
+void region_tt::set_rect( int left, int top, int right, int bottom )
+{
+	if (left > right) { INT tmp = left; left = right; right = tmp; }
+	if (top > bottom) { INT tmp = top; top = bottom; bottom = tmp; }
+
+	if ((left != right) && (top != bottom))
+	{
+		extents.left = left;
+		extents.top = top;
+		extents.right = right;
+		extents.bottom = bottom;
+
+		fix_rectangle( extents );
+
+		rects[0] = extents;
+		numRects = 1;
+	}
+	else
+		empty_region();
+}
+
 INT region_tt::get_region_type() const
 {
-	switch(rgn->numRects)
+	switch(numRects)
 	{
 	case 0:  return NULLREGION;
 	case 1:  return SIMPLEREGION;
@@ -258,25 +239,25 @@ INT region_tt::get_region_type() const
 
 INT region_tt::get_num_rects() const
 {
-	return rgn->numRects;
+	return numRects;
 }
 
 PRECT region_tt::get_rects() const
 {
-	return rgn->rects;
+	return rects;
 }
 
 void region_tt::get_bounds_rect( RECT& rcBounds ) const
 {
-	rcBounds = rgn->extents;
+	rcBounds = extents;
 }
 
 INT region_tt::get_region_box( RECT* rect )
 {
-	rect->left = rgn->extents.left;
-	rect->top = rgn->extents.top;
-	rect->right = rgn->extents.right;
-	rect->bottom = rgn->extents.bottom;
+	rect->left = extents.left;
+	rect->top = extents.top;
+	rect->right = extents.right;
+	rect->bottom = extents.bottom;
 	TRACE("%p (%ld,%ld-%ld,%ld)\n", get_handle(),
 		rect->left, rect->top, rect->right, rect->bottom);
 	return get_region_type();
@@ -292,39 +273,41 @@ BOOL region_tt::rect_equal( PRECT r1, PRECT r2 )
 
 BOOL region_tt::equal( region_tt *other )
 {
-	if (rgn->numRects != other->rgn->numRects)
+	if (numRects != other->numRects)
 		return FALSE;
 
-	if (rgn->numRects == 0)
+	if (numRects == 0)
 		return TRUE;
 
-	if (!rect_equal( &rgn->extents, &other->rgn->extents ))
+	if (!rect_equal( &extents, &other->extents ))
 		return FALSE;
 
-	for (int i = 0; i < rgn->numRects; i++ )
-		if (!rect_equal(&rgn->rects[i], &other->rgn->rects[i]))
+	for (int i = 0; i < numRects; i++ )
+		if (!rect_equal(&rects[i], &other->rects[i]))
 			return FALSE;
 
 	return TRUE;
 }
 
+void region_tt::offset_rect( RECT& rect, INT x, INT y )
+{
+	rect.left += x;
+	rect.right += x;
+	rect.top += y;
+	rect.bottom += y;
+}
+
 INT region_tt::offset( INT x, INT y )
 {
-	int nbox = rgn->numRects;
-	RECT *pbox = rgn->rects;
+	int nbox = numRects;
+	RECT *pbox = rects;
 
 	while (nbox--)
 	{
-		pbox->left += x;
-		pbox->right += x;
-		pbox->top += y;
-		pbox->bottom += y;
+		offset_rect( *pbox, x, y );
 		pbox++;
 	}
-	rgn->extents.left += x;
-	rgn->extents.right += x;
-	rgn->extents.top += y;
-	rgn->extents.bottom += y;
+	offset_rect( extents, x, y );
 	return get_region_type();
 }
 
@@ -336,14 +319,14 @@ BOOL region_tt::point_in_rect( const RECT& rect, int x, int y )
 
 BOOL region_tt::contains_point( int x, int y )
 {
-	if (rgn->numRects == 0)
+	if (numRects == 0)
 		return FALSE;
 
-	if (!point_in_rect( rgn->extents, x, y ))
+	if (!point_in_rect( extents, x, y ))
 		return FALSE;
 
-	for (int i = 0; i < rgn->numRects; i++)
-		if (point_in_rect(rgn->rects[i], x, y))
+	for (int i = 0; i < numRects; i++)
+		if (point_in_rect(rects[i], x, y))
 			return TRUE;
 
 	return FALSE;
@@ -351,22 +334,20 @@ BOOL region_tt::contains_point( int x, int y )
 
 BOOL region_tt::rects_overlap( const RECT& r1, const RECT& r2 )
 {
-	dump_rect(r1);
-	dump_rect(r2);
 	return (r1.right > r2.left) && (r1.left < r2.right) &&
 		(r1.bottom > r2.top) && (r1.top < r2.bottom);
 }
 
 BOOL region_tt::overlaps_rect( const RECT& rect )
 {
-	if (rgn->numRects == 0)
+	if (numRects == 0)
 		return FALSE;
 
-	if (!rects_overlap( rgn->extents, rect ))
+	if (!rects_overlap( extents, rect ))
 		return FALSE;
 
-	for (int i = 0; i < rgn->numRects; i++)
-		if (rects_overlap(rgn->rects[i], rect))
+	for (int i = 0; i < numRects; i++)
+		if (rects_overlap(rects[i], rect))
 			return TRUE;
 
 	return FALSE;
