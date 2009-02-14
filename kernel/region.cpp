@@ -169,6 +169,8 @@ public:
 	INT get_num_rects() const;
 	PRECT get_rects() const;
 	void get_bounds_rect( RECT& rcBounds ) const;
+	BOOL point_in_rect( RECT& rect, int x, int y );
+	BOOL contains_point( int x, int y );
 };
 
 region_tt::region_tt()
@@ -305,6 +307,27 @@ INT region_tt::offset( INT x, INT y )
 	return get_region_type();
 }
 
+BOOL region_tt::point_in_rect( RECT& rect, int x, int y )
+{
+	return (rect.top <= y) && (rect.bottom > y) &&
+		(rect.left <= x) && (rect.right > x);
+}
+
+BOOL region_tt::contains_point( int x, int y )
+{
+	if (rgn->numRects == 0)
+		return FALSE;
+
+	if (!point_in_rect( rgn->extents, x, y ))
+		return FALSE;
+
+	for (int i = 0; i < rgn->numRects; i++)
+		if (point_in_rect(rgn->rects[i], x, y))
+			return TRUE;
+
+	return FALSE;
+}
+
 HRGN NTAPI NtGdiCreateRectRgn( int left, int top, int right, int bottom )
 {
 	region_tt* region = region_tt::alloc( RGN_DEFAULT_RECTS );
@@ -404,4 +427,13 @@ ULONG NTAPI NtGdiGetRegionData( HRGN Region, ULONG Count, PRGNDATA Data )
 		return ERROR;
 
 	return size + sizeof(RGNDATAHEADER);
+}
+
+BOOLEAN NTAPI NtGdiPtInRegion( HRGN Region, int x, int y )
+{
+	region_tt* region = region_from_handle( Region );
+	if (!region)
+		return ERROR;
+
+	return region->contains_point( x, y );
 }

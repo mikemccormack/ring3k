@@ -709,6 +709,27 @@ void test_region( void )
 	ok( data->rdh.nCount == 1, "nCount wrong %ld\n", data->rdh.nCount );
 	ok( rect_equal( &data->rdh.rcBound, 10, 12, 20, 22 ), "rect wrong\n");
 
+	r = NtGdiPtInRegion( 0, 0, 0 );
+	ok( r == FALSE, "return wrong\n");
+
+	r = NtGdiPtInRegion( region, 0, 0 );
+	ok( r == FALSE, "return wrong\n");
+
+	r = NtGdiPtInRegion( region, 10, 12 );
+	ok( r == TRUE, "return wrong\n");
+
+	r = NtGdiPtInRegion( region, 19, 21 );
+	ok( r == TRUE, "return wrong\n");
+
+	r = NtGdiPtInRegion( region, 19, 22 );
+	ok( r == FALSE, "return wrong\n");
+
+	r = NtGdiPtInRegion( region, 20, 22 );
+	ok( r == FALSE, "return wrong\n");
+
+	r = NtGdiPtInRegion( region, 15, 15 );
+	ok( r == TRUE, "return wrong\n");
+
 	r = NtGdiDeleteObjectApp( region );
 	ok( r == TRUE, "delete failed\n");
 }

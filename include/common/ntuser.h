@@ -270,6 +270,7 @@ BOOLEAN NTAPI  NtUserGetObjectInformation(HANDLE,ULONG,PVOID,ULONG,PULONG);
 HANDLE NTAPI   NtUserGetProcessWindowStation(void);
 HANDLE NTAPI   NtUserGetThreadDesktop(ULONG,ULONG);
 ULONG NTAPI    NtUserGetThreadState(ULONG);
+BOOLEAN NTAPI  NtUserGetUpdateRgn(HWND,HRGN,BOOLEAN);
 BOOLEAN NTAPI  NtUserInitialize(ULONG,ULONG,ULONG);
 BOOLEAN NTAPI  NtUserInitializeClientPfnArrays(PVOID,PVOID,PVOID,PVOID);
 BOOLEAN NTAPI  NtUserInvalidateRect(HWND,const RECT*,BOOLEAN);

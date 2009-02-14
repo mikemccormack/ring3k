@@ -1316,3 +1316,8 @@ BOOLEAN NTAPI NtUserValidateRect( HWND Window, PRECT Rect )
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtUserGetUpdateRgn( HWND Window, HRGN Region, BOOLEAN Erase )
+{
+	return TRUE;
+}
