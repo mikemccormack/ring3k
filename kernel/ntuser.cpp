@@ -1097,35 +1097,67 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	if (win->style & WS_VISIBLE)
 	{
 		dprintf("Window has WS_VISIBLE\n");
-		win->show( SW_SHOW );
-
-		WINDOWPOS wp;
-		memset( &wp, 0, sizeof wp );
-		winposchanging_tt poschanging( wp );
-		win->send( poschanging );
-
-		// send activate messages
-		win->activate();
-
-		// painting probably should be done elsewhere
-		ncpaintmsg_tt ncpaint;
-		win->send( ncpaint );
-
-		erasebkgmsg_tt erase( win->get_dc() );
-		win->send( erase );
-
-		winposchanged_tt poschanged( wp );
-		win->send( poschanged );
-
-		sizemsg_tt size( win->rcWnd.right - win->rcWnd.left,
-				win->rcWnd.bottom - win->rcWnd.top );
-		win->send( size );
-
-		movemsg_tt move( win->rcWnd.left, win->rcWnd.top );
-		win->send( move );
+		win->set_window_pos( SWP_SHOWWINDOW );
 	}
 
 	return win->handle;
+}
+
+void window_tt::set_window_pos( UINT flags )
+{
+	if (!(style & WS_VISIBLE))
+		return;
+
+	if (flags & SWP_SHOWWINDOW)
+		show( SW_SHOW );
+
+	WINDOWPOS wp;
+	memset( &wp, 0, sizeof wp );
+
+	if (flags & (SWP_SHOWWINDOW | SWP_HIDEWINDOW))
+	{
+		winposchanging_tt poschanging( wp );
+		send( poschanging );
+	}
+
+	// send activate messages
+	if (!(flags & SWP_NOACTIVATE))
+	{
+		activate();
+
+		// painting probably should be done elsewhere
+		ncpaintmsg_tt ncpaint;
+		send( ncpaint );
+
+		erasebkgmsg_tt erase( get_dc() );
+		send( erase );
+	}
+
+	if (style & WS_VISIBLE)
+	{
+		winposchanged_tt poschanged( wp );
+		send( poschanged );
+	}
+
+	if (flags & SWP_HIDEWINDOW)
+	{
+		// deactivate
+		ncactivate_tt ncact;
+		send( ncact );
+	}
+
+	if (!(flags & SWP_NOSIZE))
+	{
+		sizemsg_tt size( rcWnd.right - rcWnd.left,
+				rcWnd.bottom - rcWnd.top );
+		send( size );
+	}
+
+	if (!(flags & SWP_NOMOVE))
+	{
+		movemsg_tt move( rcWnd.left, rcWnd.top );
+		send( move );
+	}
 }
 
 HGDIOBJ window_tt::get_dc()
@@ -1161,6 +1193,22 @@ void window_tt::activate()
 
 	setfocusmsg_tt setfocus;
 	send( setfocus );
+}
+
+BOOLEAN window_tt::destroy()
+{
+	// set the window to zero size
+	set_window_pos( SWP_NOMOVE | SWP_NOSIZE |
+			SWP_NOZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW );
+
+	destroymsg_tt destroy;
+	send( destroy );
+
+	ncdestroymsg_tt ncdestroy;
+	send( ncdestroy );
+
+	delete this;
+	return TRUE;
 }
 
 BOOLEAN NTAPI NtUserSetLogonNotifyWindow( HANDLE Window )
@@ -1257,7 +1305,11 @@ BOOLEAN NTAPI NtUserMessageCall( HWND Window, ULONG, ULONG, PVOID, ULONG, ULONG,
 
 BOOLEAN NTAPI NtUserDestroyWindow( HWND Window )
 {
-	return TRUE;
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return FALSE;
+
+	return win->destroy();
 }
 
 BOOLEAN NTAPI NtUserValidateRect( HWND Window, PRECT Rect )

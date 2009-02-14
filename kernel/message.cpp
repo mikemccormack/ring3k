@@ -223,3 +223,14 @@ movemsg_tt::movemsg_tt( INT x, INT y ) :
 {
 	info.lparam = MAKELONG( x, y );
 }
+
+ncdestroymsg_tt::ncdestroymsg_tt() :
+	basicmsg_tt( WM_NCDESTROY )
+{
+}
+
+destroymsg_tt::destroymsg_tt() :
+	basicmsg_tt( WM_DESTROY )
+{
+}
+

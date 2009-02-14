@@ -187,4 +187,16 @@ public:
 	movemsg_tt( INT x, INT y );
 };
 
+class ncdestroymsg_tt : public basicmsg_tt
+{
+public:
+	ncdestroymsg_tt();
+};
+
+class destroymsg_tt : public basicmsg_tt
+{
+public:
+	destroymsg_tt();
+};
+
 #endif // __RING3K_MESSAGE__

@@ -163,6 +163,7 @@ CREATESTRUCTW test_cs;
 void clear_msg_sequence(void)
 {
 	memset( &received_msg, 0, sizeof received_msg );
+	memset( &received_hwnd, 0, sizeof received_hwnd );
 	sequence = 0;
 }
 
@@ -195,6 +196,8 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 	case WM_NCACTIVATE:
 	case WM_SETFOCUS:
 	case WM_NCPAINT:
+	case WM_NCDESTROY:
+	case WM_DESTROY:
 		break;
 	case WM_SIZE:
 		ok( LOWORD( pack->lparam ) == test_cs.cx, "width wrong\n");
@@ -473,18 +476,16 @@ void register_class( void )
 	ok( atom != 0, "return %04x\n", atom );
 }
 
-static inline void check_msg( HWND hwnd, ULONG msg, ULONG* n )
+#define check_msg( hwnd, msg, n ) __check_msg( hwnd, msg, n, __LINE__ )
+static inline void __check_msg( HWND hwnd, ULONG msg, ULONG* n, int line )
 {
 	ULONG val = received_msg[*n];
-	ok( hwnd == received_hwnd[*n], "hwnd wrong\n");
-	ok( val == msg, "%ld sequence received %04lx != expected %04lx\n", *n, val, msg );
-	(*n)++;
-}
-
-static inline void maybe_skip( ULONG msg, ULONG *n )
-{
-	if (received_msg[*n] == msg)
+	while( received_hwnd[*n] && hwnd != received_hwnd[*n])
 		(*n)++;
+	if( val != msg)
+		dprintf("%d: %ld sequence received %04lx != expected %04lx\n",
+			 line, *n, val, msg );
+	(*n)++;
 }
 
 #define USER_HANDLE_WINDOW 1
@@ -623,11 +624,7 @@ void test_create_window( ULONG style )
 	{
 		check_msg( window, WM_SHOWWINDOW, &n );
 		check_msg( window, WM_WINDOWPOSCHANGING, &n );
-		// two WM_ACTIVATEAPP messages
-		// first for the window being deactivated
-		// then for the window being activated
 		check_msg( window, WM_ACTIVATEAPP, &n );
-		maybe_skip( WM_ACTIVATEAPP, &n );
 		check_msg( window, WM_NCACTIVATE, &n );
 		check_msg( window, WM_ACTIVATE, &n );
 		check_msg( window, WM_SETFOCUS, &n );
@@ -691,6 +688,18 @@ void test_create_window( ULONG style )
 	ok( msg.lParam == 0, "lParam wrong %08lx\n", msg.lParam );
 	ok( get_cached_window_handle() == 0, "cached handle not clear\n");
 	ok( get_cached_window_pointer() == 0, "cached pointer not clear\n");
+
+	r = NtUserDestroyWindow( window );
+	ok( TRUE == r, "NtUserDestroyWindow failed\n");
+
+	if (style & WS_VISIBLE)
+	{
+		check_msg( window, WM_WINDOWPOSCHANGING, &n );
+		check_msg( window, WM_WINDOWPOSCHANGED, &n );
+		check_msg( window, WM_NCACTIVATE, &n );
+	}
+	check_msg( window, WM_DESTROY, &n );
+	check_msg( window, WM_NCDESTROY, &n );
 }
 
 void test_window()

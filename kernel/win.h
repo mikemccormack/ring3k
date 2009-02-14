@@ -68,6 +68,8 @@ struct window_tt : public WND
 	BOOLEAN show( INT Show );
 	void activate();
 	HGDIOBJ get_dc();
+	BOOLEAN destroy();
+	void set_window_pos( UINT flags );
 };
 
 // system wide callback functions registered with kernel by user32.dll
