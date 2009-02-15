@@ -495,7 +495,7 @@ HGDIOBJ win32k_manager_t::alloc_screen_dc()
 	return dc->get_handle();
 }
 
-BYTE *device_context_t::get_dc_shared_mem_base()
+void init_gdi_shared_mem()
 {
 	NTSTATUS r;
 	int dc_shared_memory_size = 0x10000;
@@ -505,8 +505,7 @@ BYTE *device_context_t::get_dc_shared_mem_base()
 		LARGE_INTEGER sz;
 		sz.QuadPart = dc_shared_memory_size;
 		r = create_section( &g_gdi_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
-		if (r < STATUS_SUCCESS)
-			return NULL;
+		assert (r >= STATUS_SUCCESS);
 
 		g_gdi_shared_memory = (BYTE*) g_gdi_section->get_kernel_address();
 
@@ -522,14 +521,12 @@ BYTE *device_context_t::get_dc_shared_mem_base()
 		if (r < STATUS_SUCCESS)
 		{
 			dprintf("failed to map shared memory\n");
-			return NULL;
+			assert( 0 );
 		}
 
 		if (option_trace)
 			current->process->vm->set_tracer( dc_shared_mem, gdishm_trace );
 	}
-
-	return dc_shared_mem;
 }
 
 device_context_t::device_context_t() :
@@ -537,19 +534,30 @@ device_context_t::device_context_t() :
 {
 }
 
-DEVICE_CONTEXT_SHARED_MEMORY* device_context_t::get_dc_shared_mem()
+BYTE* gdi_object_t::get_shared_mem() const
 {
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
 	assert( entry != NULL );
 	ULONG ofs = (BYTE*) (entry->user_info) - current->process->win32k_info->dc_shared_mem;
-	return (DEVICE_CONTEXT_SHARED_MEMORY*)(g_gdi_shared_memory + ofs );
+	return g_gdi_shared_memory + ofs;
+}
+
+BYTE* gdi_object_t::get_user_shared_mem() const
+{
+	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
+	assert( entry != NULL );
+	return (BYTE*) entry->user_info;
+}
+
+DEVICE_CONTEXT_SHARED_MEMORY* device_context_t::get_dc_shared_mem() const
+{
+	return (DEVICE_CONTEXT_SHARED_MEMORY*) get_shared_mem();
 }
 
 device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 {
 	// make sure shared memory is allocated
-	if (!get_dc_shared_mem_base())
-		return NULL;
+	init_gdi_shared_mem();
 
 	device_context_t* dc = factory->alloc();
 	if (!dc)

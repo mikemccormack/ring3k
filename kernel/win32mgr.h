@@ -79,7 +79,8 @@ public:
 	void select() { refcount++; }
 	void deselect() { refcount--; }
 	static HGDIOBJ alloc( BOOL stock, ULONG type );
-	void *get_shared_mem();
+	BYTE *get_shared_mem() const;
+	BYTE *get_user_shared_mem() const;
 };
 
 class brush_t : public gdi_object_t
@@ -141,10 +142,7 @@ protected:
 	device_context_t();
 public:
 	static device_context_t* alloc( device_context_factory_t *factory );
-	static int get_free_index();
-	static BYTE *get_dc_shared_mem_ptr();
-	static BYTE* get_dc_shared_mem_base();
-	DEVICE_CONTEXT_SHARED_MEMORY* get_dc_shared_mem();
+	DEVICE_CONTEXT_SHARED_MEMORY* get_dc_shared_mem() const;
 	virtual BOOL release();
 	brush_t* get_selected_brush();
 	bitmap_t* get_selected_bitmap();
