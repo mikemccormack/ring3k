@@ -138,11 +138,6 @@ public:
 	static const ULONG dc_size = 0x100;
 
 protected:
-	// shared across all processes
-	static section_t *g_dc_section;
-	static BYTE *g_dc_shared_mem;
-
-protected:
 	device_context_t();
 public:
 	static device_context_t* alloc( device_context_factory_t *factory );

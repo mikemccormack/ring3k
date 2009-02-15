@@ -458,9 +458,9 @@ void gdishm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 
 static gdishm_tracer gdishm_trace;
 
-section_t *device_context_t::g_dc_section;
-BYTE *device_context_t::g_dc_shared_mem;
-allocation_bitmap_t* g_dc_shared_bitmap;
+section_t *g_gdi_section;
+BYTE *g_gdi_shared_memory;
+allocation_bitmap_t* g_gdi_shared_bitmap;
 
 class memory_device_context_factory_t : public device_context_factory_t {
 public:
@@ -500,25 +500,25 @@ BYTE *device_context_t::get_dc_shared_mem_base()
 	NTSTATUS r;
 	int dc_shared_memory_size = 0x10000;
 
-	if (!g_dc_shared_mem)
+	if (!g_gdi_shared_memory)
 	{
 		LARGE_INTEGER sz;
 		sz.QuadPart = dc_shared_memory_size;
-		r = create_section( &g_dc_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
+		r = create_section( &g_gdi_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
 		if (r < STATUS_SUCCESS)
 			return NULL;
 
-		g_dc_shared_mem = (BYTE*) g_dc_section->get_kernel_address();
+		g_gdi_shared_memory = (BYTE*) g_gdi_section->get_kernel_address();
 
-		assert( g_dc_shared_bitmap == NULL );
-		g_dc_shared_bitmap = new allocation_bitmap_t;
-		g_dc_shared_bitmap->set_area( g_dc_shared_mem, dc_shared_memory_size );
+		assert( g_gdi_shared_bitmap == NULL );
+		g_gdi_shared_bitmap = new allocation_bitmap_t;
+		g_gdi_shared_bitmap->set_area( g_gdi_shared_memory, dc_shared_memory_size );
 	}
 
 	BYTE*& dc_shared_mem = current->process->win32k_info->dc_shared_mem;
 	if (!dc_shared_mem)
 	{
-		r = g_dc_section->mapit( current->process->vm, dc_shared_mem, 0, MEM_COMMIT, PAGE_READWRITE );
+		r = g_gdi_section->mapit( current->process->vm, dc_shared_mem, 0, MEM_COMMIT, PAGE_READWRITE );
 		if (r < STATUS_SUCCESS)
 		{
 			dprintf("failed to map shared memory\n");
@@ -542,7 +542,7 @@ DEVICE_CONTEXT_SHARED_MEMORY* device_context_t::get_dc_shared_mem()
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
 	assert( entry != NULL );
 	ULONG ofs = (BYTE*) (entry->user_info) - current->process->win32k_info->dc_shared_mem;
-	return (DEVICE_CONTEXT_SHARED_MEMORY*)(g_dc_shared_mem + ofs );
+	return (DEVICE_CONTEXT_SHARED_MEMORY*)(g_gdi_shared_memory + ofs );
 }
 
 device_context_t* device_context_t::alloc( device_context_factory_t *factory )
@@ -556,9 +556,9 @@ device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 		return NULL;
 
 	// calculate user side pointer to the chunk
-	BYTE *shm = g_dc_shared_bitmap->alloc( 0x100 );
+	BYTE *shm = g_gdi_shared_bitmap->alloc( 0x100 );
 	dprintf("dc address %p\n", shm );
-	ULONG ofs = shm - g_dc_shared_mem;
+	ULONG ofs = shm - g_gdi_shared_memory;
 	BYTE *u_shm = (current->process->win32k_info->dc_shared_mem + ofs);
 	dc->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, u_shm, dc );
 
@@ -571,7 +571,7 @@ device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 BOOL device_context_t::release()
 {
 	DEVICE_CONTEXT_SHARED_MEMORY *shm = get_dc_shared_mem();
-	g_dc_shared_bitmap->free( (unsigned char*) shm, 0x100 );
+	g_gdi_shared_bitmap->free( (unsigned char*) shm, 0x100 );
 	gdi_object_t::release();
 	return TRUE;
 }
