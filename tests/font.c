@@ -172,16 +172,6 @@ ULONG get_process_id( void )
 	return p[ofs_process_id_table_in_peb/sizeof (*p)];
 }
 
-ULONG get_handle_index(HANDLE handle)
-{
-	return (((ULONG)handle)&0x3fff);
-}
-
-ULONG get_handle_upper(HANDLE handle)
-{
-	return (((ULONG)handle)>>16);
-}
-
 void test_text_metric( void )
 {
 	ULONG buf[8];

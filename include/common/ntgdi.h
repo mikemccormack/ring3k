@@ -23,24 +23,24 @@
 
 // from FengYuan's Windows Graphics Programming Section 3.2, page 144
 
-#define GDI_OBJECT_DC	  0x01
+#define GDI_OBJECT_DC      0x01
 #define GDI_OBJECT_REGION  0x04
 #define GDI_OBJECT_BITMAP  0x05
 #define GDI_OBJECT_PALETTE 0x08
-#define GDI_OBJECT_FONT	0x0a
+#define GDI_OBJECT_FONT    0x0a
 #define GDI_OBJECT_BRUSH   0x10
-#define GDI_OBJECT_EMF	 0x21
-#define GDI_OBJECT_PEN	 0x30
+#define GDI_OBJECT_EMF     0x21
+#define GDI_OBJECT_PEN     0x30
 #define GDI_OBJECT_EXTPEN  0x50
 
-inline HGDIOBJ makeHGDIOBJ(
+static inline HGDIOBJ makeHGDIOBJ(
 	ULONG Top,
 	BOOLEAN Stock,
 	ULONG ObjectType,
 	ULONG Index)
 {
 	return (HGDIOBJ)(((Top&0xff)<<24) | ((Stock&1) << 23) |
-					 ((ObjectType&0x7f)<<16) | (Index &0x3fff));
+			 ((ObjectType&0x7f)<<16) | (Index &0x3fff));
 }
 
 typedef struct _gdi_handle_table_entry {
@@ -52,12 +52,25 @@ typedef struct _gdi_handle_table_entry {
 	void *user_info;
 } gdi_handle_table_entry;
 
-inline ULONG get_handle_type(HGDIOBJ handle)
+static inline ULONG get_handle_type(HGDIOBJ handle)
 {
 	return (((ULONG)handle)>>16)&0x7f;
 }
 
-HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type );
+static inline ULONG get_handle_index(HANDLE handle)
+{
+	return (((ULONG)handle)&0x3fff);
+}
+
+static inline ULONG get_handle_top(HANDLE handle)
+{
+	return (((ULONG)handle)>>24)&0xff;
+}
+
+static inline ULONG get_handle_upper(HANDLE handle)
+{
+	return (((ULONG)handle)>>16);
+}
 
 #undef GetRValue
 static inline BYTE GetRValue(COLORREF rgb)
@@ -83,37 +96,6 @@ static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
 	return red | (green << 8) | (blue << 16);
 }
 
-#if 0
-  /* Brush styles */
-#define BS_SOLID	0
-#define BS_NULL		1
-#define BS_HOLLOW	1
-#define BS_HATCHED	2
-#define BS_PATTERN	3
-#define BS_INDEXED	4
-#define BS_DIBPATTERN	5
-#define BS_DIBPATTERNPT	6
-#define BS_PATTERN8X8	7
-#define BS_DIBPATTERN8X8 8
-#define BS_MONOPATTERN	9
-
-#define SRCCOPY         0xcc0020
-#define SRCPAINT        0xee0086
-#define SRCAND          0x8800c6
-#define SRCINVERT       0x660046
-#define SRCERASE        0x440328
-#define NOTSRCCOPY      0x330008
-#define NOTSRCERASE     0x1100a6
-#define MERGECOPY       0xc000ca
-#define MERGEPAINT      0xbb0226
-#define PATCOPY         0xf00021
-#define PATPAINT        0xfb0a09
-#define PATINVERT       0x5a0049
-#define DSTINVERT       0x550009
-#define BLACKNESS       0x000042
-#define WHITENESS       0xff0062
-#endif
-
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);
 int     NTAPI NtGdiCombineRgn(HRGN,HRGN,HRGN,int);
@@ -131,7 +113,7 @@ BOOLEAN NTAPI NtGdiEnumFontChunk(HANDLE,HANDLE,ULONG,PULONG,PVOID);
 BOOLEAN NTAPI NtGdiEnumFontClose(HANDLE);
 HANDLE  NTAPI NtGdiEnumFontOpen(HANDLE,ULONG,ULONG,ULONG,ULONG,ULONG,PULONG);
 BOOL    NTAPI NtGdiEqualRgn(HRGN,HRGN);
-ULONG NTAPI   NtGdiExtGetObjectW(HGDIOBJ,ULONG,PVOID);
+ULONG   NTAPI NtGdiExtGetObjectW(HGDIOBJ,ULONG,PVOID);
 BOOLEAN NTAPI NtGdiExtTextOutW(HANDLE,INT,INT,UINT,LPRECT,WCHAR*,UINT,INT*,UINT);
 BOOLEAN NTAPI NtGdiFlush(void);
 int     NTAPI NtGdiGetAppClipBox(HANDLE,RECT*);
@@ -151,7 +133,7 @@ ULONG   NTAPI NtGdiQueryFontAssocInfo(HANDLE);
 BOOLEAN NTAPI NtGdiRectangle(HANDLE,INT,INT,INT,INT);
 BOOLEAN NTAPI NtGdiRectInRegion(HRGN,const RECT*);
 BOOLEAN NTAPI NtGdiRestoreDC(HGDIOBJ,int);
-int NTAPI     NtGdiSaveDC(HGDIOBJ);
+int     NTAPI NtGdiSaveDC(HGDIOBJ);
 HGDIOBJ NTAPI NtGdiSelectBitmap(HGDIOBJ,HGDIOBJ);
 ULONG   NTAPI NtGdiSetDIBitsToDeviceInternal(HGDIOBJ,int,int,ULONG,ULONG,int,int,ULONG,ULONG,PVOID,PVOID,ULONG,ULONG,ULONG,ULONG,ULONG);
 ULONG   NTAPI NtGdiSetFontEnumeration(ULONG);

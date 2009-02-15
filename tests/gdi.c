@@ -371,32 +371,6 @@ void *get_readonly_shared_server_data( void )
 	return peb[0x54/4];
 }
 
-/*
-typedef struct _gdi_handle_table_entry {
-	void *kernel_info;
-	USHORT ProcessId;
-	USHORT Count;
-	USHORT Upper;
-	USHORT Type;
-	void *user_info;
-} gdi_handle_table_entry;
-
-ULONG get_handle_type(HANDLE handle)
-{
-	return (((ULONG)handle)>>16)&0x7f;
-}
-*/
-
-ULONG get_handle_index(HANDLE handle)
-{
-	return (((ULONG)handle)&0x3fff);
-}
-
-ULONG get_handle_top(HANDLE handle)
-{
-	return (((ULONG)handle)>>24)&0xff;
-}
-
 void *get_user_info( HANDLE handle )
 {
 	gdi_handle_table_entry *table = get_gdi_shared_handle_table();
