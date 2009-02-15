@@ -38,6 +38,7 @@
 #include "sdl.h"
 #include "win.h"
 #include "queue.h"
+#include "alloc_bitmap.h"
 
 // shared across all processes (in a window station)
 static section_t *gdi_ht_section;
@@ -459,12 +460,12 @@ void dcshm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 static dcshm_tracer dcshm_trace;
 
 section_t *device_context_t::g_dc_section;
-BYTE *device_context_t::g_dc_shared_mem = 0;
-bool device_context_t::g_dc_bitmap[max_device_contexts];
+BYTE *device_context_t::g_dc_shared_mem;
+allocation_bitmap_t* g_dc_shared_bitmap;
 
 class memory_device_context_factory_t : public device_context_factory_t {
 public:
-	device_context_t* alloc(ULONG n) { return new memory_device_context_t(n); }
+	device_context_t* alloc() { return new memory_device_context_t; }
 };
 
 HGDIOBJ win32k_manager_t::alloc_compatible_dc()
@@ -478,7 +479,7 @@ HGDIOBJ win32k_manager_t::alloc_compatible_dc()
 
 class screen_device_context_factory_t : public device_context_factory_t {
 public:
-	device_context_t* alloc(ULONG n) { return new screen_device_context_t(n); }
+	device_context_t* alloc() { return new screen_device_context_t; }
 };
 
 device_context_t* win32k_manager_t::alloc_screen_dc_ptr()
@@ -498,16 +499,21 @@ HGDIOBJ win32k_manager_t::alloc_screen_dc()
 BYTE *device_context_t::get_dc_shared_mem_base()
 {
 	NTSTATUS r;
+	int dc_shared_memory_size = 0x10000;
 
 	if (!g_dc_shared_mem)
 	{
 		LARGE_INTEGER sz;
-		sz.QuadPart = 0x10000;
+		sz.QuadPart = dc_shared_memory_size;
 		r = create_section( &g_dc_section, NULL, &sz, SEC_COMMIT, PAGE_READWRITE );
 		if (r < STATUS_SUCCESS)
 			return NULL;
 
 		g_dc_shared_mem = (BYTE*) g_dc_section->get_kernel_address();
+
+		assert( g_dc_shared_bitmap == NULL );
+		g_dc_shared_bitmap = new allocation_bitmap_t;
+		g_dc_shared_bitmap->set_area( g_dc_shared_mem, dc_shared_memory_size );
 	}
 
 	BYTE*& dc_shared_mem = current->process->win32k_info->dc_shared_mem;
@@ -523,53 +529,38 @@ BYTE *device_context_t::get_dc_shared_mem_base()
 		if (option_trace)
 			current->process->vm->set_tracer( dc_shared_mem, dcshm_trace );
 	}
+
 	return dc_shared_mem;
 }
 
-int device_context_t::get_free_index()
-{
-	// find a free device context area
-	ULONG n;
-	for (n=0; n<max_device_contexts; n++)
-		if (!g_dc_bitmap[n])
-			break;
-	if (n >= max_device_contexts)
-	{
-		dprintf("no device contexts left\n");
-		return -1;
-	}
-	g_dc_bitmap[n] = true;
-	return n;
-}
-
-device_context_t::device_context_t( ULONG n ) :
-	dc_index( n ),
+device_context_t::device_context_t() :
 	selected_bitmap( 0 )
 {
 }
 
 DEVICE_CONTEXT_SHARED_MEMORY* device_context_t::get_dc_shared_mem()
 {
-	return (DEVICE_CONTEXT_SHARED_MEMORY*) (g_dc_shared_mem + dc_index * dc_size);
+	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
+	assert( entry != NULL );
+	ULONG ofs = (BYTE*) (entry->user_info) - current->process->win32k_info->dc_shared_mem;
+	return (DEVICE_CONTEXT_SHARED_MEMORY*)(g_dc_shared_mem + ofs );
 }
 
 device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 {
-	BYTE* dc_shared_mem = get_dc_shared_mem_base();
-	if (!dc_shared_mem)
+	// make sure shared memory is allocated
+	if (!get_dc_shared_mem_base())
 		return NULL;
 
-	int n = get_free_index();
-	if (n < 0)
-		return NULL;
-
-	device_context_t* dc = factory->alloc( n );
+	device_context_t* dc = factory->alloc();
 	if (!dc)
 		return NULL;
 
 	// calculate user side pointer to the chunk
-	BYTE *u_shm = dc_shared_mem + n*dc_size;
-	dprintf("dc number %02x address %p\n", n, u_shm );
+	BYTE *shm = g_dc_shared_bitmap->alloc( 0x100 );
+	dprintf("dc address %p\n", shm );
+	ULONG ofs = shm - g_dc_shared_mem;
+	BYTE *u_shm = (current->process->win32k_info->dc_shared_mem + ofs);
 	dc->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, u_shm, dc );
 
 	DEVICE_CONTEXT_SHARED_MEMORY *dcshm = dc->get_dc_shared_mem();
@@ -580,9 +571,8 @@ device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 
 BOOL device_context_t::release()
 {
-	assert( dc_index <= max_device_contexts );
-	assert( g_dc_bitmap[dc_index] );
-	g_dc_bitmap[dc_index] = false;
+	DEVICE_CONTEXT_SHARED_MEMORY *shm = get_dc_shared_mem();
+	g_dc_shared_bitmap->free( (unsigned char*) shm, 0x100 );
 	gdi_object_t::release();
 	return TRUE;
 }
@@ -627,8 +617,7 @@ BOOL screen_device_context_t::polypatblt( ULONG Rop, PRECT rect )
 	return win32k_manager->polypatblt( Rop, rect );
 }
 
-screen_device_context_t::screen_device_context_t( ULONG n ) :
-	device_context_t( n ),
+screen_device_context_t::screen_device_context_t() :
 	win( 0 )
 {
 }
@@ -649,8 +638,7 @@ COLORREF screen_device_context_t::get_pixel( INT x, INT y )
 	return 0;
 }
 
-memory_device_context_t::memory_device_context_t( ULONG n ) :
-	device_context_t( n )
+memory_device_context_t::memory_device_context_t()
 {
 }
 

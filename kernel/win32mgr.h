@@ -125,13 +125,12 @@ class device_context_t;
 class device_context_factory_t
 {
 public:
-	virtual device_context_t* alloc( ULONG n ) = 0;
+	virtual device_context_t* alloc() = 0;
 	virtual ~device_context_factory_t() {};
 };
 
 class device_context_t : public gdi_object_t
 {
-	ULONG dc_index;
 	bitmap_t* selected_bitmap;
 	RECT BoundsRect;
 public:
@@ -142,14 +141,13 @@ protected:
 	// shared across all processes
 	static section_t *g_dc_section;
 	static BYTE *g_dc_shared_mem;
-	static bool g_dc_bitmap[max_device_contexts];
 
 protected:
-	device_context_t( ULONG n );
+	device_context_t();
 public:
 	static device_context_t* alloc( device_context_factory_t *factory );
 	static int get_free_index();
-	static BYTE *get_dc_shared_mem_ptr(int n);
+	static BYTE *get_dc_shared_mem_ptr();
 	static BYTE* get_dc_shared_mem_base();
 	DEVICE_CONTEXT_SHARED_MEMORY* get_dc_shared_mem();
 	virtual BOOL release();
@@ -170,7 +168,7 @@ public:
 class memory_device_context_t : public device_context_t
 {
 public:
-	memory_device_context_t( ULONG n );
+	memory_device_context_t();
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
@@ -186,7 +184,7 @@ class screen_device_context_t : public device_context_t
 public:
 	window_tt *win;
 public:
-	screen_device_context_t( ULONG n );
+	screen_device_context_t();
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
