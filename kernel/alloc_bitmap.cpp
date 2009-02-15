@@ -90,7 +90,7 @@ unsigned char* allocation_bitmap_t::alloc( size_t len )
 	assert( ptr != 0 );
 	size_t i = 0;
 
-	size_t required = bits_required( len );
+	size_t required = bits_required( len + sizeof len );
 
 	while (i < max_bits )
 	{
@@ -104,9 +104,10 @@ unsigned char* allocation_bitmap_t::alloc( size_t len )
 
 			// check that we allocated the bits correctly
 			assert( required == count_one_bits( i, required ) );
-			unsigned char *ret = &ptr[ i * allocation_granularity ];
+			size_t *ret = (size_t*) &ptr[ i * allocation_granularity ];
+			*ret++ = len;
 			VALGRIND_MALLOCLIKE_BLOCK( ret, len, 0, 0 );
-			return ret;
+			return (unsigned char*) ret;
 		}
 
 		i += free;
@@ -120,18 +121,28 @@ unsigned char* allocation_bitmap_t::alloc( size_t len )
 	return NULL;
 }
 
+void allocation_bitmap_t::free( unsigned char *start )
+{
+	size_t ofs = (start - sizeof (size_t) - ptr);
+	assert( ofs %allocation_granularity == 0 );
+	ofs /= allocation_granularity;
+	assert( ofs < max_bits );
+	free( start, ((size_t*)start)[-1]);
+}
+
 void allocation_bitmap_t::free( unsigned char *start, size_t len )
 {
 	assert( ptr != 0 );
 
 	// check the pointer is within bounds
-	size_t ofs = (start - ptr);
-	assert( ofs %allocation_granularity == 0 );
+	size_t ofs = (start - sizeof len - ptr);
+	assert( ofs % allocation_granularity == 0 );
 	ofs /= allocation_granularity;
 	assert( ofs < max_bits );
+	assert( len == ((size_t*) start)[-1] );
 
 	// assert the memory is allocated
-	size_t required = bits_required( len );
+	size_t required = bits_required( len + sizeof len );
 	size_t n = count_one_bits( ofs, required );
 	assert( required == n );
 

@@ -47,6 +47,7 @@ public:
 	allocation_bitmap_t();
 	void set_area( void *_ptr, size_t _size );
 	unsigned char *alloc( size_t len );
+	void free( unsigned char *start );
 	void free( unsigned char *mem, size_t len );
 	void get_info( size_t& total, size_t& used, size_t& free );
 	static void test(); // unit test for validating the code
