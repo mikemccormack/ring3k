@@ -443,21 +443,20 @@ HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type )
 	return gdi_object_t::alloc( stock, type );
 }
 
-class dcshm_tracer : public block_tracer
+class gdishm_tracer : public block_tracer
 {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
 };
 
-void dcshm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
+void gdishm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
-	ULONG dc_size = device_context_t::dc_size;
 	ULONG ofs = address - mb->get_base_address();
-	fprintf(stderr, "%04lx: accessed dcshm[%02lx][%02lx] from %08lx\n",
-				current->trace_id(), ofs/dc_size, ofs%dc_size, eip);
+	fprintf(stderr, "%04lx: accessed gdishm[%04lx] from %08lx\n",
+				current->trace_id(), ofs, eip);
 }
 
-static dcshm_tracer dcshm_trace;
+static gdishm_tracer gdishm_trace;
 
 section_t *device_context_t::g_dc_section;
 BYTE *device_context_t::g_dc_shared_mem;
@@ -527,7 +526,7 @@ BYTE *device_context_t::get_dc_shared_mem_base()
 		}
 
 		if (option_trace)
-			current->process->vm->set_tracer( dc_shared_mem, dcshm_trace );
+			current->process->vm->set_tracer( dc_shared_mem, gdishm_trace );
 	}
 
 	return dc_shared_mem;
