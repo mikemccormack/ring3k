@@ -758,6 +758,34 @@ void test_region( void )
 	ok( r == TRUE, "delete failed\n");
 }
 
+void test_region_shared( void )
+{
+	HRGN region;
+	ULONG type;
+	GDI_REGION_SHARED* info;
+	//int r;
+
+	region = NtGdiCreateRectRgn( 0, 0, 1, 1 );
+	ok( region != 0, "region was null");
+
+	type = get_handle_type( region );
+	ok( type == GDI_OBJECT_REGION, "region wrong handle type %ld\n", type );
+	ok( check_gdi_handle( region ), "invalid gdi handle %p\n", region );
+	info = get_user_info( region );
+	ok( info != NULL, "user_info was null\n");
+	ok( (void*) info->rects == (void*) (info+1), "rect pointer wrong\n");
+	ok( info->Count == 0, "count wrong %ld\n", info->Count);
+	ok( rect_equal( &info->extents, 0, 0, 0, 0 ), "extents rect wrong\n");
+
+	//dprintf("region = %p\n", region );
+	//dprintf("info   = %p\n", info );
+	//dprintf("rects  = %p\n", info->rects );
+	//dprintf("Count  = %08lx\n", info->Count );
+
+	//r = NtGdiDeleteObjectApp( region );
+	//ok( r == TRUE, "delete failed\n");
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -771,5 +799,6 @@ void NtProcessStartup( void )
 	test_stock_brush();
 	test_solid_brush();
 	test_region();
+	//test_region_shared();
 	log_fini();
 }
