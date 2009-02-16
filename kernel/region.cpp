@@ -112,15 +112,65 @@ SOFTWARE.
 
 static const int RGN_DEFAULT_RECTS = 2;
 
-void region_tt::dump_rect( const RECT& rect )
+void rect_tt::clear()
 {
-	dprintf("%ld,%ld-%ld,%ld\n", rect.left, rect.top, rect.right, rect.bottom);
+	left = 0;
+	top = 0;
+	right = 0;
+	bottom = 0;
+}
+
+void rect_tt::set( int l, int t, int r, int b )
+{
+	left = l;
+	top = t;
+	right = r;
+	bottom = b;
+}
+
+void rect_tt::dump() const
+{
+	dprintf("%ld,%ld-%ld,%ld\n", left, top, right, bottom);
+}
+
+void rect_tt::fix()
+{
+	if (left > right)
+		swap( left, right );
+	if (top > bottom)
+		swap( top, bottom );
+}
+
+BOOL rect_tt::equal( const RECT& other ) const
+{
+	return (left == other.left) && (right == other.right) &&
+		(top == other.top) && (bottom == other.bottom);
+}
+
+void rect_tt::offset( INT x, INT y )
+{
+	left += x;
+	right += x;
+	top += y;
+	bottom += y;
+}
+
+BOOL rect_tt::overlaps( const RECT& other ) const
+{
+	return (right > other.left) && (left < other.right) &&
+		(bottom > other.top) && (top < other.bottom);
+}
+
+BOOL rect_tt::contains_point( int x, int y ) const
+{
+	return (top <= y) && (bottom > y) &&
+		(left <= x) && (right > x);
 }
 
 region_tt::region_tt( INT n )
 {
 	size = n;
-	rects = new RECT[n];
+	rects = new rect_tt[n];
 	empty_region();
 }
 
@@ -132,10 +182,7 @@ region_tt::~region_tt()
 void region_tt::empty_region()
 {
 	numRects = 0;
-	extents.left = 0;
-	extents.top = 0;
-	extents.right = 0;
-	extents.bottom = 0;
+	extents.clear();
 }
 
 region_tt* region_tt::alloc( INT n )
@@ -163,24 +210,12 @@ region_tt* region_from_handle( HGDIOBJ handle )
 	return (region_tt*) entry->kernel_info;
 }
 
-static inline void fix_rectangle( RECT& rect )
-{
-	if (rect.left > rect.right)
-		swap( rect.left, rect.right );
-	if (rect.top > rect.bottom)
-		swap( rect.top, rect.bottom );
-}
-
 void region_tt::set_rect( int left, int top, int right, int bottom )
 {
 	if ((left != right) && (top != bottom))
 	{
-		extents.left = left;
-		extents.top = top;
-		extents.right = right;
-		extents.bottom = bottom;
-
-		fix_rectangle( extents );
+		extents.set( left, top, right, bottom );
+		extents.fix();
 
 		rects[0] = extents;
 		numRects = 1;
@@ -216,21 +251,9 @@ void region_tt::get_bounds_rect( RECT& rcBounds ) const
 
 INT region_tt::get_region_box( RECT* rect )
 {
-	rect->left = extents.left;
-	rect->top = extents.top;
-	rect->right = extents.right;
-	rect->bottom = extents.bottom;
-	dprintf("%p (%ld,%ld-%ld,%ld)\n", get_handle(),
-		rect->left, rect->top, rect->right, rect->bottom);
+	*rect = extents;
+	extents.dump();
 	return get_region_type();
-}
-
-BOOL region_tt::rect_equal( PRECT r1, PRECT r2 )
-{
-	return (r1->left == r2->left) &&
-		(r1->right == r2->right) &&
-		(r1->top == r2->top) &&
-		(r1->bottom == r2->bottom);
 }
 
 BOOL region_tt::equal( region_tt *other )
@@ -241,42 +264,28 @@ BOOL region_tt::equal( region_tt *other )
 	if (numRects == 0)
 		return TRUE;
 
-	if (!rect_equal( &extents, &other->extents ))
+	if (!extents.equal( other->extents ))
 		return FALSE;
 
 	for (int i = 0; i < numRects; i++ )
-		if (!rect_equal(&rects[i], &other->rects[i]))
+		if (!rects[i].equal( other->rects[i] ))
 			return FALSE;
 
 	return TRUE;
 }
 
-void region_tt::offset_rect( RECT& rect, INT x, INT y )
-{
-	rect.left += x;
-	rect.right += x;
-	rect.top += y;
-	rect.bottom += y;
-}
-
 INT region_tt::offset( INT x, INT y )
 {
 	int nbox = numRects;
-	RECT *pbox = rects;
+	rect_tt *pbox = rects;
 
 	while (nbox--)
 	{
-		offset_rect( *pbox, x, y );
+		pbox->offset( x, y );
 		pbox++;
 	}
-	offset_rect( extents, x, y );
+	extents.offset( x, y );
 	return get_region_type();
-}
-
-BOOL region_tt::point_in_rect( const RECT& rect, int x, int y )
-{
-	return (rect.top <= y) && (rect.bottom > y) &&
-		(rect.left <= x) && (rect.right > x);
 }
 
 BOOL region_tt::contains_point( int x, int y )
@@ -284,20 +293,14 @@ BOOL region_tt::contains_point( int x, int y )
 	if (numRects == 0)
 		return FALSE;
 
-	if (!point_in_rect( extents, x, y ))
+	if (!extents.contains_point( x, y ))
 		return FALSE;
 
 	for (int i = 0; i < numRects; i++)
-		if (point_in_rect(rects[i], x, y))
+		if (rects[i].contains_point( x, y ))
 			return TRUE;
 
 	return FALSE;
-}
-
-BOOL region_tt::rects_overlap( const RECT& r1, const RECT& r2 )
-{
-	return (r1.right > r2.left) && (r1.left < r2.right) &&
-		(r1.bottom > r2.top) && (r1.top < r2.bottom);
 }
 
 BOOL region_tt::overlaps_rect( const RECT& rect )
@@ -305,11 +308,11 @@ BOOL region_tt::overlaps_rect( const RECT& rect )
 	if (numRects == 0)
 		return FALSE;
 
-	if (!rects_overlap( extents, rect ))
+	if (!extents.overlaps( rect ))
 		return FALSE;
 
 	for (int i = 0; i < numRects; i++)
-		if (rects_overlap(rects[i], rect))
+		if (rects[i].overlaps( rect ))
 			return TRUE;
 
 	return FALSE;
@@ -431,13 +434,13 @@ BOOLEAN NTAPI NtGdiRectInRegion( HRGN Region, const RECT *rect )
 	if (!region)
 		return ERROR;
 
-	RECT overlap;
+	rect_tt overlap;
 	NTSTATUS r;
 	r = copy_from_user( &overlap, rect, sizeof *rect );
 	if (r < STATUS_SUCCESS)
 		return ERROR;
 
-	fix_rectangle( overlap );
+	overlap.fix();
 
 	return region->overlaps_rect( overlap );
 }

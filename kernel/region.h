@@ -104,12 +104,25 @@ SOFTWARE.
 #include "windef.h"
 #include "winternl.h"
 
+class rect_tt : public RECT
+{
+public:
+	void clear();
+	void set( int left, int top, int right, int bottom );
+	BOOL equal( const RECT& other ) const;
+	BOOL contains_point( int x, int y ) const;
+	BOOL overlaps( const RECT& other ) const;
+	void offset( INT x, INT y );
+	void dump() const;
+	void fix();
+};
+
 class region_tt : public gdi_object_t
 {
 	INT size;
 	INT numRects;
-	RECT *rects;
-	RECT extents;
+	rect_tt *rects;
+	rect_tt extents;
 
 public:
 	region_tt( INT n );
@@ -118,18 +131,13 @@ public:
 	void set_rect( int left, int top, int right, int bottom );
 	INT get_region_box( RECT* rect );
 	INT get_region_type() const;
-	BOOL rect_equal( PRECT r1, PRECT r2 );
 	BOOL equal( region_tt *other );
-	void offset_rect( RECT& rect, INT x, INT y );
 	INT offset( INT x, INT y );
 	INT get_num_rects() const;
 	PRECT get_rects() const;
 	void get_bounds_rect( RECT& rcBounds ) const;
-	BOOL point_in_rect( const RECT& rect, int x, int y );
 	BOOL contains_point( int x, int y );
 	BOOL overlaps_rect( const RECT& overlap );
-	BOOL rects_overlap( const RECT& r1, const RECT& r2 );
-	static void dump_rect( const RECT& rect );
 	void empty_region();
 };
 
