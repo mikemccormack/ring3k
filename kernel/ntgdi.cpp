@@ -554,20 +554,32 @@ DEVICE_CONTEXT_SHARED_MEMORY* device_context_t::get_dc_shared_mem() const
 	return (DEVICE_CONTEXT_SHARED_MEMORY*) get_shared_mem();
 }
 
+BYTE *alloc_gdi_shared_memory( size_t len )
+{
+	init_gdi_shared_mem();
+	BYTE *shm = g_gdi_shared_bitmap->alloc( 0x100 );
+	assert( shm != NULL );
+	ULONG ofs = shm - g_gdi_shared_memory;
+	return (current->process->win32k_info->dc_shared_mem + ofs);
+}
+
+void free_gdi_shared_memory( BYTE *shm )
+{
+	g_gdi_shared_bitmap->free( shm );
+}
+
 device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 {
 	// make sure shared memory is allocated
-	init_gdi_shared_mem();
 
 	device_context_t* dc = factory->alloc();
 	if (!dc)
 		return NULL;
 
 	// calculate user side pointer to the chunk
-	BYTE *shm = g_gdi_shared_bitmap->alloc( 0x100 );
-	dprintf("dc address %p\n", shm );
-	ULONG ofs = shm - g_gdi_shared_memory;
-	BYTE *u_shm = (current->process->win32k_info->dc_shared_mem + ofs);
+	BYTE *u_shm = alloc_gdi_shared_memory( 0x100 );
+	dprintf("dc address %p\n", u_shm );
+
 	dc->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, u_shm, dc );
 
 	DEVICE_CONTEXT_SHARED_MEMORY *dcshm = dc->get_dc_shared_mem();
