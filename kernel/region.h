@@ -133,4 +133,11 @@ public:
 	void empty_region();
 };
 
+template<typename T> static inline void swap( T& a, T& b )
+{
+	T x = a;
+	a = b;
+	b = x;
+}
+
 #endif // __RING3K_REGION__

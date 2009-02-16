@@ -163,13 +163,6 @@ region_tt* region_from_handle( HGDIOBJ handle )
 	return (region_tt*) entry->kernel_info;
 }
 
-template<typename T> static inline void swap( T& a, T& b )
-{
-	T x = a;
-	a = b;
-	b = x;
-}
-
 static inline void fix_rectangle( RECT& rect )
 {
 	if (rect.left > rect.right)
