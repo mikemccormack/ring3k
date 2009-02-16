@@ -119,13 +119,12 @@ public:
 
 class region_tt : public gdi_object_t
 {
-	INT size;
-	INT numRects;
+	ULONG numRects;
 	rect_tt *rects;
 	rect_tt extents;
 
 public:
-	region_tt( INT n );
+	region_tt( ULONG n );
 	~region_tt();
 	static region_tt* alloc( INT n );
 	void set_rect( int left, int top, int right, int bottom );

@@ -167,9 +167,9 @@ BOOL rect_tt::contains_point( int x, int y ) const
 		(left <= x) && (right > x);
 }
 
-region_tt::region_tt( INT n )
+region_tt::region_tt( ULONG n )
 {
-	size = n;
+	numRects = n;
 	rects = new rect_tt[n];
 	empty_region();
 }
@@ -267,7 +267,7 @@ BOOL region_tt::equal( region_tt *other )
 	if (!extents.equal( other->extents ))
 		return FALSE;
 
-	for (int i = 0; i < numRects; i++ )
+	for (ULONG i = 0; i < numRects; i++ )
 		if (!rects[i].equal( other->rects[i] ))
 			return FALSE;
 
@@ -276,7 +276,7 @@ BOOL region_tt::equal( region_tt *other )
 
 INT region_tt::offset( INT x, INT y )
 {
-	int nbox = numRects;
+	ULONG nbox = numRects;
 	rect_tt *pbox = rects;
 
 	while (nbox--)
@@ -296,7 +296,7 @@ BOOL region_tt::contains_point( int x, int y )
 	if (!extents.contains_point( x, y ))
 		return FALSE;
 
-	for (int i = 0; i < numRects; i++)
+	for (ULONG i = 0; i < numRects; i++)
 		if (rects[i].contains_point( x, y ))
 			return TRUE;
 
@@ -311,7 +311,7 @@ BOOL region_tt::overlaps_rect( const RECT& rect )
 	if (!extents.overlaps( rect ))
 		return FALSE;
 
-	for (int i = 0; i < numRects; i++)
+	for (ULONG i = 0; i < numRects; i++)
 		if (rects[i].overlaps( rect ))
 			return TRUE;
 
