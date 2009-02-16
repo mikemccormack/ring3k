@@ -774,7 +774,7 @@ void test_region_shared( void )
 	info = get_user_info( region );
 	ok( info != NULL, "user_info was null\n");
 	ok( (void*) info->rects == (void*) (info+1), "rect pointer wrong\n");
-	ok( info->Count == 0, "count wrong %ld\n", info->Count);
+	ok( info->numRects == 0, "count wrong %ld\n", info->numRects);
 	ok( rect_equal( &info->extents, 0, 0, 0, 0 ), "extents rect wrong\n");
 
 	//dprintf("region = %p\n", region );

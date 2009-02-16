@@ -98,7 +98,7 @@ static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
 
 typedef struct _GDI_REGION_SHARED {
 	PRECT rects;
-	ULONG Count;
+	ULONG numRects;
 	RECT extents;
 } GDI_REGION_SHARED;
 
