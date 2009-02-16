@@ -96,6 +96,12 @@ static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
 	return red | (green << 8) | (blue << 16);
 }
 
+typedef struct _GDI_REGION_SHARED {
+	PRECT rects;
+	ULONG Count;
+	RECT extents;
+} GDI_REGION_SHARED;
+
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ,INT,INT,INT,INT,HGDIOBJ,INT,INT,ULONG,ULONG,ULONG);
 int     NTAPI NtGdiCombineRgn(HRGN,HRGN,HRGN,int);
