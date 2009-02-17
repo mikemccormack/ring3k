@@ -89,12 +89,12 @@ public:
 	void deselect() { refcount--; }
 	static HGDIOBJ alloc( BOOL stock, ULONG type );
 	BYTE *get_shared_mem() const;
-	template<typename T> T* kernel_to_user( T* kernel_ptr ) const
+	template<typename T> static T* kernel_to_user( T* kernel_ptr )
 	{
 		ULONG ofs = (BYTE*) kernel_ptr - (BYTE*) g_gdi_shared_memory;
 		return (T*) (current->process->win32k_info->dc_shared_mem + ofs);
 	}
-	template<typename T> T* user_to_kernel( T* user_ptr ) const
+	template<typename T> static T* user_to_kernel( T* user_ptr )
 	{
 		ULONG ofs = (BYTE*) user_ptr - (BYTE*) current->process->win32k_info->dc_shared_mem;
 		return (T*) (g_gdi_shared_memory + ofs);
