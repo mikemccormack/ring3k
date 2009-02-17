@@ -117,14 +117,20 @@ public:
 	void fix();
 };
 
+class gdi_region_shared_tt
+{
+public:
+	// must be compatible with GDI_REGION_SHARED
+	rect_tt *rects;
+	ULONG numRects;
+	rect_tt extents;
+};
+
 class region_tt : public gdi_object_t
 {
-	ULONG numRects;
-	rect_tt *rects;
-	rect_tt extents;
-
+	gdi_region_shared_tt *rgn;
 public:
-	region_tt( ULONG n );
+	region_tt();
 	~region_tt();
 	static region_tt* alloc( INT n );
 	void set_rect( int left, int top, int right, int bottom );
@@ -133,7 +139,7 @@ public:
 	BOOL equal( region_tt *other );
 	INT offset( INT x, INT y );
 	INT get_num_rects() const;
-	PRECT get_rects() const;
+	rect_tt* get_rects() const;
 	void get_bounds_rect( RECT& rcBounds ) const;
 	BOOL contains_point( int x, int y );
 	BOOL overlaps_rect( const RECT& overlap );

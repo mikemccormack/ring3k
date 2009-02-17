@@ -799,6 +799,6 @@ void NtProcessStartup( void )
 	test_stock_brush();
 	test_solid_brush();
 	test_region();
-	//test_region_shared();
+	test_region_shared();
 	log_fini();
 }
