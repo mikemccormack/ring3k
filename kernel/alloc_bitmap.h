@@ -21,9 +21,7 @@
 #ifndef __ALLOC_BITMAP__
 #define __ALLOC_BITMAP__
 
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <stddef.h>
 
 // TODO: optimize
 class allocation_bitmap_t

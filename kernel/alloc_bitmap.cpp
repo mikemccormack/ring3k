@@ -19,6 +19,8 @@
  */
 
 #include "alloc_bitmap.h"
+#include <string.h>
+#include <assert.h>
 
 #ifdef HAVE_VALGRIND_VALGRIND_H
 #include <valgrind/valgrind.h>
