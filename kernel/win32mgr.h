@@ -22,6 +22,7 @@
 #define __WIN32K_MANAGER__
 
 #include "ntwin32.h"
+#include "alloc_bitmap.h"
 
 class win32k_info_t
 {
@@ -70,6 +71,14 @@ class gdi_object_t
 protected:
 	HGDIOBJ handle;
 	ULONG refcount;
+
+	static section_t *g_gdi_section;
+	static BYTE *g_gdi_shared_memory;
+	static allocation_bitmap_t* g_gdi_shared_bitmap;
+
+	static void init_gdi_shared_mem();
+	static BYTE *alloc_gdi_shared_memory( size_t len, BYTE** kernel_shm = NULL );
+	static void free_gdi_shared_memory( BYTE* ptr );
 protected:
 	gdi_object_t();
 public:
@@ -80,8 +89,20 @@ public:
 	void deselect() { refcount--; }
 	static HGDIOBJ alloc( BOOL stock, ULONG type );
 	BYTE *get_shared_mem() const;
+	template<typename T> T* kernel_to_user( T* kernel_ptr ) const
+	{
+		ULONG ofs = (BYTE*) kernel_ptr - (BYTE*) g_gdi_shared_memory;
+		return (T*) (current->process->win32k_info->dc_shared_mem + ofs);
+	}
+	template<typename T> T* user_to_kernel( T* user_ptr ) const
+	{
+		ULONG ofs = (BYTE*) user_ptr - (BYTE*) current->process->win32k_info->dc_shared_mem;
+		return (T*) (g_gdi_shared_memory + ofs);
+	}
 	BYTE *get_user_shared_mem() const;
 };
+
+
 
 class brush_t : public gdi_object_t
 {
@@ -192,7 +213,5 @@ void free_user32_handles( process_t *p );
 HGDIOBJ alloc_gdi_handle( BOOL stock, ULONG type, void *user_info, gdi_object_t* obj );
 HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type );
 gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle);
-BYTE *alloc_gdi_shared_memory( size_t len );
-void free_gdi_shared_memory( BYTE* ptr );
 
 #endif // __WIN32K_MANAGER__
