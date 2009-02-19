@@ -626,6 +626,7 @@ void set_rect( PRECT rect, INT left, INT top, INT right, INT bottom )
 
 void test_region( void )
 {
+	GDI_REGION_SHARED* info;
 	char buffer[0x100];
 	RGNDATA *data;
 	HRGN region;
@@ -635,6 +636,9 @@ void test_region( void )
 
 	region = NtGdiCreateRectRgn( 0, 0, 0, 0 );
 	ok( region != 0, "region was null");
+	info = get_user_info( region );
+	info->flags = 0x30;
+	info->type = 0;
 
 	type = get_handle_type( region );
 	ok( type == GDI_OBJECT_REGION, "region wrong handle type %ld\n", type );
@@ -763,7 +767,8 @@ void test_region_shared( void )
 	HRGN region;
 	ULONG type;
 	GDI_REGION_SHARED* info;
-	//int r;
+	RECT rect;
+	int r;
 
 	region = NtGdiCreateRectRgn( 0, 0, 1, 1 );
 	ok( region != 0, "region was null");
@@ -773,17 +778,65 @@ void test_region_shared( void )
 	ok( check_gdi_handle( region ), "invalid gdi handle %p\n", region );
 	info = get_user_info( region );
 	ok( info != NULL, "user_info was null\n");
-	ok( (void*) info->rects == (void*) (info+1), "rect pointer wrong\n");
-	ok( info->numRects == 0, "count wrong %ld\n", info->numRects);
-	ok( rect_equal( &info->extents, 0, 0, 0, 0 ), "extents rect wrong\n");
+	ok( info->type == 0, "type wrong %ld\n", info->type);
+	ok( rect_equal( &info->rect, 0, 0, 0, 0 ), "first rect wrong\n");
 
-	//dprintf("region = %p\n", region );
-	//dprintf("info   = %p\n", info );
-	//dprintf("rects  = %p\n", info->rects );
-	//dprintf("Count  = %08lx\n", info->Count );
+	// flags      return of NtGdiSetRectRgn
+	// 0xffffffff ERROR
+	// 0xffff     ERROR
+	// 0xff       ERROR
+	// 0xf        ERROR
+	// 0          ERROR
+	// 0x10       NULLREGION
+	// 0x20       ERROR
+	// 0x50       NULLREGION
+	// 0x1f       ERROR
+	// 0x17       ERROR
+	// 0x13       ERROR
+	// 0x11       ERROR
+	// 0x18       NULLREGION
+	// 0x1c       NULLREGION
+	// 0x1e       NULLREGION
+	info->flags = 0;
+	info->type = 0;
+	r = NtGdiSetRectRgn( region, 0, 0, 0, 0 );
+	ok( info == get_user_info( region ), "region changed\n");
+	ok( r == ERROR, "NtGdiSetRectRgn return wrong %08x\n", r);
 
-	//r = NtGdiDeleteObjectApp( region );
-	//ok( r == TRUE, "delete failed\n");
+	// initialize shared data
+	info->flags = 0x30;
+	info->type = NULLREGION;
+	set_rect( &info->rect, 0, 0, 0, 0 );
+
+	r = NtGdiGetRgnBox( region, &rect );
+	ok( r == NULLREGION, "Region type wrong %d\n", r );
+	ok( rect_equal( &rect, 0, 0, 0, 0 ), "rect wrong\n");
+	ok( info == get_user_info( region ), "region changed\n");
+	ok( info->flags == 0x10, "flags not changed %08lx\n", info->flags);
+
+	// set the correct number of rectangles
+	set_rect( &info->rect, 9, 10, 19, 20 );
+	info->type = SIMPLEREGION;
+	info->flags |= 0x20;
+	r = NtGdiGetRgnBox( region, &rect );
+	ok( r == SIMPLEREGION, "Region type wrong %d\n", r );
+	ok( info == get_user_info( region ), "region changed\n");
+	ok( rect_equal( &rect, 9, 10, 19, 20 ), "rect wrong\n");
+	ok( info->flags == 0x10, "flags not changed %08lx\n", info->flags);
+
+	//dprintf("rect = %ld,%ld-%ld,%ld\n", rect.left, rect.top, rect.right, rect.bottom );
+
+	r = NtGdiSetRectRgn( region, 1, 2, 3, 4 );
+	ok( r == TRUE, "NtGdiSetRectRgn failed\n");
+	ok( info == get_user_info( region ), "region changed\n");
+	ok( rect_equal( &info->rect, 1, 2, 3, 4 ), "rect wrong\n");
+
+	r = NtGdiGetRgnBox( region, &rect );
+	ok( r == SIMPLEREGION, "Region type wrong %d\n", r );
+	ok( rect_equal( &rect, 1, 2, 3, 4 ), "rect wrong\n");
+
+	r = NtGdiDeleteObjectApp( region );
+	ok( r == TRUE, "delete failed\n");
 }
 
 void NtProcessStartup( void )

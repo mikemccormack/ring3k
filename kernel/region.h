@@ -121,14 +121,17 @@ class gdi_region_shared_tt
 {
 public:
 	// must be compatible with GDI_REGION_SHARED
-	rect_tt *rects;
-	ULONG numRects;
+	ULONG flags;
+	ULONG type;
 	rect_tt extents;
 };
 
 class region_tt : public gdi_object_t
 {
 	gdi_region_shared_tt *rgn;
+	ULONG numRects;
+	ULONG maxRects;
+	rect_tt *rects;
 public:
 	region_tt();
 	~region_tt();
@@ -144,6 +147,7 @@ public:
 	BOOL contains_point( int x, int y );
 	BOOL overlaps_rect( const RECT& overlap );
 	void empty_region();
+	bool is_valid();
 };
 
 template<typename T> static inline void swap( T& a, T& b )

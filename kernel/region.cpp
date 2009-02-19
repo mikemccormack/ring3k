@@ -174,17 +174,18 @@ region_tt::region_tt()
 region_tt::~region_tt()
 {
 	free_gdi_shared_memory( (BYTE*) rgn );
+	delete[] rects;
 }
 
 void region_tt::empty_region()
 {
-	rgn->numRects = 0;
+	numRects = 0;
 	rgn->extents.clear();
 }
 
 region_tt* region_tt::alloc( INT n )
 {
-	size_t len = sizeof (gdi_region_shared_tt) + n * sizeof(RECT);
+	size_t len = sizeof (gdi_region_shared_tt);
 	BYTE *shm = alloc_gdi_shared_memory( len );
 	if (!shm)
 		return NULL;
@@ -201,21 +202,34 @@ region_tt* region_tt::alloc( INT n )
 	}
 
 	region->rgn = (gdi_region_shared_tt*) shm;
-	region->rgn->rects = (rect_tt*)((gdi_region_shared_tt*)user_shm+1);
 	region->empty_region();
+	region->rgn->flags = 0;
+	region->rgn->type = 0;
+	region->maxRects = 2;
+	region->rects = new rect_tt[ region->maxRects ];
 
 	return region;
+}
+
+bool region_tt::is_valid()
+{
+	if ((rgn->flags & 0x11) != 0x10)
+		return false;
+	rgn->flags &= ~0x20;
+	return true;
 }
 
 region_tt* region_from_handle( HGDIOBJ handle )
 {
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
 	if (!entry)
-		return FALSE;
+		return NULL;
 	if (entry->Type != GDI_OBJECT_REGION)
-		return FALSE;
-	assert( entry->kernel_info );
-	return (region_tt*) entry->kernel_info;
+		return NULL;
+	region_tt* region = (region_tt*) entry->kernel_info;
+	if (!region->is_valid())
+		return NULL;
+	return region;
 }
 
 void region_tt::set_rect( int left, int top, int right, int bottom )
@@ -223,14 +237,13 @@ void region_tt::set_rect( int left, int top, int right, int bottom )
 	if ((left != right) && (top != bottom))
 	{
 		rgn->extents.set( left, top, right, bottom );
-		rgn->extents.dump();
 		rgn->extents.fix();
-		rgn->extents.dump();
-		rect_tt* rects = get_rects();
+		numRects = 1;
 		rects[0] = rgn->extents;
-		rgn->numRects = 1;
-
-		rgn->extents.dump();
+		if (left == right || top == bottom)
+			rgn->type = NULLREGION;
+		else
+			rgn->type = SIMPLEREGION;
 	}
 	else
 		empty_region();
@@ -238,22 +251,17 @@ void region_tt::set_rect( int left, int top, int right, int bottom )
 
 INT region_tt::get_region_type() const
 {
-	switch (rgn->numRects)
-	{
-	case 0:  return NULLREGION;
-	case 1:  return SIMPLEREGION;
-	default: return COMPLEXREGION;
-	}
+	return rgn->type;
 }
 
 INT region_tt::get_num_rects() const
 {
-	return rgn->numRects;
+	return numRects;
 }
 
 rect_tt* region_tt::get_rects() const
 {
-	return user_to_kernel( rgn->rects );
+	return rects;
 }
 
 void region_tt::get_bounds_rect( RECT& rcBounds ) const
@@ -270,19 +278,17 @@ INT region_tt::get_region_box( RECT* rect )
 BOOL region_tt::equal( region_tt *other )
 {
 
-	if (rgn->numRects != other->rgn->numRects)
+	if (numRects != other->numRects)
 		return FALSE;
 
-	if (rgn->numRects == 0)
+	if (numRects == 0)
 		return TRUE;
 
 	if (!rgn->extents.equal( other->rgn->extents ))
 		return FALSE;
 
-	rect_tt* rects = get_rects();
-	rect_tt* other_rects = other->get_rects();
-	for (ULONG i = 0; i < rgn->numRects; i++ )
-		if (!rects[i].equal( other_rects[i] ))
+	for (ULONG i = 0; i < numRects; i++ )
+		if (!rects[i].equal( other->rects[i] ))
 			return FALSE;
 
 	return TRUE;
@@ -290,8 +296,8 @@ BOOL region_tt::equal( region_tt *other )
 
 INT region_tt::offset( INT x, INT y )
 {
-	ULONG nbox = rgn->numRects;
-	rect_tt *pbox = get_rects();
+	ULONG nbox = numRects;
+	rect_tt *pbox = rects;
 
 	while (nbox--)
 	{
@@ -304,14 +310,13 @@ INT region_tt::offset( INT x, INT y )
 
 BOOL region_tt::contains_point( int x, int y )
 {
-	if (rgn->numRects == 0)
+	if (numRects == 0)
 		return FALSE;
 
 	if (!rgn->extents.contains_point( x, y ))
 		return FALSE;
 
-	rect_tt *rects = get_rects();
-	for (ULONG i = 0; i < rgn->numRects; i++)
+	for (ULONG i = 0; i < numRects; i++)
 		if (rects[i].contains_point( x, y ))
 			return TRUE;
 
@@ -320,14 +325,13 @@ BOOL region_tt::contains_point( int x, int y )
 
 BOOL region_tt::overlaps_rect( const RECT& rect )
 {
-	if (rgn->numRects == 0)
+	if (numRects == 0)
 		return FALSE;
 
 	if (!rgn->extents.overlaps( rect ))
 		return FALSE;
 
-	rect_tt *rects = get_rects();
-	for (ULONG i = 0; i < rgn->numRects; i++)
+	for (ULONG i = 0; i < numRects; i++)
 		if (rects[i].overlaps( rect ))
 			return TRUE;
 

@@ -97,9 +97,9 @@ static inline COLORREF RGB( BYTE red, BYTE green, BYTE blue )
 }
 
 typedef struct _GDI_REGION_SHARED {
-	PRECT rects;
-	ULONG numRects;
-	RECT extents;
+	ULONG flags;
+	ULONG type;
+	RECT  rect;
 } GDI_REGION_SHARED;
 
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
