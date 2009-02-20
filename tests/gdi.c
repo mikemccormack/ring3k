@@ -839,6 +839,91 @@ void test_region_shared( void )
 	ok( r == TRUE, "delete failed\n");
 }
 
+void test_multiregion( void )
+{
+	HRGN region1, region2, region3;
+	GDI_REGION_SHARED* info;
+	int r;
+
+	region1 = NtGdiCreateRectRgn( 0, 0, 1, 1 );
+	ok( region1 != 0, "region was null");
+
+	info = get_user_info( region1 );
+	info->flags = 0x30;
+	info->type = SIMPLEREGION;
+	set_rect( &info->rect, 5, 5, 20, 20 );
+
+	region2 = NtGdiCreateRectRgn( 0, 0, 1, 1 );
+	ok( region2 != 0, "region was null");
+
+	info = get_user_info( region2 );
+	info->flags = 0x30;
+	info->type = SIMPLEREGION;
+	set_rect( &info->rect, 0, 0, 15, 15 );
+
+	region3 = NtGdiCreateRectRgn( 0, 0, 1, 1 );
+	ok( region3 != 0, "region was null");
+
+	info = get_user_info( region3 );
+	info->flags = 0x30;
+	info->type = NULLREGION;
+	set_rect( &info->rect, 0, 0, 0, 0 );
+
+	r = NtGdiCombineRgn( region3, region1, region2, RGN_AND );
+	ok( r == SIMPLEREGION, "Region type wrong %d\n", r );
+	info = get_user_info( region3 );
+	ok( info->type == r, "type wrong %ld\n", info->type);
+	ok( rect_equal( &info->rect, 5, 5, 15, 15 ), "rect wrong\n");
+	ok( info->flags == 0x10, "flags not changed %08lx\n", info->flags);
+
+	// set the rectangle region
+	info = get_user_info( region1 );
+	info->type = SIMPLEREGION;
+	set_rect( &info->rect, 5, 6, 10, 11 );
+	info->flags = 0x30;
+
+	// set the rectangle region
+	info = get_user_info( region2 );
+	info->type = SIMPLEREGION;
+	set_rect( &info->rect, 10, 11, 15, 16 );
+	info->flags = 0x30;
+
+	// region1 does not overlap region2
+	r = NtGdiCombineRgn( region3, region1, region2, RGN_AND );
+	ok( r == NULLREGION, "Region type wrong %d\n", r );
+	info = get_user_info( region3 );
+	ok( info->type == r, "type wrong %ld\n", info->type);
+
+	// set the rectangle region
+	info = get_user_info( region1 );
+	info->type = SIMPLEREGION;
+	set_rect( &info->rect, 5, 6, 20, 21 );
+	info->flags = 0x30;
+
+	// set the rectangle region
+	info = get_user_info( region2 );
+	info->type = SIMPLEREGION;
+	set_rect( &info->rect, 10, 11, 15, 16 );
+	info->flags = 0x30;
+
+	// region1 full contains region2
+	r = NtGdiCombineRgn( region3, region1, region2, RGN_AND );
+	ok( r == SIMPLEREGION, "Region type wrong %d\n", r );
+	info = get_user_info( region3 );
+	ok( rect_equal( &info->rect, 10, 11, 15, 16 ), "rect wrong\n");
+	ok( info->flags == 0x10, "flags not changed %08lx\n", info->flags);
+	ok( info->type == r, "type wrong %ld\n", info->type);
+
+	r = NtGdiDeleteObjectApp( region1 );
+	ok( r == TRUE, "delete failed\n");
+
+	r = NtGdiDeleteObjectApp( region2 );
+	ok( r == TRUE, "delete failed\n");
+
+	r = NtGdiDeleteObjectApp( region3 );
+	ok( r == TRUE, "delete failed\n");
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -853,5 +938,6 @@ void NtProcessStartup( void )
 	test_solid_brush();
 	test_region();
 	test_region_shared();
+	test_multiregion();
 	log_fini();
 }

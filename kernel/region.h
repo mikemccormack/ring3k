@@ -115,6 +115,8 @@ public:
 	void offset( INT x, INT y );
 	void dump() const;
 	void fix();
+	void intersect( const RECT& other );
+	bool is_empty() const;
 };
 
 class gdi_region_shared_tt
@@ -147,7 +149,14 @@ public:
 	BOOL contains_point( int x, int y );
 	BOOL overlaps_rect( const RECT& overlap );
 	void empty_region();
-	bool is_valid();
+	bool is_empty() const;
+	bool validate();
+	INT update_type();
+	INT combine( region_tt* src1, region_tt* src2, INT mode );
+	INT intersect_rgn( region_tt *src1, region_tt *src2 );
+	INT union_rgn( region_tt *src1, region_tt *src2 );
+	INT xor_rgn( region_tt *src1, region_tt *src2 );
+	INT diff_rgn( region_tt *src1, region_tt *src2 );
 };
 
 template<typename T> static inline void swap( T& a, T& b )

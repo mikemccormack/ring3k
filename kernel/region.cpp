@@ -167,6 +167,21 @@ BOOL rect_tt::contains_point( int x, int y ) const
 		(left <= x) && (right > x);
 }
 
+void rect_tt::intersect( const RECT& other )
+{
+	top = max( top, other.top );
+	left = max( left, other.left );
+	bottom = min( bottom, other.bottom );
+	right = min( right, other.right );
+	if (top >= bottom || left >= right)
+		clear();
+}
+
+bool rect_tt::is_empty() const
+{
+	return (left == right || top == bottom);
+}
+
 region_tt::region_tt()
 {
 }
@@ -181,6 +196,7 @@ void region_tt::empty_region()
 {
 	numRects = 0;
 	rgn->extents.clear();
+	rgn->type = NULLREGION;
 }
 
 region_tt* region_tt::alloc( INT n )
@@ -211,10 +227,22 @@ region_tt* region_tt::alloc( INT n )
 	return region;
 }
 
-bool region_tt::is_valid()
+bool region_tt::validate()
 {
 	if ((rgn->flags & 0x11) != 0x10)
 		return false;
+	switch (rgn->type)
+	{
+	case NULLREGION:
+		numRects = 0;
+		break;
+	case SIMPLEREGION:
+		numRects = 1;
+		rects[0] = rgn->extents;
+		break;
+	//default:
+		//return false;
+	}
 	rgn->flags &= ~0x20;
 	return true;
 }
@@ -227,9 +255,21 @@ region_tt* region_from_handle( HGDIOBJ handle )
 	if (entry->Type != GDI_OBJECT_REGION)
 		return NULL;
 	region_tt* region = (region_tt*) entry->kernel_info;
-	if (!region->is_valid())
+	if (!region->validate())
 		return NULL;
 	return region;
+}
+
+INT region_tt::update_type()
+{
+	if (rgn->extents.is_empty())
+	{
+		rgn->type = NULLREGION;
+		numRects = 0;
+	}
+	else
+		rgn->type = SIMPLEREGION;
+	return get_region_type();
 }
 
 void region_tt::set_rect( int left, int top, int right, int bottom )
@@ -240,10 +280,7 @@ void region_tt::set_rect( int left, int top, int right, int bottom )
 		rgn->extents.fix();
 		numRects = 1;
 		rects[0] = rgn->extents;
-		if (left == right || top == bottom)
-			rgn->type = NULLREGION;
-		else
-			rgn->type = SIMPLEREGION;
+		update_type();
 	}
 	else
 		empty_region();
@@ -338,6 +375,67 @@ BOOL region_tt::overlaps_rect( const RECT& rect )
 	return FALSE;
 }
 
+INT region_tt::intersect_rgn( region_tt *reg1, region_tt *reg2 )
+{
+	dprintf("%ld %ld\n", reg1->numRects, reg2->numRects);
+	/* check for trivial reject */
+	if ( !reg1->numRects || !reg2->numRects ||
+		!reg1->rgn->extents.overlaps( reg2->rgn->extents ))
+	{
+		empty_region();
+		return rgn->type;
+	}
+
+	// FIXME: implement more complicated regions
+	assert(reg1->rgn->type == SIMPLEREGION);
+	assert(reg2->rgn->type == SIMPLEREGION);
+
+	rgn->extents = reg1->rgn->extents;
+	rgn->extents.dump();
+	rgn->extents.intersect( reg2->rgn->extents );
+	rgn->extents.dump();
+
+	return update_type();
+}
+
+INT region_tt::union_rgn( region_tt *src1, region_tt *src2 )
+{
+	return ERROR;
+}
+
+INT region_tt::xor_rgn( region_tt *src1, region_tt *src2 )
+{
+	return ERROR;
+}
+
+INT region_tt::diff_rgn( region_tt *src1, region_tt *src2 )
+{
+	return ERROR;
+}
+
+INT region_tt::combine( region_tt* src1, region_tt* src2, INT mode )
+{
+	INT (region_tt::*op)( region_tt*, region_tt* );
+	switch (mode)
+	{
+	case RGN_AND:
+		op = &region_tt::intersect_rgn;
+		break;
+	case RGN_OR:
+		op = &region_tt::union_rgn;
+		break;
+	case RGN_XOR:
+		op = &region_tt::xor_rgn;
+		break;
+	case RGN_DIFF:
+		op = &region_tt::diff_rgn;
+		break;
+	default:
+		return ERROR;
+	}
+	return (this->*op)( src1, src2 );
+}
+
 HRGN NTAPI NtGdiCreateRectRgn( int, int, int, int )
 {
 	region_tt* region = region_tt::alloc( RGN_DEFAULT_RECTS );
@@ -370,7 +468,19 @@ int NTAPI NtGdiGetRgnBox( HRGN Region, PRECT Rect )
 
 int NTAPI NtGdiCombineRgn( HRGN Dest, HRGN Source1, HRGN Source2, int CombineMode )
 {
-	return 0;
+	region_tt* rgn_src1 = region_from_handle( Source1 );
+	if (!rgn_src1)
+		return ERROR;
+
+	region_tt* rgn_src2 = region_from_handle( Source2 );
+	if (!rgn_src2)
+		return ERROR;
+
+	region_tt* rgn_dst = region_from_handle( Dest );
+	if (!rgn_dst)
+		return ERROR;
+
+	return rgn_dst->combine( rgn_src1, rgn_src2, CombineMode );
 }
 
 BOOL NTAPI NtGdiEqualRgn( HRGN Source1, HRGN Source2 )
