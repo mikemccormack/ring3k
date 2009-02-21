@@ -1415,3 +1415,8 @@ HDC NTAPI NtUserBeginPaint( HWND Window, PAINTSTRUCT* pps)
 
 	return (HDC) win->get_dc();
 }
+
+BOOLEAN NTAPI NtUserEndPaint( HWND Window, PAINTSTRUCT* pps )
+{
+	return TRUE;
+}
