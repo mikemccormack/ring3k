@@ -23,21 +23,23 @@
 
 // FIXME: the following should go in a different file
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void init_syscalls(bool xp);
 NTSTATUS do_nt_syscall(ULONG id, ULONG func, ULONG *uargs, ULONG retaddr);
 NTSTATUS copy_to_user( void *dest, const void *src, size_t len );
 NTSTATUS copy_from_user( void *dest, const void *src, size_t len );
 NTSTATUS verify_for_write( void *dest, size_t len );
 
-#ifdef __cplusplus
-};
-#endif
+template <typename T>
+NTSTATUS copy_to_user( T* dest, const T* src )
+{
+	return copy_to_user( dest, src, sizeof (T) );
+}
 
-#ifdef __cplusplus
+template <typename T>
+NTSTATUS copy_from_user( T* dest, const T* src )
+{
+	return copy_from_user( dest, src, sizeof (T) );
+}
 
 class address_space;
 class thread_t;
@@ -118,7 +120,5 @@ NTSTATUS win32k_thread_init(thread_t *t);
 // from kthread.cpp
 void create_kthread(void);
 void shutdown_kthread(void);
-
-#endif // __cplusplus
 
 #endif // __NTCALL_H__
