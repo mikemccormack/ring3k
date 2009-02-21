@@ -1462,3 +1462,8 @@ BOOLEAN NTAPI NtUserCallHwnd( HWND Window, ULONG )
 	return TRUE;
 }
 
+
+BOOLEAN NTAPI NtUserSetMenu( HWND Window, ULONG, ULONG )
+{
+	return TRUE;
+}
