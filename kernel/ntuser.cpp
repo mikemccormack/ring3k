@@ -1374,6 +1374,25 @@ LRESULT NTAPI NtUserDispatchMessage( PMSG Message )
 
 BOOLEAN NTAPI NtUserInvalidateRect( HWND Window, const RECT* Rectangle, BOOLEAN Erase )
 {
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return FALSE;
+
+	RECT rect;
+	if (Rectangle)
+	{
+		NTSTATUS r = copy_from_user( &rect, Rectangle );
+		if (r < STATUS_SUCCESS)
+			return FALSE;
+	}
+	else
+	{
+		rect = win->rcClient;
+	}
+
+	region_tt*& region = win->get_invalid_region();
+	region->set_rect( rect );
+
 	return TRUE;
 }
 
