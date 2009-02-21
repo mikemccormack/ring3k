@@ -1456,3 +1456,9 @@ BOOLEAN NTAPI NtUserEndPaint( HWND Window, PAINTSTRUCT* pps )
 {
 	return TRUE;
 }
+
+BOOLEAN NTAPI NtUserCallHwnd( HWND Window, ULONG )
+{
+	return TRUE;
+}
+
