@@ -513,3 +513,19 @@ NTSTATUS NTAPI NtQuerySystemTime(PLARGE_INTEGER CurrentTime)
 
 	return copy_to_user( CurrentTime, &now, sizeof now );
 }
+
+NTSTATUS NTAPI NtQueryTimerResolution( PULONG CoarsestResolution, PULONG FinestResolution, PULONG ActualResolution)
+{
+	ULONG resolution = 100000LL; // 10ms
+	NTSTATUS r;
+	r = copy_to_user( CoarsestResolution, &resolution );
+	if (r < STATUS_SUCCESS)
+		return r;
+	r = copy_to_user( FinestResolution, &resolution );
+	if (r < STATUS_SUCCESS)
+		return r;
+	r = copy_to_user( ActualResolution, &resolution );
+	if (r < STATUS_SUCCESS)
+		return r;
+	return STATUS_SUCCESS;
+}

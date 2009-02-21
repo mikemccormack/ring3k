@@ -243,7 +243,7 @@
 	IMP( NtQuerySystemInformation, 4 ),
 	IMP( NtQuerySystemTime, 1 ),
 	IMP( NtQueryTimer, 5 ),
-	DEC( NtQueryTimerResolution, 3 ),
+	IMP( NtQueryTimerResolution, 3 ),
 	IMP( NtQueryValueKey, 6 ),
 	IMP( NtQueryVirtualMemory, 6 ),
 	IMP( NtQueryVolumeInformationFile, 5 ),
