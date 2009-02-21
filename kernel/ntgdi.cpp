@@ -1310,3 +1310,8 @@ BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG Rop, PRECT Rectangle, ULONG,
 
 	return dc->polypatblt( Rop, &rect );
 }
+
+BOOLEAN NTAPI NtGdiLineTo( HDC handle, int xpos, int ypos )
+{
+	return TRUE;
+}
