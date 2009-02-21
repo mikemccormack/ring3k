@@ -110,6 +110,7 @@ HGDIOBJ NTAPI NtGdiCreateBitmap(int,int,UINT,UINT,VOID*);
 HANDLE  NTAPI NtGdiCreateCompatibleBitmap(HANDLE,int,int);
 HGDIOBJ NTAPI NtGdiCreateCompatibleDC(HGDIOBJ);
 HRGN    NTAPI NtGdiCreateEllipticRgn(int,int,int,int);
+HPEN    NTAPI NtGdiCreatePen(int,int,COLORREF,ULONG);
 HRGN    NTAPI NtGdiCreateRectRgn(int,int,int,int);
 HGDIOBJ NTAPI NtGdiCreateSolidBrush(COLORREF,ULONG);
 HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(HDC,ULONG,ULONG,ULONG,ULONG,PVOID,ULONG,ULONG,ULONG,ULONG,ULONG);

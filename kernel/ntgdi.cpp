@@ -1343,3 +1343,7 @@ int NTAPI NtGdiGetDeviceCaps( HDC handle, int index )
 	return dc->getcaps( index );
 }
 
+HPEN NTAPI NtGdiCreatePen(int style, int width, COLORREF color, ULONG)
+{
+	return (HPEN) alloc_gdi_object( FALSE, GDI_OBJECT_PEN );
+}
