@@ -1400,3 +1400,18 @@ BOOLEAN NTAPI NtUserGetUpdateRgn( HWND Window, HRGN Region, BOOLEAN Erase )
 {
 	return TRUE;
 }
+
+HDC NTAPI NtUserBeginPaint( HWND Window, PAINTSTRUCT* pps)
+{
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return NULL;
+
+	PAINTSTRUCT ps;
+	memset( &ps, 0, sizeof ps );
+	NTSTATUS r = copy_to_user( pps, &ps );
+	if (r < STATUS_SUCCESS)
+		return NULL;
+
+	return (HDC) win->get_dc();
+}
