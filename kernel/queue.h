@@ -72,9 +72,13 @@ public:
 	BOOL post_message( HWND Window, UINT Message, WPARAM Wparam, LPARAM Lparam );
 	void post_quit_message( ULONG exit_code );
 	bool get_quit_message( MSG &msg );
+	bool get_paint_message( HWND Window, MSG& msg );
 	virtual BOOLEAN is_signalled( void );
 	BOOLEAN get_message( MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage);
-	bool copy_msg( MSG& Message );
+	BOOLEAN get_message_no_wait( MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage);
+	bool get_posted_message( HWND Window, MSG& Message );
 };
+
+HWND find_window_to_repaint( HWND Window, thread_t *thread );
 
 #endif // __RING3K_QUEUE__

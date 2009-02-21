@@ -898,6 +898,29 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 	return copy_wstr_from_user( str.Buffer, str.Length );
 }
 
+// window list
+WND *window_tt::first;
+
+void window_tt::link_window( window_tt* parent )
+{
+	next = parent->first;
+	parent->first = this;
+}
+
+void window_tt::unlink_window()
+{
+	WND **p;
+	if (parent)
+		p = &parent->first_child;
+	else
+		p = &first;
+
+	while (*p != this)
+		*p = (*p)->next;
+	assert (*p);
+	*p = this->next;
+}
+
 void* window_tt::operator new(size_t sz)
 {
 	dprintf("allocating window\n");
@@ -928,6 +951,7 @@ window_tt::window_tt( thread_t* t, wndcls_tt *_wndcls, unicode_string_t& _name, 
 
 window_tt::~window_tt()
 {
+
 	free_user_handle( handle );
 	dprintf("active window = %p this = %p\n", active_window, this);
 	if (active_window == this)
@@ -1000,8 +1024,16 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	//ULONG ShowMode,
 	BOOL UnicodeWindow)
 {
-
 	NTSTATUS r;
+
+	window_tt* parent_win = 0;
+
+	if (Parent)
+	{
+		parent_win = window_from_handle( Parent );
+		if (!parent_win)
+			return FALSE;
+	}
 
 	user32_unicode_string_t window_name;
 	r = window_name.copy_from_user( WindowName );
@@ -1032,6 +1064,8 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	if (!win)
 		return NULL;
 
+	win->link_window( parent_win );
+
 	if (x == CW_USEDEFAULT)
 		x = 0;
 	if (y == CW_USEDEFAULT)
@@ -1053,6 +1087,9 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	// create a thread message queue if necessary
 	if (!current->queue)
 		current->queue = new thread_message_queue_tt;
+
+	region_tt*& region = win->get_invalid_region();
+	region = region_tt::alloc();
 
 	// send WM_GETMINMAXINFO
 	getminmaxinfo_tt minmax;
@@ -1103,13 +1140,33 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	return win->handle;
 }
 
+
+window_tt* window_tt::find_window_to_repaint( HWND window, thread_t* thread )
+{
+	for (WND *p = first; p; p = p->next)
+	{
+		window_tt *win = reinterpret_cast<window_tt*>( p );
+		region_tt*& region = win->get_invalid_region();
+
+		if (region->get_region_type() != NULLREGION)
+			return win;
+	}
+
+	return NULL;
+}
+
 void window_tt::set_window_pos( UINT flags )
 {
 	if (!(style & WS_VISIBLE))
 		return;
 
 	if (flags & SWP_SHOWWINDOW)
+	{
 		show( SW_SHOW );
+
+		region_tt*& rgn = get_invalid_region();
+		rgn->set_rect( rcClient );
+	}
 
 	WINDOWPOS wp;
 	memset( &wp, 0, sizeof wp );

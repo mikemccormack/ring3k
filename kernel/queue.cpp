@@ -83,6 +83,19 @@ bool thread_message_queue_tt::get_quit_message( MSG& msg )
 	return ret;
 }
 
+bool thread_message_queue_tt::get_paint_message( HWND Window, MSG& msg )
+{
+	window_tt *win = window_tt::find_window_to_repaint( Window, current );
+	if (!win)
+		return FALSE;
+
+	msg.message = WM_PAINT;
+	msg.time = timeout_t::get_tick_count();
+	msg.hwnd = win->handle;
+
+	return TRUE;
+}
+
 BOOLEAN thread_message_queue_tt::is_signalled( void )
 {
 	return FALSE;
@@ -129,11 +142,8 @@ BOOL thread_message_queue_tt::post_message(
 }
 
 // return true if we copied a message
-bool thread_message_queue_tt::copy_msg( MSG& Message )
+bool thread_message_queue_tt::get_posted_message( HWND Window, MSG& Message )
 {
-	if (get_quit_message( Message ))
-		return true;
-
 	msg_tt *m = msg_list.head();
 	if (!m)
 		return false;
@@ -159,11 +169,26 @@ msg_waiter_tt::msg_waiter_tt( MSG& m):
 
 
 // return true if we succeeded in copying a message
+BOOLEAN thread_message_queue_tt::get_message_no_wait(
+	MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
+{
+	if (get_posted_message( Window, Message ))
+		return true;
+
+	if (get_quit_message( Message ))
+		return true;
+
+	if (get_paint_message( Window, Message ))
+		return true;
+
+	return false;
+}
+
 BOOLEAN thread_message_queue_tt::get_message(
 	MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
 {
-	if (copy_msg( Message ))
-		return TRUE;
+	if (get_message_no_wait( Message, Window, MinMessage, MaxMessage))
+		return true;
 
 	// wait for a message
 	// a thread sending a message will restart us
@@ -219,5 +244,19 @@ BOOLEAN NTAPI NtUserPostMessage( HWND Window, UINT Message, WPARAM Wparam, LPARA
 
 BOOLEAN NTAPI NtUserPeekMessage( PMSG Message, HWND Window, UINT MaxMessage, UINT MinMessage, UINT Remove)
 {
-	return TRUE;
+	thread_message_queue_tt* queue = current->queue;
+	if (!queue)
+		return FALSE;
+
+	NTSTATUS r = verify_for_write( Message, sizeof *Message );
+	if (r != STATUS_SUCCESS)
+		return FALSE;
+
+	MSG msg;
+	memset( &msg, 0, sizeof msg );
+	BOOL ret = queue->get_message_no_wait( msg, Window, MinMessage, MaxMessage );
+	if (ret)
+		copy_to_user( Message, &msg, sizeof msg );
+
+	return ret;
 }

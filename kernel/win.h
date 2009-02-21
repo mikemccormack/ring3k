@@ -22,6 +22,7 @@
 #define __RING3K_WIN_H__
 
 #include "ntwin32.h"
+#include "region.h"
 
 struct window_tt;
 class wndcls_tt;
@@ -53,9 +54,12 @@ public:
 	PVOID get_wndproc() const { return info.WndProc; }
 };
 
-struct window_tt : public WND
+class window_tt : public WND
 {
 	// no virtual functions here, binary compatible with user side WND struct
+public:
+	static WND *first;
+public:
 	void* operator new(size_t sz);
 	void operator delete(void *p);
 	window_tt( thread_t* t, wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
@@ -65,18 +69,22 @@ struct window_tt : public WND
 	void *get_wndproc() { return wndproc; }
 	PWND get_wininfo();
 	thread_t* &get_win_thread() {return (thread_t*&)unk1; }
+	region_tt* &get_invalid_region() {return (region_tt*&)unk2; }
 	BOOLEAN show( INT Show );
 	void activate();
 	HGDIOBJ get_dc();
 	BOOLEAN destroy();
 	void set_window_pos( UINT flags );
+	static window_tt* find_window_to_repaint( HWND window, thread_t* thread );
+	void link_window( window_tt *parent );
+	void unlink_window();
 };
+
+window_tt *window_from_handle( HANDLE handle );
 
 // system wide callback functions registered with kernel by user32.dll
 extern PVOID g_funcs[9];
 extern PVOID g_funcsW[20];
 extern PVOID g_funcsA[20];
-
-window_tt *window_from_handle( HANDLE handle );
 
 #endif // __RING3K_WIN_H__

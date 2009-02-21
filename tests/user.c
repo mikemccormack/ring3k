@@ -641,14 +641,12 @@ void test_create_window( ULONG style )
 
 	if (style & WS_VISIBLE)
 	{
-#if 0
 		r = NtUserPeekMessage( &msg, 0, 0, 0, 0 );
 		ok( TRUE == r, "NtUserPeekMessage indicates message remaining (%04x)\n", msg.message);
 		ok( msg.hwnd == window, "window wrong %p\n", msg.hwnd );
 		ok( msg.message == WM_PAINT, "message wrong %08x\n", msg.message );
 		ok( msg.wParam == 0, "wParam wrong %08x\n", msg.wParam );
 		ok( msg.lParam == 0, "lParam wrong %08lx\n", msg.lParam );
-#endif
 	}
 
 	// check the window handle -> pointer translation
@@ -705,7 +703,9 @@ void test_create_window( ULONG style )
 void test_window()
 {
 	register_class();
+	//dprintf("non-visible\n");
 	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP );
+	//dprintf("visible\n");
 	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP | WS_VISIBLE );
 }
 

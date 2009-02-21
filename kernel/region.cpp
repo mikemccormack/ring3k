@@ -110,7 +110,7 @@ SOFTWARE.
 #include "win32mgr.h"
 #include "region.h"
 
-static const int RGN_DEFAULT_RECTS = 2;
+const int region_tt::RGN_DEFAULT_RECTS = 2;
 
 void rect_tt::clear()
 {
@@ -199,7 +199,7 @@ void region_tt::empty_region()
 	rgn->type = NULLREGION;
 }
 
-region_tt* region_tt::alloc( INT n )
+region_tt* region_tt::alloc()
 {
 	size_t len = sizeof (gdi_region_shared_tt);
 	BYTE *shm = alloc_gdi_shared_memory( len );
@@ -221,7 +221,7 @@ region_tt* region_tt::alloc( INT n )
 	region->empty_region();
 	region->rgn->flags = 0;
 	region->rgn->type = 0;
-	region->maxRects = 2;
+	region->maxRects = RGN_DEFAULT_RECTS;
 	region->rects = new rect_tt[ region->maxRects ];
 
 	return region;
@@ -270,6 +270,11 @@ INT region_tt::update_type()
 	else
 		rgn->type = SIMPLEREGION;
 	return get_region_type();
+}
+
+void region_tt::set_rect( const RECT& rect )
+{
+	return set_rect( rect.left, rect.top, rect.right, rect.bottom );
 }
 
 void region_tt::set_rect( int left, int top, int right, int bottom )
@@ -438,7 +443,7 @@ INT region_tt::combine( region_tt* src1, region_tt* src2, INT mode )
 
 HRGN NTAPI NtGdiCreateRectRgn( int, int, int, int )
 {
-	region_tt* region = region_tt::alloc( RGN_DEFAULT_RECTS );
+	region_tt* region = region_tt::alloc();
 	if (!region)
 		return 0;
 	return (HRGN) region->get_handle();

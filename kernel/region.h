@@ -104,6 +104,8 @@ SOFTWARE.
 #include "windef.h"
 #include "winternl.h"
 
+#include "win32mgr.h"
+
 class rect_tt : public RECT
 {
 public:
@@ -130,6 +132,7 @@ public:
 
 class region_tt : public gdi_object_t
 {
+	static const int RGN_DEFAULT_RECTS;
 	gdi_region_shared_tt *rgn;
 	ULONG numRects;
 	ULONG maxRects;
@@ -137,8 +140,9 @@ class region_tt : public gdi_object_t
 public:
 	region_tt();
 	~region_tt();
-	static region_tt* alloc( INT n );
+	static region_tt* alloc();
 	void set_rect( int left, int top, int right, int bottom );
+	void set_rect( const RECT& rect );
 	INT get_region_box( RECT* rect );
 	INT get_region_type() const;
 	BOOL equal( region_tt *other );
