@@ -1413,6 +1413,9 @@ HDC NTAPI NtUserBeginPaint( HWND Window, PAINTSTRUCT* pps)
 	if (r < STATUS_SUCCESS)
 		return NULL;
 
+	region_tt*& region = win->get_invalid_region();
+	region->empty_region();
+
 	return (HDC) win->get_dc();
 }
 
