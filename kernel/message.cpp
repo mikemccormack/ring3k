@@ -194,6 +194,11 @@ ncpaintmsg_tt::ncpaintmsg_tt() :
 {
 }
 
+paintmsg_tt::paintmsg_tt() :
+	basicmsg_tt( WM_PAINT )
+{
+}
+
 erasebkgmsg_tt::erasebkgmsg_tt( HANDLE dc ) :
 	basicmsg_tt( WM_ERASEBKGND )
 {

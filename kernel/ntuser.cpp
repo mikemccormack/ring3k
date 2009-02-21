@@ -1347,6 +1347,28 @@ ULONG NTAPI NtUserGetAsyncKeyState( ULONG Key )
 
 LRESULT NTAPI NtUserDispatchMessage( PMSG Message )
 {
+	MSG msg;
+	NTSTATUS r;
+	r = copy_from_user( &msg, Message );
+	if (r < STATUS_SUCCESS)
+		return 0;
+
+	window_tt *win = window_from_handle( msg.hwnd );
+	if (!win)
+		return 0;
+
+	switch (msg.message)
+	{
+	case WM_PAINT:
+		{
+		paintmsg_tt msg;
+		win->send( msg );
+		}
+		break;
+	default:
+		dprintf("unknown message %04x\n", msg.message);
+	}
+
 	return 0;
 }
 

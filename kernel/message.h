@@ -151,6 +151,12 @@ public:
 	setfocusmsg_tt();
 };
 
+class paintmsg_tt : public basicmsg_tt
+{
+public:
+	paintmsg_tt();
+};
+
 class ncpaintmsg_tt : public basicmsg_tt
 {
 public:

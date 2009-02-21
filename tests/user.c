@@ -211,6 +211,10 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 		ok( pack->wparam != 0, "hdc was null\n");
 		ret.val = 1;
 		break;
+	case WM_PAINT:
+		ok( pack->lparam == 0, "lparam wrong\n");
+		ok( pack->wparam == 0, "wparam wrong\n");
+		break;
 	default:
 		dprintf("msg %04lx\n", pack->msg );
 		break;
@@ -647,6 +651,21 @@ void test_create_window( ULONG style )
 		ok( msg.message == WM_PAINT, "message wrong %08x\n", msg.message );
 		ok( msg.wParam == 0, "wParam wrong %08x\n", msg.wParam );
 		ok( msg.lParam == 0, "lParam wrong %08lx\n", msg.lParam );
+
+		r = NtUserGetMessage( &msg, 0, 0, 0 );
+		ok( TRUE == r, "NtUserGetMessage indicates message remaining (%04x)\n", msg.message);
+		ok( msg.hwnd == window, "window wrong %p\n", msg.hwnd );
+		ok( msg.message == WM_PAINT, "message wrong %08x\n", msg.message );
+		ok( msg.wParam == 0, "wParam wrong %08x\n", msg.wParam );
+		ok( msg.lParam == 0, "lParam wrong %08lx\n", msg.lParam );
+
+		r = NtUserDispatchMessage( 0 );
+		ok( 0 == r, "NtUserDispatchMessage failed %d\n", r);
+
+		r = NtUserDispatchMessage( &msg );
+		ok( 0 == r, "NtUserDispatchMessage failed %d\n", r);
+
+		check_msg( window, WM_PAINT, &n );
 	}
 
 	// check the window handle -> pointer translation
