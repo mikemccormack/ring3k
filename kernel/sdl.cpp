@@ -61,6 +61,7 @@ protected:
 	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
 	virtual BOOL polypatblt_l( ULONG Rop, PRECT rect ) = 0;
 	virtual bool check_events( bool wait );
+	virtual int getcaps( int index );
 	static Uint32 timeout_callback( Uint32 interval, void *arg );
 	bool handle_sdl_event( SDL_Event& event );
 	WORD sdl_keysum_to_vkey( SDLKey sym );
@@ -347,6 +348,18 @@ bool win32k_sdl_t::check_events( bool wait )
 	if (id != NULL)
 		SDL_RemoveTimer( id );
 	return quit;
+}
+
+int win32k_sdl_t::getcaps( int index )
+{
+	switch (index)
+	{
+	case NUMCOLORS:
+		return 1 << screen->format->BitsPerPixel;
+	default:
+		dprintf("%d\n", index );
+		return 0;
+	}
 }
 
 BOOL win32k_sdl_t::init()

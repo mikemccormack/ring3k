@@ -62,6 +62,7 @@ public:
 	win32k_info_t* alloc_win32k_info();
 	virtual void send_input( INPUT* input );
 	ULONG get_async_key_state( ULONG Key );
+	virtual int getcaps( int index ) = 0;
 };
 
 extern win32k_manager_t* win32k_manager;
@@ -177,6 +178,7 @@ public:
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t* src, INT xSrc, INT ySrc, ULONG rop );
 	virtual COLORREF get_pixel( INT x, INT y ) = 0;
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
+	virtual int getcaps( int index ) = 0;
 };
 
 class memory_device_context_t : public device_context_t
@@ -189,6 +191,7 @@ public:
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual COLORREF get_pixel( INT x, INT y );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
+	virtual int getcaps( int index );
 };
 
 class window_tt;
@@ -205,6 +208,7 @@ public:
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual COLORREF get_pixel( INT x, INT y );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
+	virtual int getcaps( int index );
 };
 
 class window_tt;

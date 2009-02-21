@@ -240,6 +240,7 @@ public:
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
+	virtual int getcaps( int index );
 };
 
 BOOL win32k_null_t::init()
@@ -275,6 +276,12 @@ BOOL win32k_null_t::bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context
 BOOL win32k_null_t::polypatblt( ULONG Rop, PRECT rect )
 {
 	return TRUE;
+}
+
+int win32k_null_t::getcaps( int index )
+{
+	dprintf("%d\n", index);
+	return 0;
 }
 
 win32k_null_t win32k_manager_null;
@@ -652,6 +659,11 @@ COLORREF screen_device_context_t::get_pixel( INT x, INT y )
 	return 0;
 }
 
+int screen_device_context_t::getcaps( int index )
+{
+	return win32k_manager->getcaps( index );
+}
+
 memory_device_context_t::memory_device_context_t()
 {
 }
@@ -688,6 +700,12 @@ BOOL memory_device_context_t::exttextout( INT x, INT y, UINT options,
 BOOL memory_device_context_t::polypatblt( ULONG Rop, PRECT rect )
 {
 	return TRUE;
+}
+
+int memory_device_context_t::getcaps( int index )
+{
+	dprintf("%d\n", index );
+	return 0;
 }
 
 brush_t::brush_t( UINT _style, COLORREF _color, ULONG _hatch ) :
@@ -1315,3 +1333,13 @@ BOOLEAN NTAPI NtGdiLineTo( HDC handle, int xpos, int ypos )
 {
 	return TRUE;
 }
+
+int NTAPI NtGdiGetDeviceCaps( HDC handle, int index )
+{
+	device_context_t* dc = dc_from_handle( handle );
+	if (!dc)
+		return FALSE;
+
+	return dc->getcaps( index );
+}
+
