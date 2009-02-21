@@ -755,6 +755,8 @@ NTSTATUS NTAPI NtUserGetKeyboardLayoutList(ULONG x1, ULONG x2)
 	return STATUS_SUCCESS;
 }
 
+static int g_hack_desktop = 0xf00d2001;
+
 HANDLE NTAPI NtUserCreateWindowStation(
 	POBJECT_ATTRIBUTES WindowStationName,
 	ACCESS_MASK DesiredAccess,
@@ -781,7 +783,7 @@ HANDLE NTAPI NtUserCreateWindowStation(
 
 	dprintf("name = %pus\n", &us );
 
-	return (HANDLE) 0xf00d2000;
+	return (HANDLE) g_hack_desktop++;
 }
 
 HANDLE NTAPI NtUserCreateDesktop(
@@ -791,8 +793,6 @@ HANDLE NTAPI NtUserCreateDesktop(
 	ULONG x3,
 	ACCESS_MASK DesiredAccess)
 {
-	static int desktop = 0xf00d2001;
-
 	// print out the name
 	object_attributes_t oa;
 	NTSTATUS r;
@@ -803,7 +803,21 @@ HANDLE NTAPI NtUserCreateDesktop(
 	dprintf("name = %pus\n", oa.ObjectName );
 	dprintf("root = %p\n", oa.RootDirectory );
 
-	return (HANDLE) desktop++;
+	return (HANDLE) g_hack_desktop++;
+}
+
+HANDLE NTAPI NtUserOpenDesktop(POBJECT_ATTRIBUTES DesktopName, ULONG, ACCESS_MASK DesiredAccess)
+{
+	object_attributes_t oa;
+	NTSTATUS r;
+	r = oa.copy_from_user( DesktopName );
+	if (r < STATUS_SUCCESS)
+		return 0;
+
+	dprintf("name = %pus\n", oa.ObjectName );
+	dprintf("root = %p\n", oa.RootDirectory );
+
+	return (HANDLE) g_hack_desktop++;
 }
 
 BOOLEAN NTAPI NtUserSetProcessWindowStation(HANDLE WindowStation)
