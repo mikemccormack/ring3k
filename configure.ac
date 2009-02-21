@@ -4,7 +4,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script
 dnl
 
-AC_INIT(ring3k,0.0.19)
+AC_INIT(ring3k,0.0.20)
 AC_CONFIG_SRCDIR(kernel/thread.cpp)
 
 AC_PROG_CC
