@@ -124,6 +124,7 @@ BOOL thread_message_queue_tt::post_message(
 
 		// remove from the list first
 		waiter_list.unlink( waiter );
+		set_timeout( 0 );
 
 		// start the thread (might reschedule here )
 		waiter->t->start();
@@ -167,30 +168,162 @@ msg_waiter_tt::msg_waiter_tt( MSG& m):
 	t = current;
 }
 
+win_timer_tt::win_timer_tt( HWND Window, UINT Identifier ) :
+	hwnd( Window ),
+	id( Identifier )
+{
+}
+
+win_timer_tt* thread_message_queue_tt::find_timer( HWND Window, UINT Identifier )
+{
+	for (win_timer_iter_t i(timer_list); i; i.next())
+	{
+		win_timer_tt *t = i;
+		if (t->id != Identifier)
+			continue;
+		if (t->hwnd != Window )
+			continue;
+		return t;
+	}
+	return NULL;
+}
+
+void win_timer_tt::reset()
+{
+	expiry = timeout_t::current_time();
+	expiry.QuadPart += period*10000LL;
+}
+
+bool win_timer_tt::expired() const
+{
+	LARGE_INTEGER now = timeout_t::current_time();
+	return (now.QuadPart >= expiry.QuadPart);
+}
+
+void thread_message_queue_tt::timer_add( win_timer_tt* timer )
+{
+	win_timer_tt *t = NULL;
+
+	// maintain list in order of expiry time
+	for (win_timer_iter_t i(timer_list); i; i.next())
+	{
+		t = i;
+		if (t->expiry.QuadPart >= timer->expiry.QuadPart)
+			break;
+	}
+	if (t)
+		timer_list.insert_before( t, timer );
+	else
+		timer_list.append( timer );
+}
+
+bool thread_message_queue_tt::get_timer_message( HWND Window, MSG& msg )
+{
+	LARGE_INTEGER now = timeout_t::current_time();
+	win_timer_tt *t = NULL;
+	for (win_timer_iter_t i(timer_list); i; i.next())
+	{
+		t = i;
+		// stop searching after we reach a timer that has not expired
+		if (t->expiry.QuadPart > now.QuadPart)
+			return false;
+		if (t->hwnd == Window)
+			break;
+	}
+
+	if (!t)
+		return false;
+
+	// remove from the front of the queue
+	timer_list.unlink( t );
+
+	msg.hwnd = t->hwnd;
+	msg.message = WM_TIMER;
+	msg.wParam = t->id;
+	msg.lParam = (UINT) t->lparam;
+	msg.time = timeout_t::get_tick_count();
+	msg.pt.x = 0;
+	msg.pt.y = 0;
+
+	// reset and add back to the queue
+	t->reset();
+	timer_add( t );
+
+	return true;
+}
+
 BOOLEAN thread_message_queue_tt::set_timer( HWND Window, UINT Identifier, UINT Elapse, PVOID TimerProc )
 {
-	return FALSE;
+	win_timer_tt* timer = find_timer( Window, Identifier );
+	if (timer)
+		timer_list.unlink( timer );
+	else
+		timer = new win_timer_tt( Window, Identifier );
+	dprintf("adding timer %p hwnd %p id %d\n", timer, Window, Identifier );
+	timer->period = Elapse;
+	timer->lparam = TimerProc;
+	timer_add( timer );
+	return TRUE;
 }
 
 BOOLEAN thread_message_queue_tt::kill_timer( HWND Window, UINT Identifier )
 {
-	return FALSE;
+	win_timer_tt* timer = find_timer( Window, Identifier );
+	if (!timer)
+		return FALSE;
+	dprintf("deleting timer %p hwnd %p id %d\n", timer, Window, Identifier );
+	timer_list.unlink( timer );
+	delete timer;
+	return TRUE;
+}
+
+bool thread_message_queue_tt::get_message_timeout( HWND Window, LARGE_INTEGER& timeout )
+{
+	for (win_timer_iter_t i(timer_list); i; i.next())
+	{
+		win_timer_tt *t = i;
+		if (t->hwnd != Window )
+			continue;
+		timeout = t->expiry;
+		return true;
+	}
+	return false;
 }
 
 // return true if we succeeded in copying a message
 BOOLEAN thread_message_queue_tt::get_message_no_wait(
 	MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
 {
+	dprintf("checking posted messages\n");
 	if (get_posted_message( Window, Message ))
 		return true;
 
+	dprintf("checking quit messages\n");
 	if (get_quit_message( Message ))
 		return true;
 
+	dprintf("checking paint messages\n");
 	if (get_paint_message( Window, Message ))
 		return true;
 
+	dprintf("checking timer messages\n");
+	if (get_timer_message( Window, Message ))
+		return true;
+
 	return false;
+}
+
+void thread_message_queue_tt::signal_timeout()
+{
+	msg_waiter_tt *waiter = waiter_list.head();
+	if (waiter)
+	{
+		waiter_list.unlink( waiter );
+		set_timeout( 0 );
+
+		// start the thread (might reschedule here )
+		waiter->t->start();
+	}
 }
 
 BOOLEAN thread_message_queue_tt::get_message(
@@ -198,6 +331,10 @@ BOOLEAN thread_message_queue_tt::get_message(
 {
 	if (get_message_no_wait( Message, Window, MinMessage, MaxMessage))
 		return true;
+
+	LARGE_INTEGER t;
+	if (get_message_timeout( Window, t ))
+		set_timeout( &t );
 
 	// wait for a message
 	// a thread sending a message will restart us

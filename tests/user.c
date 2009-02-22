@@ -567,6 +567,7 @@ void test_create_window( ULONG style )
 	const int quit_magic = 0xdada;
 	BOOL r;
 	ULONG cx, cy;
+	ULONG timer_id;
 
 	clear_msg_sequence();
 
@@ -700,6 +701,20 @@ void test_create_window( ULONG style )
 
 	r = NtUserPeekMessage( &msg, 0, 0, 0, 0 );
 	ok( FALSE == r, "NtUserPeekMessage indicates message remaining (%04x)\n", msg.message);
+
+	timer_id = NtUserSetTimer( window, 1, 10, 0 );
+	ok( timer_id != 0, "timer id wrong\n");
+
+	r = NtUserGetMessage( &msg, 0, 0, 0 );
+	ok( r == TRUE, "timer message not received\n");
+
+	ok( msg.hwnd == window, "window wrong %p\n", msg.hwnd );
+	ok( msg.message == WM_TIMER, "message wrong %08x\n", msg.message );
+	ok( msg.wParam == timer_id, "wParam wrong %08x %08lx\n", msg.wParam, timer_id );
+	ok( msg.lParam == 0, "lParam wrong %08lx\n", msg.lParam );
+
+	r = NtUserKillTimer( window, timer_id );
+	ok( r == TRUE, "NtUserKillTimer failed\n");
 
 	// check that PostQuitMessage will work
 	r = NtUserCallOneParam( quit_magic, NTUCOP_POSTQUITMESSAGE );
