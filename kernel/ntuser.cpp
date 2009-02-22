@@ -915,10 +915,23 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 // window list
 WND *window_tt::first;
 
-void window_tt::link_window( window_tt* parent )
+void window_tt::link_window( window_tt* parent_win )
 {
-	next = parent->first;
-	parent->first = this;
+	assert( next == NULL );
+	assert( parent == NULL );
+	parent = parent_win;
+	if (parent)
+	{
+		next = parent->first_child;
+		parent->first_child = this;
+	}
+	else
+	{
+		assert( first != this );
+		next = first;
+		first = this;
+	}
+	assert( next != this );
 }
 
 void window_tt::unlink_window()
@@ -930,9 +943,11 @@ void window_tt::unlink_window()
 		p = &first;
 
 	while (*p != this)
-		*p = (*p)->next;
+		p = &((*p)->next);
 	assert (*p);
 	*p = this->next;
+	next = NULL;
+	assert( first != this );
 }
 
 void* window_tt::operator new(size_t sz)
@@ -965,7 +980,7 @@ window_tt::window_tt( thread_t* t, wndcls_tt *_wndcls, unicode_string_t& _name, 
 
 window_tt::~window_tt()
 {
-
+	unlink_window();
 	free_user_handle( handle );
 	dprintf("active window = %p this = %p\n", active_window, this);
 	if (active_window == this)
@@ -1104,6 +1119,7 @@ HANDLE NTAPI NtUserCreateWindowEx(
 
 	region_tt*& region = win->get_invalid_region();
 	region = region_tt::alloc();
+	region->empty_region();
 
 	// send WM_GETMINMAXINFO
 	getminmaxinfo_tt minmax;
@@ -1385,6 +1401,9 @@ BOOLEAN NTAPI NtUserInvalidateRect( HWND Window, const RECT* Rectangle, BOOLEAN 
 	window_tt *win = window_from_handle( Window );
 	if (!win)
 		return FALSE;
+
+	if (!(win->style & WS_VISIBLE))
+		return TRUE;
 
 	RECT rect;
 	if (Rectangle)

@@ -178,13 +178,16 @@ static inline void record_received( HWND hwnd, ULONG msg )
 
 void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 {
+	NTWINCALLBACKRETINFO ret;
+	PAINTSTRUCT ps;
+	HDC dc;
+
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 	record_received( pack->wininfo->handle, pack->msg );
 	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
 
-	NTWINCALLBACKRETINFO ret;
 	ret.val = 0;
 	ret.size = 0;
 	ret.buf = 0;
@@ -214,6 +217,8 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 	case WM_PAINT:
 		ok( pack->lparam == 0, "lparam wrong\n");
 		ok( pack->wparam == 0, "wparam wrong\n");
+		dc = NtUserBeginPaint( pack->wininfo->handle, &ps );
+		NtUserEndPaint( pack->wininfo->handle, &ps );
 		break;
 	default:
 		dprintf("msg %04lx\n", pack->msg );
@@ -692,6 +697,9 @@ void test_create_window( ULONG style )
 	ok( msg.lParam == 1, "lParam wrong %08lx\n", msg.lParam );
 	ok( get_cached_window_handle() == 0, "cached handle not clear\n");
 	ok( get_cached_window_pointer() == 0, "cached pointer not clear\n");
+
+	r = NtUserPeekMessage( &msg, 0, 0, 0, 0 );
+	ok( FALSE == r, "NtUserPeekMessage indicates message remaining (%04x)\n", msg.message);
 
 	// check that PostQuitMessage will work
 	r = NtUserCallOneParam( quit_magic, NTUCOP_POSTQUITMESSAGE );
