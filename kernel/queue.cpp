@@ -170,8 +170,11 @@ msg_waiter_tt::msg_waiter_tt( MSG& m):
 
 win_timer_tt::win_timer_tt( HWND Window, UINT Identifier ) :
 	hwnd( Window ),
-	id( Identifier )
+	id( Identifier ),
+	lparam(0),
+	period(0)
 {
+	expiry.QuadPart = 0LL;
 }
 
 win_timer_tt* thread_message_queue_tt::find_timer( HWND Window, UINT Identifier )
@@ -227,7 +230,7 @@ bool thread_message_queue_tt::get_timer_message( HWND Window, MSG& msg )
 		// stop searching after we reach a timer that has not expired
 		if (t->expiry.QuadPart > now.QuadPart)
 			return false;
-		if (t->hwnd == Window)
+		if (Window == NULL || t->hwnd == Window)
 			break;
 	}
 
@@ -282,7 +285,7 @@ bool thread_message_queue_tt::get_message_timeout( HWND Window, LARGE_INTEGER& t
 	for (win_timer_iter_t i(timer_list); i; i.next())
 	{
 		win_timer_tt *t = i;
-		if (t->hwnd != Window )
+		if (Window != NULL && t->hwnd != Window)
 			continue;
 		timeout = t->expiry;
 		return true;
@@ -294,19 +297,19 @@ bool thread_message_queue_tt::get_message_timeout( HWND Window, LARGE_INTEGER& t
 BOOLEAN thread_message_queue_tt::get_message_no_wait(
 	MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
 {
-	dprintf("checking posted messages\n");
+	//dprintf("checking posted messages\n");
 	if (get_posted_message( Window, Message ))
 		return true;
 
-	dprintf("checking quit messages\n");
+	//dprintf("checking quit messages\n");
 	if (get_quit_message( Message ))
 		return true;
 
-	dprintf("checking paint messages\n");
+	//dprintf("checking paint messages\n");
 	if (get_paint_message( Window, Message ))
 		return true;
 
-	dprintf("checking timer messages\n");
+	//dprintf("checking timer messages\n");
 	if (get_timer_message( Window, Message ))
 		return true;
 
@@ -334,7 +337,10 @@ BOOLEAN thread_message_queue_tt::get_message(
 
 	LARGE_INTEGER t;
 	if (get_message_timeout( Window, t ))
+	{
+		//dprintf("setting timeout %lld\n", t.QuadPart);
 		set_timeout( &t );
+	}
 
 	// wait for a message
 	// a thread sending a message will restart us
