@@ -1338,6 +1338,11 @@ UINT NTAPI NtUserSetTimer( HANDLE Window, UINT Identifier, UINT Elapse, PVOID Ti
 	return timer++;
 }
 
+BOOLEAN NTAPI NtUserKillTimer( HANDLE Window, UINT Identifier )
+{
+	return TRUE;
+}
+
 HANDLE NTAPI NtUserCreateAcceleratorTable( PVOID Accelerators, UINT Count )
 {
 	static UINT accelerator = 1;
