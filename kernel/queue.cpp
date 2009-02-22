@@ -167,6 +167,15 @@ msg_waiter_tt::msg_waiter_tt( MSG& m):
 	t = current;
 }
 
+BOOLEAN thread_message_queue_tt::set_timer( HWND Window, UINT Identifier, UINT Elapse, PVOID TimerProc )
+{
+	return FALSE;
+}
+
+BOOLEAN thread_message_queue_tt::kill_timer( HWND Window, UINT Identifier )
+{
+	return FALSE;
+}
 
 // return true if we succeeded in copying a message
 BOOLEAN thread_message_queue_tt::get_message_no_wait(
@@ -259,4 +268,28 @@ BOOLEAN NTAPI NtUserPeekMessage( PMSG Message, HWND Window, UINT MaxMessage, UIN
 		copy_to_user( Message, &msg, sizeof msg );
 
 	return ret;
+}
+
+UINT NTAPI NtUserSetTimer( HWND Window, UINT Identifier, UINT Elapse, PVOID TimerProc )
+{
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return FALSE;
+
+	thread_t*& thread = win->get_win_thread();
+	assert(thread != NULL);
+
+	return thread->queue->set_timer( Window, Identifier, Elapse, TimerProc );
+}
+
+BOOLEAN NTAPI NtUserKillTimer( HWND Window, UINT Identifier )
+{
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return FALSE;
+
+	thread_t*& thread = win->get_win_thread();
+	assert(thread != NULL);
+
+	return thread->queue->kill_timer( Window, Identifier );
 }

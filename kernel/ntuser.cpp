@@ -1332,17 +1332,6 @@ BOOLEAN NTAPI NtUserShowWindow( HANDLE Window, INT Show )
 	return win->show( Show );
 }
 
-UINT NTAPI NtUserSetTimer( HANDLE Window, UINT Identifier, UINT Elapse, PVOID TimerProc )
-{
-	static UINT timer = 1;
-	return timer++;
-}
-
-BOOLEAN NTAPI NtUserKillTimer( HANDLE Window, UINT Identifier )
-{
-	return TRUE;
-}
-
 HANDLE NTAPI NtUserCreateAcceleratorTable( PVOID Accelerators, UINT Count )
 {
 	static UINT accelerator = 1;

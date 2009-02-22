@@ -77,6 +77,8 @@ public:
 	BOOLEAN get_message( MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage);
 	BOOLEAN get_message_no_wait( MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage);
 	bool get_posted_message( HWND Window, MSG& Message );
+	BOOLEAN set_timer( HWND Window, UINT Identifier, UINT Elapse, PVOID TimerProc );
+	BOOLEAN kill_timer( HWND Window, UINT Identifier );
 };
 
 HWND find_window_to_repaint( HWND Window, thread_t *thread );
