@@ -302,6 +302,16 @@ void ntuserhandle_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 }
 static ntuserhandle_tracer ntuserhandle_trace;
 
+BYTE* alloc_message_bitmap( MESSAGE_MAP_SHARED_MEMORY& map, ULONG last_message )
+{
+	BYTE *msg_map = user_shared_bitmap.alloc( (last_message+7)/8 );
+	ULONG ofs = (BYTE*)msg_map - (BYTE*)user_shared;
+	map.Bitmap = (BYTE*) (current->process->win32k_info->user_shared_mem + ofs);
+	map.MaxMessage = last_message;
+	dprintf("bitmap = %p last = %ld\n", map.Bitmap, map.MaxMessage);
+	return msg_map;
+}
+
 NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSize)
 {
 	union {
@@ -369,6 +379,15 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	info.win2k.Ptr[1] = (void*)user_handles;
 	info.win2k.Ptr[2] = (void*)0xbee30000;
 	info.win2k.Ptr[3] = (void*)0xbee40000;
+
+	for (ULONG i=0; i<NUMBER_OF_MESSAGE_MAPS; i++ )
+	{
+		info.win2k.MessageMap[i].MaxMessage = 0;
+		info.win2k.MessageMap[i].Bitmap = (BYTE*)i;
+	}
+
+	alloc_message_bitmap( info.win2k.MessageMap[0x1b], 0x400 );
+	alloc_message_bitmap( info.win2k.MessageMap[0x1c], 0x400 );
 
 	dprintf("user shared at %p\n", user_shared_mem);
 
