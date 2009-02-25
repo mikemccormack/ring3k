@@ -570,7 +570,7 @@ void* check_user_handle( HANDLE handle, USHORT type )
 
 	user_shared_mem = user_info.Ptr[0];
 	user_handle_table = (struct user_handle_entry_t *) user_info.Ptr[1];
-	ok( user_shared_mem->max_window_handle >= lowpart, "max_window_handle zero\n");
+	ok( user_shared_mem->max_window_handle >= lowpart, "max_window_handle %08lx %08lx\n", user_shared_mem->max_window_handle, lowpart);
 	ok( user_handle_table[lowpart].type == type, "type wrong\n");
 	ok( user_handle_table[lowpart].highpart == highpart, "highpart wrong\n");
 	ok( user_handle_table[lowpart].owner != 0, "owner empty\n");
@@ -632,6 +632,17 @@ void test_create_window( ULONG style )
 	PNTUSERINFO thread_user_info;
 
 	clear_msg_sequence();
+
+	// check the desktop window
+	thread_user_info = get_thread_user_info();
+	kernel_wndptr = thread_user_info->DesktopWindow;
+	if (kernel_wndptr)
+	{
+	ok( kernel_wndptr != NULL, "desktop window null\n");
+	wndptr = kernel_to_user( kernel_wndptr );
+	kernel_wndptr = check_user_handle( wndptr->handle, USER_HANDLE_WINDOW );
+	ok( kernel_wndptr == thread_user_info->DesktopWindow, "pointer mismatch\n" );
+	}
 
 	cls.Buffer = test_class_name;
 	cls.Length = sizeof test_class_name - 2;
