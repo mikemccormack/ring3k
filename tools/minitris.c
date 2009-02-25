@@ -514,11 +514,15 @@ LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 		break;
 	case WM_ERASEBKGND:
 		return do_erasebackground( hwnd, (HDC) wparam );
+	case WM_WINDOWPOSCHANGED:
+		return 0;
 	}
 
+	// this can be useful when debugging to
 	// avoid the obfuscation of calling back into user32
-	// return DefWindowProc(hwnd, msg, wparam, lparam);
-	return 0;
+	if (0) return 0;
+
+	return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
 void init_brushes( void )
