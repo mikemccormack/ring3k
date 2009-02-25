@@ -317,6 +317,10 @@ typedef struct _PEB
 #ifndef WINE_NO_TEB  /* don't define TEB if included from thread.h */
 # ifndef WINE_TEB_DEFINED
 # define WINE_TEB_DEFINED
+
+struct _NTUSERINFO;
+typedef struct _NTUSERINFO NTUSERINFO, *PNTUSERINFO;
+
 typedef struct _TEB
 {
     NT_TIB          Tib;                        /* 000 */
@@ -341,7 +345,10 @@ typedef struct _TEB
     GDI_TEB_BATCH   GdiTebBatch;                /* 1fc */
     ULONG           gdiRgn;                     /* 6dc */
     ULONG           gdiPen;                     /* 6e0 */
+    union {
+    PNTUSERINFO     NtUserInfo;                 /* 6e4 */
     ULONG           gdiBrush;                   /* 6e4 */
+    };
     union {
     ULONG           KernelUserPointerOffset;	/* 6e8 */
     CLIENT_ID       RealClientId;               /* 6e8 */

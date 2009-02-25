@@ -102,6 +102,31 @@ void* get_teb( void )
 	return p;
 }
 
+const int ofs_thread_id_in_teb = 0x24;
+
+ULONG get_current_thread_id(void)
+{
+	ULONG *teb = get_teb();
+	return teb[ofs_thread_id_in_teb/4];
+}
+
+const int ofs_thread_user_info_in_teb = 0x6e4;
+
+/*
+ *   NTUSERINFO
+ *
+ *   0x08  PWND DesktopWindow
+ *   0x14  hookinfo[]
+ *   0x50  PWND ShellWindow
+ *   0x5C  PWND TaskmanWindow
+ *   0x60  PWND ProgmanWindow
+ */
+void* get_thread_user_info( void )
+{
+	void **teb = get_teb();
+	return teb[ofs_thread_user_info_in_teb/4];
+}
+
 const int ofs_kernel_pointer_delta_in_teb = 0x6e8;
 
 ULONG get_user_pointer_offset(void)
@@ -513,7 +538,7 @@ static inline void __check_msg( HWND hwnd, ULONG msg, ULONG* n, int line )
 struct user_handle_entry_t {
 	union {
 		void *object;
-		USHORT next_free;
+		ULONG next_free;
 	};
 	void *owner;
 	USHORT type;
@@ -554,9 +579,34 @@ void* check_user_handle( HANDLE handle, USHORT type )
 	return (void*) kptr;
 }
 
+/*
+void dump_handles( void )
+{
+	struct user_shared_mem_t *user_shared_mem = user_info.Ptr[0];
+	struct user_handle_entry_t *user_handle_table = user_info.Ptr[1];
+	int i;
+
+	for (i=0; i< user_shared_mem->max_window_handle; i++)
+	{
+		if (user_handle_table[i].next_free < 0x10000)
+			continue;
+		dprintf("%d %p %p %04x %04x\n", i,
+			user_handle_table[i].object,
+			user_handle_table[i].owner,
+			user_handle_table[i].type,
+			user_handle_table[i].highpart);
+	}
+}
+*/
+
 void* kernel_to_user( void *kptr )
 {
 	return (void*) ((ULONG)kptr - get_user_pointer_offset());
+}
+
+void* user_to_kernel( void *uptr )
+{
+	return (void*) ((ULONG)uptr + get_user_pointer_offset());
 }
 
 void check_classinfo( PCLASSINFO kernel_clsptr )
@@ -579,6 +629,7 @@ void test_create_window( ULONG style )
 	BOOL r;
 	ULONG cx, cy;
 	ULONG timer_id;
+	PNTUSERINFO thread_user_info;
 
 	clear_msg_sequence();
 
@@ -618,6 +669,8 @@ void test_create_window( ULONG style )
 	ok( wndptr->style == style, "style wrong %08lx %08lx\n", wndptr->style, style);
 	ok( wndptr->exstyle == test_cs.dwExStyle, "exstyle wrong %08lx %08lx\n", wndptr->exstyle, test_cs.dwExStyle);
 	ok( wndptr->hInstance == test_cs.hInstance, "instance wrong\n");
+	thread_user_info = get_thread_user_info();
+	ok( wndptr->parent == thread_user_info->DesktopWindow, "parent not desktop %p %p\n", wndptr->parent, thread_user_info->DesktopWindow);
 
 	// check window rectangle
 	ok( wndptr->rcWnd.left == test_cs.x, "x position wrong %ld\n", wndptr->rcWnd.left);

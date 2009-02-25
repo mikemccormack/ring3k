@@ -312,6 +312,13 @@ BYTE* alloc_message_bitmap( MESSAGE_MAP_SHARED_MEMORY& map, ULONG last_message )
 	return msg_map;
 }
 
+NTUSERINFO *alloc_user_info()
+{
+	BYTE *msg_map = user_shared_bitmap.alloc( sizeof (NTUSERINFO) );
+	ULONG ofs = (BYTE*)msg_map - (BYTE*)user_shared;
+	return (NTUSERINFO*) (current->process->win32k_info->user_shared_mem + ofs);
+}
+
 NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSize)
 {
 	union {
@@ -388,6 +395,7 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 
 	alloc_message_bitmap( info.win2k.MessageMap[0x1b], 0x400 );
 	alloc_message_bitmap( info.win2k.MessageMap[0x1c], 0x400 );
+	current->get_teb()->NtUserInfo = alloc_user_info();
 
 	dprintf("user shared at %p\n", user_shared_mem);
 
