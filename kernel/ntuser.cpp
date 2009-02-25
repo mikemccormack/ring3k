@@ -1082,55 +1082,73 @@ HANDLE NTAPI NtUserCreateWindowEx(
 {
 	NTSTATUS r;
 
-	window_tt* parent_win = 0;
-
-	if (Parent)
-	{
-		parent_win = window_from_handle( Parent );
-		if (!parent_win)
-			return FALSE;
-	}
-
 	user32_unicode_string_t window_name;
 	r = window_name.copy_from_user( WindowName );
 	if (r < STATUS_SUCCESS)
 		return 0;
 
-	dprintf("WindowName = %pus\n", &window_name );
 
 	user32_unicode_string_t wndcls_name;
 	r = wndcls_name.copy_from_user( ClassName );
 	if (r < STATUS_SUCCESS)
 		return 0;
 
-	dprintf("ClassName = %pus\n", &wndcls_name );
+	NTCREATESTRUCT cs;
 
-	wndcls_tt* wndcls = wndcls_tt::from_name( wndcls_name );
+	cs.lpCreateParams = Param;
+	cs.hInstance = Instance;
+	cs.hwndParent = (HWND) Parent;
+	cs.hMenu = Menu;
+	cs.cx = Width;
+	cs.cy = Height;
+	cs.x = x;
+	cs.y = y;
+	cs.style = Style;
+	cs.lpszName = NULL;
+	cs.lpszClass = NULL;
+	cs.dwExStyle = ExStyle;
+
+	return window_tt::do_create( window_name, wndcls_name, cs );
+}
+
+HANDLE window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, NTCREATESTRUCT cs )
+{
+	dprintf("window = %pus class = %pus\n", &name, &cls );
+
+	window_tt* parent_win = 0;
+	if (cs.hwndParent)
+	{
+		parent_win = window_from_handle( cs.hwndParent );
+		if (!parent_win)
+			return FALSE;
+	}
+
+	wndcls_tt* wndcls = wndcls_tt::from_name( cls );
 	if (!wndcls)
 		return 0;
 
 	// tweak the styles
-	ExStyle |= WS_EX_WINDOWEDGE;
-	ExStyle &= ~0x80000000;
+	cs.dwExStyle |= WS_EX_WINDOWEDGE;
+	cs.dwExStyle &= ~0x80000000;
 
 	// allocate a window
 	window_tt *win;
-	win = new window_tt( current, wndcls, window_name, Style, ExStyle, x, y, Width, Height, Instance );
+	win = new window_tt( current, wndcls, name, cs.style, cs.dwExStyle, cs.x, cs.y, cs.cx, cs.cy, cs.hInstance );
 	dprintf("new window %p\n", win);
 	if (!win)
 		return NULL;
 
 	win->link_window( parent_win );
 
-	if (x == CW_USEDEFAULT)
-		x = 0;
-	if (y == CW_USEDEFAULT)
-		y = 0;
+	if (cs.x == CW_USEDEFAULT)
+		cs.x = 0;
+	if (cs.y == CW_USEDEFAULT)
+		cs.y = 0;
 
-	if (Width == CW_USEDEFAULT)
-		Width = 100;
-	if (Height == CW_USEDEFAULT)
-		Height = 100;
+	if (cs.cx == CW_USEDEFAULT)
+		cs.cx = 100;
+	if (cs.cy == CW_USEDEFAULT)
+		cs.cy = 100;
 
 	win->handle = (HWND) alloc_user_handle( win, USER_HANDLE_WINDOW, current->process );
 	win->wndproc = wndcls->get_wndproc();
@@ -1152,28 +1170,14 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	getminmaxinfo_tt minmax;
 	win->send( minmax );
 
-	NTCREATESTRUCT cs;
-
-	cs.lpCreateParams = Param;
-	cs.hInstance = Instance;
-	cs.hMenu = Menu;
-	cs.cx = Width;
-	cs.cy = Height;
-	cs.x = x;
-	cs.y = y;
-	cs.style = Style;
-	cs.lpszName = NULL;
-	cs.lpszClass = NULL;
-	cs.dwExStyle = ExStyle;
-
 	// send WM_NCCREATE
-	nccreate_message_tt nccreate( cs, wndcls_name, window_name );
+	nccreate_message_tt nccreate( cs, cls, name );
 	win->send( nccreate );
 
-	win->rcWnd.left = x;
-	win->rcWnd.top = y;
-	win->rcWnd.right = x + Width;
-	win->rcWnd.bottom = y + Height;
+	win->rcWnd.left = cs.x;
+	win->rcWnd.top = cs.y;
+	win->rcWnd.right = cs.x + cs.cx;
+	win->rcWnd.bottom = cs.y + cs.cy;
 
 	// FIXME: not always correct
 	win->rcClient = win->rcWnd;
@@ -1185,7 +1189,7 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	win->style |= WS_CLIPSIBLINGS;
 
 	// send WM_CREATE
-	create_message_tt create( cs, wndcls_name, window_name );
+	create_message_tt create( cs, cls, name );
 	win->send( create );
 
 	if (win->style & WS_VISIBLE)
