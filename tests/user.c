@@ -181,11 +181,11 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 	NTWINCALLBACKRETINFO ret;
 	PAINTSTRUCT ps;
 	HDC dc;
+	BOOL record = TRUE;
 
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
-	record_received( pack->wininfo->handle, pack->msg );
 	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
 
 	ret.val = 0;
@@ -193,6 +193,14 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 	ret.buf = 0;
 	switch (pack->msg)
 	{
+	// messages that may or may not come
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+	case WM_MOUSEMOVE:
+	case WM_NCHITTEST:
+	case WM_SETCURSOR:
+		record = FALSE;
+		break;
 	case WM_SHOWWINDOW:
 	case WM_ACTIVATE:
 	case WM_ACTIVATEAPP:
@@ -224,6 +232,9 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 		dprintf("msg %04lx\n", pack->msg );
 		break;
 	}
+	if (record)
+		record_received( pack->wininfo->handle, pack->msg );
+
 	NtCallbackReturn( &ret, sizeof ret, 0 );
 }
 
