@@ -436,13 +436,11 @@ BOOLEAN NTAPI NtUserInitializeClientPfnArrays(
 
 BOOLEAN NTAPI NtUserInitialize(ULONG u_arg1, ULONG u_arg2, ULONG u_arg3)
 {
-	dprintf("%08lx %08lx %08lx\n", u_arg1, u_arg2, u_arg3);
 	return TRUE;
 }
 
 ULONG NTAPI NtUserCallNoParam(ULONG Index)
 {
-	dprintf("%lu\n", Index);
 	switch (Index)
 	{
 	case 0:
@@ -618,15 +616,12 @@ HANDLE NTAPI NtUserGetThreadDesktop(
 	ULONG ThreadId,
 	ULONG u_arg2)
 {
-	dprintf("%lu %lu\n", ThreadId, u_arg2);
 	return (HANDLE) 0xde5;
 }
 
 HANDLE NTAPI NtUserFindExistingCursorIcon(PUNICODE_STRING Library, PUNICODE_STRING str2, PVOID p_arg3)
 {
 	ULONG index;
-
-	dprintf("%p %p %p\n", Library, str2, p_arg3);
 
 	unicode_string_t us;
 	NTSTATUS r;
@@ -660,7 +655,6 @@ HANDLE NTAPI NtUserGetDC(HANDLE Window)
 
 HGDIOBJ NtUserSelectPalette(HGDIOBJ hdc, HPALETTE palette, BOOLEAN force_bg)
 {
-	dprintf("%p %p %d\n", hdc, palette, force_bg);
 	return alloc_gdi_object( FALSE, GDI_OBJECT_PALETTE );
 }
 
@@ -670,7 +664,6 @@ BOOLEAN NTAPI NtUserSetCursorIconData(
 	PUNICODE_STRING ResourceName,
 	PICONINFO IconInfo)
 {
-	dprintf("%p %p %p %p\n", Handle, Module, ResourceName, IconInfo);
 	return TRUE;
 }
 
@@ -682,7 +675,6 @@ BOOLEAN NTAPI NtUserGetIconInfo(
 	LPDWORD pbpp,
 	BOOL bInternal)
 {
-	dprintf("\n");
 	return TRUE;
 }
 
@@ -1499,7 +1491,6 @@ BOOLEAN NTAPI NtUserCallHwnd( HWND Window, ULONG )
 {
 	return TRUE;
 }
-
 
 BOOLEAN NTAPI NtUserSetMenu( HWND Window, ULONG, ULONG )
 {
