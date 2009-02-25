@@ -989,22 +989,6 @@ void window_tt::operator delete(void *p)
 	user_shared_bitmap.free( (unsigned char*) p, sizeof (window_tt) );
 }
 
-window_tt::window_tt( thread_t* t, wndcls_tt *_wndcls, unicode_string_t& _name, ULONG _style, ULONG _exstyle,
-		 LONG x, LONG y, LONG width, LONG height, PVOID instance )
-{
-	parent = 0;
-	get_win_thread() = t;
-	self = this;
-	wndcls = _wndcls;
-	style = _style;
-	exstyle = _exstyle;
-	rcWnd.left = x;
-	rcWnd.top = y;
-	rcWnd.right = x + width;
-	rcWnd.bottom = y + height;
-	hInstance = instance;
-}
-
 window_tt::~window_tt()
 {
 	unlink_window();
@@ -1131,15 +1115,6 @@ HANDLE window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, NTCR
 	cs.dwExStyle |= WS_EX_WINDOWEDGE;
 	cs.dwExStyle &= ~0x80000000;
 
-	// allocate a window
-	window_tt *win;
-	win = new window_tt( current, wndcls, name, cs.style, cs.dwExStyle, cs.x, cs.y, cs.cx, cs.cy, cs.hInstance );
-	dprintf("new window %p\n", win);
-	if (!win)
-		return NULL;
-
-	win->link_window( parent_win );
-
 	if (cs.x == CW_USEDEFAULT)
 		cs.x = 0;
 	if (cs.y == CW_USEDEFAULT)
@@ -1149,6 +1124,25 @@ HANDLE window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, NTCR
 		cs.cx = 100;
 	if (cs.cy == CW_USEDEFAULT)
 		cs.cy = 100;
+
+	// allocate a window
+	window_tt *win = new window_tt;
+	dprintf("new window %p\n", win);
+	if (!win)
+		return NULL;
+
+	win->get_win_thread() = current;
+	win->self = win;
+	win->wndcls = wndcls;
+	win->style = cs.style;
+	win->exstyle = cs.dwExStyle;
+	win->rcWnd.left = cs.x;
+	win->rcWnd.top = cs.y;
+	win->rcWnd.right = cs.x + cs.cx;
+	win->rcWnd.bottom = cs.y + cs.cy;
+	win->hInstance = cs.hInstance;
+
+	win->link_window( parent_win );
 
 	win->handle = (HWND) alloc_user_handle( win, USER_HANDLE_WINDOW, current->process );
 	win->wndproc = wndcls->get_wndproc();

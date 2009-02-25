@@ -62,8 +62,6 @@ public:
 public:
 	void* operator new(size_t sz);
 	void operator delete(void *p);
-	window_tt( thread_t* t, wndcls_tt* wndcls, unicode_string_t& name, ULONG _style, ULONG _exstyle,
-		 LONG x, LONG y, LONG width, LONG height, PVOID instance );
 	~window_tt();
 	static HANDLE do_create( unicode_string_t& name, unicode_string_t& cls, NTCREATESTRUCT cs );
 	NTSTATUS send( message_tt& msg );
