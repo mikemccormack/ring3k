@@ -63,7 +63,7 @@ public:
 	void* operator new(size_t sz);
 	void operator delete(void *p);
 	~window_tt();
-	static HANDLE do_create( unicode_string_t& name, unicode_string_t& cls, NTCREATESTRUCT cs );
+	static window_tt* do_create( unicode_string_t& name, unicode_string_t& cls, NTCREATESTRUCT& cs );
 	NTSTATUS send( message_tt& msg );
 	void *get_wndproc() { return wndproc; }
 	PWND get_wininfo();

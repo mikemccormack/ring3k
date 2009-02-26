@@ -44,6 +44,7 @@
 
 wndcls_list_tt wndcls_list;
 window_tt *active_window;
+window_tt *desktop_window;
 
 ULONG NTAPI NtUserGetThreadState( ULONG InfoClass )
 {
@@ -314,9 +315,28 @@ BYTE* alloc_message_bitmap( MESSAGE_MAP_SHARED_MEMORY& map, ULONG last_message )
 
 NTUSERINFO *alloc_user_info()
 {
-	BYTE *msg_map = user_shared_bitmap.alloc( sizeof (NTUSERINFO) );
-	ULONG ofs = (BYTE*)msg_map - (BYTE*)user_shared;
+	NTUSERINFO *info = (NTUSERINFO*) user_shared_bitmap.alloc( sizeof (NTUSERINFO) );
+	info->DesktopWindow = desktop_window;
+	ULONG ofs = (BYTE*)info - (BYTE*)user_shared;
 	return (NTUSERINFO*) (current->process->win32k_info->user_shared_mem + ofs);
+}
+
+void create_desktop_window()
+{
+	if (desktop_window)
+		return;
+
+	desktop_window = new window_tt;
+	if (!desktop_window)
+		return;
+
+	desktop_window->rcWnd.left = 0;
+	desktop_window->rcWnd.top = 0;
+	desktop_window->rcWnd.right = 640;
+	desktop_window->rcWnd.bottom = 480;
+	desktop_window->rcClient = desktop_window->rcWnd;
+
+	desktop_window->handle = (HWND) alloc_user_handle( desktop_window, USER_HANDLE_WINDOW, current->process );
 }
 
 NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSize)
@@ -399,6 +419,8 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	// check set the offset
 	current->get_teb()->KernelUserPointerOffset = (BYTE*) user_shared - user_shared_mem;
 
+	// create the desktop window for alloc_user_info
+	create_desktop_window();
 	current->get_teb()->NtUserInfo = alloc_user_info();
 
 	dprintf("user shared at %p\n", user_shared_mem);
@@ -959,6 +981,13 @@ void window_tt::link_window( window_tt* parent_win )
 
 void window_tt::unlink_window()
 {
+	// special behaviour for desktop window
+	// should replace window_tt::first with desktop...
+	if (this == desktop_window)
+	{
+		desktop_window = NULL;
+		return;
+	}
 	WND **p;
 	if (parent)
 		p = &parent->first_child;
@@ -1088,10 +1117,13 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	cs.lpszClass = NULL;
 	cs.dwExStyle = ExStyle;
 
-	return window_tt::do_create( window_name, wndcls_name, cs );
+	window_tt* win = window_tt::do_create( window_name, wndcls_name, cs );
+	if (!win)
+		return NULL;
+	return win->handle;
 }
 
-HANDLE window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, NTCREATESTRUCT cs )
+window_tt* window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, NTCREATESTRUCT& cs )
 {
 	dprintf("window = %pus class = %pus\n", &name, &cls );
 
@@ -1183,7 +1215,7 @@ HANDLE window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, NTCR
 		win->set_window_pos( SWP_SHOWWINDOW );
 	}
 
-	return win->handle;
+	return win;
 }
 
 
