@@ -825,6 +825,9 @@ int thread_impl_t::run()
 	{
 		current = this;
 
+		if (ThreadState == StateTerminated)
+			return 0;
+
 		if (ThreadState != StateRunning)
 		{
 			dprintf("%04lx: thread state wrong (%d)!\n", trace_id(), ThreadState);
