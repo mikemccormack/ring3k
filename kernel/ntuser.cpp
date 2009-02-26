@@ -395,6 +395,10 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 
 	alloc_message_bitmap( info.win2k.MessageMap[0x1b], 0x400 );
 	alloc_message_bitmap( info.win2k.MessageMap[0x1c], 0x400 );
+
+	// check set the offset
+	current->get_teb()->KernelUserPointerOffset = (BYTE*) user_shared - user_shared_mem;
+
 	current->get_teb()->NtUserInfo = alloc_user_info();
 
 	dprintf("user shared at %p\n", user_shared_mem);
@@ -1138,11 +1142,6 @@ HANDLE window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, NTCR
 
 	win->handle = (HWND) alloc_user_handle( win, USER_HANDLE_WINDOW, current->process );
 	win->wndproc = wndcls->get_wndproc();
-
-	// check set the offset
-	// FIXME: there might be a better place to do this
-	ULONG ofs = (BYTE*) user_shared - current->process->win32k_info->user_shared_mem;
-	current->get_teb()->KernelUserPointerOffset = ofs;
 
 	// create a thread message queue if necessary
 	if (!current->queue)
