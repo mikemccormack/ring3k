@@ -514,8 +514,6 @@ LRESULT CALLBACK minitris_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 		break;
 	case WM_ERASEBKGND:
 		return do_erasebackground( hwnd, (HDC) wparam );
-	case WM_WINDOWPOSCHANGED:
-		return 0;
 	}
 
 	// this can be useful when debugging to
