@@ -404,7 +404,7 @@ cat > reg.xml <<EOF
     </k>
    </k>
    <k n="Minitris">
-    <n n="Polled">1</n>
+    <n n="Polled">0</n>
    </k>
   </k>
   <k n="HARDWARE">
