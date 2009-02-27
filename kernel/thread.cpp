@@ -821,6 +821,7 @@ void thread_t::stop()
 
 int thread_impl_t::run()
 {
+	int i = 0;
 	while (1)
 	{
 		current = this;
@@ -855,6 +856,14 @@ int thread_impl_t::run()
 			return 0;
 		}
 
+		// keep running the same thread for a while
+		if (ThreadState == StateRunning && i<=10)
+		{
+			i++;
+			continue;
+		}
+
+		i = 0;
 		fiber_t::yield();
 	}
 	return 0;
