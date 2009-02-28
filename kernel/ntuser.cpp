@@ -390,11 +390,8 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	if (r < STATUS_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
-	if (option_trace)
-	{
-		proc->vm->set_tracer( user_shared_mem, ntusershm_trace );
-		proc->vm->set_tracer( user_handles, ntuserhandle_trace );
-	}
+	proc->vm->set_tracer( user_shared_mem, ntusershm_trace );
+	proc->vm->set_tracer( user_handles, ntuserhandle_trace );
 
 	// map the shared handle table
 	r = user_handle_table_section->mapit( proc->vm, user_handles, 0,

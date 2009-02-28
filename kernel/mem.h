@@ -47,6 +47,7 @@ public:
 class block_tracer {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+	virtual bool enabled() const;
 	virtual ~block_tracer();
 };
 

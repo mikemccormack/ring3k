@@ -344,6 +344,8 @@ void mblock::remote_remap( address_space *vm, bool except )
 
 bool mblock::set_tracer( address_space *vm, block_tracer *bt )
 {
+	if (!bt->enabled())
+		return false;
 	assert( (tracer == 0) ^ (bt == 0) );
 	tracer = bt;
 	remote_remap( vm, tracer != 0 );
@@ -429,6 +431,11 @@ void block_tracer::on_access( mblock *mb, BYTE *address, ULONG Eip )
 {
 	fprintf(stderr, "%04lx: accessed %p from %08lx\n",
 			current->trace_id(), address, Eip );
+}
+
+bool block_tracer::enabled() const
+{
+	return option_trace;
 }
 
 block_tracer::~block_tracer()

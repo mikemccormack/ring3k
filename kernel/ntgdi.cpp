@@ -353,8 +353,7 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	ppeb->GdiSharedHandleTable = (void*) p;
 
-	if (option_trace)
-		process->vm->set_tracer( p, ntgdishm_trace );
+	process->vm->set_tracer( p, ntgdishm_trace );
 
 	return r;
 }
@@ -531,8 +530,7 @@ void gdi_object_t::init_gdi_shared_mem()
 			assert( 0 );
 		}
 
-		if (option_trace)
-			current->process->vm->set_tracer( dc_shared_mem, gdishm_trace );
+		current->process->vm->set_tracer( dc_shared_mem, gdishm_trace );
 	}
 }
 

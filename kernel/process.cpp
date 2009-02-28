@@ -153,7 +153,14 @@ class kshm_tracer : public block_tracer
 {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+	virtual bool enabled() const;
 };
+
+bool kshm_tracer::enabled() const
+{
+	// disable this, as it's noisy
+	return false;
+}
 
 void kshm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
@@ -219,7 +226,7 @@ NTSTATUS get_shared_memory_block( process_t *p )
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	if (0) p->vm->set_tracer( shm, kshm_trace );
+	p->vm->set_tracer( shm, kshm_trace );
 
 	assert( shm == (BYTE*) 0x7ffe0000 );
 
@@ -378,7 +385,14 @@ class peb_tracer : public block_tracer
 {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+	virtual bool enabled() const;
 };
+
+bool peb_tracer::enabled() const
+{
+	// disable this, as it's noisy
+	return false;
+}
 
 void peb_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
@@ -472,7 +486,7 @@ NTSTATUS create_process( process_t **pprocess, object_t *section )
 
 	*pprocess = p;
 
-	if (0) p->vm->set_tracer( peb_addr, peb_trace );
+	p->vm->set_tracer( peb_addr, peb_trace );
 
 	return r;
 }

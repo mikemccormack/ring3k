@@ -85,6 +85,7 @@ void free_registry( void );
 
 // from ntl.cpp
 extern int option_trace;
+extern int option_trace_shared;
 extern ULONG KiIntSystemCall;
 
 class sleeper_t
