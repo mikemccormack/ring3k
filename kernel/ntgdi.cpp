@@ -579,6 +579,8 @@ device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 
 	// calculate user side pointer to the chunk
 	BYTE *shm = alloc_gdi_shared_memory( 0x100 );
+	if (!shm)
+		return NULL;
 	dprintf("dc address %p\n", shm );
 	BYTE *user_shm = gdi_object_t::kernel_to_user( shm );
 
