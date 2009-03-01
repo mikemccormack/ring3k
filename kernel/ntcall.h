@@ -83,9 +83,10 @@ static inline NTSTATUS alloc_user_handle( object_t *obj, ACCESS_MASK access, HAN
 void init_registry( void );
 void free_registry( void );
 
-// from ntl.cpp
-extern int option_trace;
-extern int option_trace_shared;
+// from main.cpp
+extern int& option_trace;
+bool trace_is_enabled( const char *name );
+
 extern ULONG KiIntSystemCall;
 
 class sleeper_t

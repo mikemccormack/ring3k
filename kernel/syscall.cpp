@@ -66,8 +66,6 @@ ntcalldesc winxp_uicalls[] = {
 #undef SYSCALL_WINXP
 };
 
-int option_trace;
-
 ntcalldesc *ntcalls;
 ULONG number_of_ntcalls;
 

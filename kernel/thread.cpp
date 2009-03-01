@@ -1326,7 +1326,13 @@ class teb_tracer : public block_tracer
 {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+	virtual bool enabled() const;
 };
+
+bool teb_tracer::enabled() const
+{
+	return trace_is_enabled( "tebshm" );
+}
 
 void teb_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {

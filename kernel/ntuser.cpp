@@ -264,7 +264,13 @@ class ntusershm_tracer : public block_tracer
 {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+	virtual bool enabled() const;
 };
+
+bool ntusershm_tracer::enabled() const
+{
+	return trace_is_enabled( "usershm" );
+}
 
 void ntusershm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
@@ -278,7 +284,13 @@ class ntuserhandle_tracer : public block_tracer
 {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+	virtual bool enabled() const;
 };
+
+bool ntuserhandle_tracer::enabled() const
+{
+	return trace_is_enabled( "usershm" );
+}
 
 void ntuserhandle_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {

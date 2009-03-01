@@ -281,6 +281,23 @@ static void abort_handler(int)
 bool init_skas();
 bool init_tt( const char *loader_path );
 
+struct trace_option {
+	const char *name;
+	int enabled;
+};
+
+trace_option trace_option_list[] = {
+	{ "syscall", false },
+	{ "tebshm", false },
+	{ "pebshm", false },
+	{ "ntshm", false },
+	{ "gdishm", false },
+	{ "usershm", false },
+	{ 0, false },
+};
+
+int& option_trace = trace_option_list[0].enabled;
+
 void usage( void )
 {
 	const char usage[] =
@@ -289,12 +306,19 @@ void usage( void )
 		"  -d,--debug    break into debugger on exceptions\n"
 		"  -h,--help     print this message\n"
 		"  -q,--quiet    quiet, suppress debug messages\n"
-		"  -t,--trace    trace syscall entry and exit\n"
+		"  -t,--trace=<options>    enable tracing\n"
 		"  -v,--version  print version\n\n"
 		"  smss.exe is started by default\n\n";
 	printf( usage, PACKAGE_NAME );
+
+	printf("  trace options: ");
+	for (int i=0; trace_option_list[i].name; i++)
+		printf("%s ", trace_option_list[i].name );
+	printf("\n\n");
+
 	exit(0);
 }
+
 
 void version( void )
 {
@@ -307,20 +331,73 @@ void version( void )
 	exit(0);
 }
 
+bool trace_is_enabled( const char *name )
+{
+	for (int i=0; trace_option_list[i].name; i++)
+		if (!strcmp(name, trace_option_list[i].name))
+			return trace_option_list[i].enabled;
+
+	return false;
+}
+
+void enable_trace( const char *name )
+{
+	for (int i=0; trace_option_list[i].name; i++)
+	{
+		const char *optname = trace_option_list[i].name;
+		if ( strcmp( optname, name ))
+			continue;
+		trace_option_list[i].enabled = true;
+		return;
+	}
+
+	fprintf(stderr, "unknown trace: %s\n\n", name);
+	usage();
+}
+
+void parse_trace_options( const char *options )
+{
+	if (!options)
+	{
+		enable_trace( "syscall" );
+		return;
+	}
+
+	const char *x, *p = options;
+	unsigned int len;
+	char str[10];
+	while (*p)
+	{
+		x = strchr( p, ',' );
+		if (x)
+			len = x - p;
+		else
+			len = strlen( p );
+
+		len = min( len, sizeof str );
+		memcpy( str, p, len );
+		str[len] = 0;
+		enable_trace( str );
+		p += len;
+		if ( *p == ',')
+			p++;
+	}
+}
+
 void parse_options(int argc, char **argv)
 {
 	while (1)
 	{
 		int option_index;
 		static struct option long_options[] = {
-			{"debug", 0, &option_debug, 1 },
-			{"help", 0, 0, 'h' },
-			{"trace", 0, &option_trace, 1 },
-			{"version", 0, 0, 'v' },
+			{"debug", no_argument, NULL, 'd' },
+			{"help", no_argument, NULL, 'h' },
+			{"trace", optional_argument, NULL, 't' },
+			{"version", no_argument, NULL, 'v' },
 			{NULL, 0, 0, 0 },
 		};
 
-		int ch = getopt_long(argc, argv, "dhtqv?", long_options, &option_index );
+		int ch = getopt_long(argc, argv, "dhqt::v?", long_options, &option_index );
 		if (ch == -1)
 			break;
 
@@ -334,7 +411,7 @@ void parse_options(int argc, char **argv)
 			usage();
 			break;
 		case 't':
-			option_trace = 1;
+			parse_trace_options( optarg );
 			break;
 		case 'v':
 			version();

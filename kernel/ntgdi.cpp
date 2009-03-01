@@ -48,7 +48,13 @@ class ntgdishm_tracer : public block_tracer
 {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+	virtual bool enabled() const;
 };
+
+bool ntgdishm_tracer::enabled() const
+{
+	return trace_is_enabled( "gdishm" );
+}
 
 #define MAX_GDI_HANDLE 0x4000
 
@@ -453,6 +459,7 @@ class gdishm_tracer : public block_tracer
 {
 public:
 	virtual void on_access( mblock *mb, BYTE *address, ULONG eip );
+	virtual bool enabled() const;
 };
 
 void gdishm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
@@ -460,6 +467,11 @@ void gdishm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 	ULONG ofs = address - mb->get_base_address();
 	fprintf(stderr, "%04lx: accessed gdishm[%04lx] from %08lx\n",
 				current->trace_id(), ofs, eip);
+}
+
+bool gdishm_tracer::enabled() const
+{
+	return trace_is_enabled( "gdishm" );
 }
 
 static gdishm_tracer gdishm_trace;
