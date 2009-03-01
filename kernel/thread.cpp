@@ -751,16 +751,19 @@ void thread_impl_t::set_context( CONTEXT& c, bool override_return )
 
 NTSTATUS thread_impl_t::copy_to_user( void *dest, const void *src, size_t count )
 {
+	assert( process->is_valid() );
 	return process->vm->copy_to_user( dest, src, count );
 }
 
 NTSTATUS thread_impl_t::copy_from_user( void *dest, const void *src, size_t count )
 {
+	assert( process->is_valid() );
 	return process->vm->copy_from_user( dest, src, count );
 }
 
 NTSTATUS thread_impl_t::verify_for_write( void *dest, size_t count )
 {
+	assert( process->is_valid() );
 	return process->vm->verify_for_write( dest, count );
 }
 

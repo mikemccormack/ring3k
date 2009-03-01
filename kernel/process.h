@@ -65,6 +65,7 @@ public:
 	~process_t();
 	virtual BOOLEAN is_signalled( void );
 	void terminate( NTSTATUS status );
+	bool is_valid() {return id != 0; }
 };
 
 extern process_list_t processes;
