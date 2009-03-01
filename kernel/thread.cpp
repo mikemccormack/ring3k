@@ -1142,7 +1142,8 @@ NTSTATUS thread_impl_t::check_wait_any()
 
 void thread_impl_t::notify()
 {
-	assert(in_wait);
+	if (!in_wait)
+		return;
 	in_wait = FALSE;
 	start();
 }
