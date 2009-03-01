@@ -155,12 +155,16 @@ fiber_t::fiber_t( unsigned sz ) :
 {
 	assert(current_fiber);
 
-	stack = ::mmap_anon(0, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC);
+	stack = ::mmap_anon(0, stack_size + guard_size*2, PROT_NONE);
 	if (stack == (void*) -1)
 	{
 		fprintf(stderr,"failed to allocate stack\n");
 		exit(1);
 	}
+
+	/* remap fixed */
+	stack = ::mmap_anon( (unsigned char*)stack + guard_size, stack_size, PROT_READ|PROT_WRITE|PROT_EXEC, 1 );
+	assert (stack != (void*) -1);
 
 	char *stack_end = (char*) stack + stack_size;
 	VALGRIND_STACK_REGISTER(stack, stack_end);
@@ -213,7 +217,7 @@ fiber_t::~fiber_t()
 {
 	assert(prev == 0);
 	if (stack)
-		munmap(stack, stack_size);
+		munmap( (unsigned char*) stack - guard_size, stack_size);
 }
 
 bool fiber_t::last_fiber()

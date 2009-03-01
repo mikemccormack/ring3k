@@ -55,6 +55,7 @@ private:
 
 public:
 	static const unsigned int fiber_default_stack_size = 0x10000;
+	static const unsigned int guard_size = 0x1000;
 
 public:
 	static void fibers_init();

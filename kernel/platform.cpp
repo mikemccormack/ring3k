@@ -24,8 +24,11 @@
 #include <sys/mman.h>
 #include "platform.h"
 
-void* mmap_anon(void *addr, size_t len, int prot)
+void* mmap_anon(void *addr, size_t len, int prot, int fixed)
 {
-	return mmap(addr, len, prot, MAP_PRIVATE | MAP_ANON, -1, 0);
+	int flags = MAP_PRIVATE | MAP_ANON;
+	if (fixed)
+		flags |= MAP_FIXED;
+	return ::mmap(addr, len, prot, MAP_PRIVATE | MAP_ANON, -1, 0);
 }
 

@@ -23,7 +23,7 @@
 
 extern "C" {
 
-void* mmap_anon(void *addr, size_t len, int prot);
+void* mmap_anon(void *addr, size_t len, int prot, int fixed = 0);
 
 };
 
