@@ -293,6 +293,8 @@ trace_option trace_option_list[] = {
 	{ "ntshm", false },
 	{ "gdishm", false },
 	{ "usershm", false },
+	{ "csrdebug", false },
+	{ "ldrsnaps", false },
 	{ "core", false },
 	{ 0, false },
 };
