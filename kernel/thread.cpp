@@ -847,9 +847,9 @@ int thread_impl_t::run()
 		if (trace_step_access)
 		{
 			// enable access to the memory, then single step over the access
-			current->process->vm->set_traced( trace_accessed_address, false );
+			process->vm->set_traced( trace_accessed_address, false );
 			process->vm->run( TebBaseAddress, &ctx, true, timeout, this );
-			current->process->vm->set_traced( trace_accessed_address, true );
+			process->vm->set_traced( trace_accessed_address, true );
 			trace_step_access = false;
 		}
 
