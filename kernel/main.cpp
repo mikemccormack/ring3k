@@ -293,6 +293,7 @@ trace_option trace_option_list[] = {
 	{ "ntshm", false },
 	{ "gdishm", false },
 	{ "usershm", false },
+	{ "core", false },
 	{ 0, false },
 };
 
@@ -445,9 +446,12 @@ int main(int argc, char **argv)
 	if (!pcreate_address_space)
 		die("no way to manage address spaces found\n");
 
-	// enable backtraces
-	signal(SIGSEGV, segv_handler);
-	signal(SIGABRT, abort_handler);
+	if (!trace_is_enabled("core"))
+	{
+		// enable backtraces
+		signal(SIGSEGV, segv_handler);
+		signal(SIGABRT, abort_handler);
+	}
 
 	// quick sanity test
 	allocation_bitmap_t::test();

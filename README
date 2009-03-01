@@ -54,6 +54,25 @@ To run all the working tests, do:
 
 make test
 
+
+Debugging ring3k using gdb
+--------------------------
+
+As ring3k uses ptrace, it interferes with gdb.  You can still debug 
+ring3k coredumps as follows:
+
+ $ ulimit -c unlimited
+ # echo "core-%p" > /proc/sys/kernel/core_pattern 
+ # echo "1" > /proc/sys/kernel/core_uses_pid 
+ $ ring3k --trace=core
+
+If ring3k crashes, two core files will be generated, one for ring3k-client
+and one for ring3k-bin.  You can load them alternately into gdb as follows:
+
+ $ gdb --core=core-1234
+ (gdb) symbol-file kernel/ring3k-bin
+
+
 Files
 -----
 kernel/     - implementation of the userspace kernel
