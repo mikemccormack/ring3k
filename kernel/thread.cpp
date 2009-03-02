@@ -283,13 +283,20 @@ NTSTATUS thread_impl_t::kernel_debugger_output_string( struct kernel_debug_strin
 		return r;
 	}
 
+	if ( header.length > 0x1000 )
+	{
+		dprintf("too long %d\n", header.length );
+		return STATUS_SUCCESS;
+	}
+
 	string = new char[ header.length + 1 ];
-	memset( string, 0, header.length + 1 );
 	r = copy_from_user( string, hdr+1, header.length );
-	if (r == STATUS_SUCCESS)
+	if (r >= STATUS_SUCCESS)
 	{
 		if (string[header.length - 1] == '\n')
-			string[header.length - 1] = 0;
+			header.length--;
+
+		string[header.length] = 0;
 		fprintf(stderr, "%04lx: debug: %s\n", trace_id(), string);
 	}
 	else
@@ -330,15 +337,15 @@ NTSTATUS thread_impl_t::kernel_debugger_call( ULONG func, void *arg1, void *arg2
 		dprintf("unhandled function %ld\n", func );
 		r = STATUS_NOT_IMPLEMENTED;
 	}
-	if (r == STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
+		return r;
+
+	// skip breakpoints after debugger calls
+	BYTE inst[1];
+	if (r == copy_from_user( inst, (void*) ctx.Eip, 1 ) &&
+		inst[0] == 0xcc)
 	{
-		// skip breakpoints after debugger calls
-		BYTE inst[1];
-		if (STATUS_SUCCESS == copy_from_user( inst, (void*) ctx.Eip, 1 ) &&
-			inst[0] == 0xcc)
-		{
-			ctx.Eip++;
-		}
+		ctx.Eip++;
 	}
 	return r;
 }
@@ -878,6 +885,7 @@ void thread_impl_t::handle_fault()
 	NTSTATUS r;
 
 	memset( inst, 0, sizeof inst );
+	assert( current == this );
 	r = copy_from_user( inst, (void*) ctx.Eip, 2 );
 	if (r < STATUS_SUCCESS ||
 		inst[0] != 0xcd ||
