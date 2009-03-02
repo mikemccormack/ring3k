@@ -1066,6 +1066,9 @@ NTSTATUS window_tt::send( message_tt& msg )
 		r = thread->do_user_callback( msg.get_callback_num(), ret_len, ret_buf );
 	}
 
+	if (thread->is_terminated())
+		return STATUS_THREAD_IS_TERMINATING;
+
 	thread->pop( msg.get_size() );
 	teb->CachedWindowHandle = 0;
 	teb->CachedWindowPointer = 0;

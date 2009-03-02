@@ -592,6 +592,9 @@ NTSTATUS thread_impl_t::do_user_callback( ULONG index, ULONG &length, PVOID &buf
 	dprintf("continuing execution at %08lx\n", ctx.Eip);
 	run();
 
+	if (is_terminated())
+		return STATUS_THREAD_IS_TERMINATING;
+
 	// fetch return values out of the frame
 	old_frame.get_return(r, length, buffer);
 	context_changed = 0;
@@ -759,18 +762,24 @@ void thread_impl_t::set_context( CONTEXT& c, bool override_return )
 NTSTATUS thread_impl_t::copy_to_user( void *dest, const void *src, size_t count )
 {
 	assert( process->is_valid() );
+	if (is_terminated())
+		return STATUS_THREAD_IS_TERMINATING;
 	return process->vm->copy_to_user( dest, src, count );
 }
 
 NTSTATUS thread_impl_t::copy_from_user( void *dest, const void *src, size_t count )
 {
 	assert( process->is_valid() );
+	if (is_terminated())
+		return STATUS_THREAD_IS_TERMINATING;
 	return process->vm->copy_from_user( dest, src, count );
 }
 
 NTSTATUS thread_impl_t::verify_for_write( void *dest, size_t count )
 {
 	assert( process->is_valid() );
+	if (is_terminated())
+		return STATUS_THREAD_IS_TERMINATING;
 	return process->vm->verify_for_write( dest, count );
 }
 
