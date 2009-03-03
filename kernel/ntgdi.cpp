@@ -110,8 +110,7 @@ BOOL gdi_object_t::release()
 
 BOOLEAN NTAPI NtGdiInit()
 {
-	dprintf("\n");
-	return TRUE;
+	return do_gdi_init();
 }
 
 win32k_manager_t::win32k_manager_t()

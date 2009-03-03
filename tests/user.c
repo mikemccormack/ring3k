@@ -416,7 +416,9 @@ void become_gui_thread( void )
 	PVOID p;
 
 	init_callbacks();
+	ok( 0 == get_user_pointer_offset(), "user-kernel offset set too soon\n");
 	NtGdiInit();
+	ok( 0 != get_user_pointer_offset(), "user-kernel offset not set\n");
 
 	memset( &user_info, 0, sizeof user_info );
 	user_info.Version = 0x00050000;

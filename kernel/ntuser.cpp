@@ -315,11 +315,13 @@ void ntuserhandle_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 }
 static ntuserhandle_tracer ntuserhandle_trace;
 
-BYTE* alloc_message_bitmap( MESSAGE_MAP_SHARED_MEMORY& map, ULONG last_message )
+BYTE* alloc_message_bitmap( process_t* proc, MESSAGE_MAP_SHARED_MEMORY& map, ULONG last_message )
 {
-	BYTE *msg_map = user_shared_bitmap.alloc( (last_message+7)/8 );
+	ULONG sz = (last_message+7)/8;
+	BYTE *msg_map = user_shared_bitmap.alloc( sz );
+	memset( msg_map, 0, sz );
 	ULONG ofs = (BYTE*)msg_map - (BYTE*)user_shared;
-	map.Bitmap = (BYTE*) (current->process->win32k_info->user_shared_mem + ofs);
+	map.Bitmap = (BYTE*) (proc->win32k_info->user_shared_mem + ofs);
 	map.MaxMessage = last_message;
 	dprintf("bitmap = %p last = %ld\n", map.Bitmap, map.MaxMessage);
 	return msg_map;
@@ -351,6 +353,63 @@ void create_desktop_window()
 	desktop_window->handle = (HWND) alloc_user_handle( desktop_window, USER_HANDLE_WINDOW, current->process );
 }
 
+// should be called from NtGdiInit to map the user32 shared memory
+NTSTATUS map_user_shared_memory( process_t *proc )
+{
+	NTSTATUS r;
+
+	assert( proc->win32k_info );
+	BYTE*& user_shared_mem = proc->win32k_info->user_shared_mem;
+	BYTE*& user_handles = proc->win32k_info->user_handles;
+
+	// map the user shared memory block into the process's memory
+	if (!init_user_shared_memory())
+		return STATUS_UNSUCCESSFUL;
+
+	// already mapped into this process?
+	if (user_shared_mem)
+		return STATUS_SUCCESS;
+
+	r = user_shared_section->mapit( proc->vm, user_shared_mem, 0,
+					MEM_COMMIT, PAGE_READONLY );
+	if (r < STATUS_SUCCESS)
+		return STATUS_UNSUCCESSFUL;
+
+	if (option_trace)
+	{
+		proc->vm->set_tracer( user_shared_mem, ntusershm_trace );
+		proc->vm->set_tracer( user_handles, ntuserhandle_trace );
+	}
+
+	// map the shared handle table
+	r = user_handle_table_section->mapit( proc->vm, user_handles, 0,
+					MEM_COMMIT, PAGE_READONLY );
+	if (r < STATUS_SUCCESS)
+		return STATUS_UNSUCCESSFUL;
+
+	dprintf("user shared at %p\n", user_shared_mem);
+
+	return STATUS_SUCCESS;
+}
+
+BOOLEAN do_gdi_init()
+{
+	NTSTATUS r;
+	r = map_user_shared_memory( current->process );
+	if (r < STATUS_SUCCESS)
+		return FALSE;
+
+	// check set the offset
+	BYTE*& user_shared_mem = current->process->win32k_info->user_shared_mem;
+	current->get_teb()->KernelUserPointerOffset = (BYTE*) user_shared - user_shared_mem;
+
+	// create the desktop window for alloc_user_info
+	create_desktop_window();
+	current->get_teb()->NtUserInfo = alloc_user_info();
+
+	return TRUE;
+}
+
 NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSize)
 {
 	union {
@@ -365,18 +424,6 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	// check if we're already connected
-	r = win32k_process_init( proc );
-	if (r < STATUS_SUCCESS)
-		return r;
-
-	assert( proc->win32k_info );
-	BYTE*& user_shared_mem = proc->win32k_info->user_shared_mem;
-	if (user_shared_mem)
-		return STATUS_SUCCESS;
-	BYTE*& user_handles = proc->win32k_info->user_handles;
-
-	dprintf("%p %p %lu\n", Process, Buffer, BufferSize);
 	if (BufferSize != sizeof info.winxp && BufferSize != sizeof info.win2k)
 	{
 		dprintf("buffer size wrong %ld (not WinXP or Win2K?)\n", BufferSize);
@@ -393,26 +440,18 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	// map the user shared memory block into the process's memory
-	if (!init_user_shared_memory())
-		return STATUS_UNSUCCESSFUL;
 
-	r = user_shared_section->mapit( proc->vm, user_shared_mem, 0,
-					MEM_COMMIT, PAGE_READONLY );
+	// check if we're already connected
+	r = win32k_process_init( proc );
 	if (r < STATUS_SUCCESS)
-		return STATUS_UNSUCCESSFUL;
+		return r;
 
-	proc->vm->set_tracer( user_shared_mem, ntusershm_trace );
-	proc->vm->set_tracer( user_handles, ntuserhandle_trace );
-
-	// map the shared handle table
-	r = user_handle_table_section->mapit( proc->vm, user_handles, 0,
-					MEM_COMMIT, PAGE_READONLY );
+	r = map_user_shared_memory( proc );
 	if (r < STATUS_SUCCESS)
-		return STATUS_UNSUCCESSFUL;
+		return r;
 
-	info.win2k.Ptr[0] = (void*)user_shared_mem;
-	info.win2k.Ptr[1] = (void*)user_handles;
+	info.win2k.Ptr[0] = (void*)proc->win32k_info->user_shared_mem;
+	info.win2k.Ptr[1] = (void*)proc->win32k_info->user_handles;
 	info.win2k.Ptr[2] = (void*)0xbee30000;
 	info.win2k.Ptr[3] = (void*)0xbee40000;
 
@@ -422,17 +461,8 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 		info.win2k.MessageMap[i].Bitmap = (BYTE*)i;
 	}
 
-	alloc_message_bitmap( info.win2k.MessageMap[0x1b], 0x400 );
-	alloc_message_bitmap( info.win2k.MessageMap[0x1c], 0x400 );
-
-	// check set the offset
-	current->get_teb()->KernelUserPointerOffset = (BYTE*) user_shared - user_shared_mem;
-
-	// create the desktop window for alloc_user_info
-	create_desktop_window();
-	current->get_teb()->NtUserInfo = alloc_user_info();
-
-	dprintf("user shared at %p\n", user_shared_mem);
+	alloc_message_bitmap( proc, info.win2k.MessageMap[0x1b], 0x400 );
+	alloc_message_bitmap( proc, info.win2k.MessageMap[0x1c], 0x400 );
 
 	r = copy_to_user( Buffer, &info, BufferSize );
 	if (r < STATUS_SUCCESS)
