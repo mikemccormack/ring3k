@@ -579,7 +579,6 @@ void* check_user_handle( HANDLE handle, USHORT type )
 	return (void*) kptr;
 }
 
-/*
 void dump_handles( void )
 {
 	struct user_shared_mem_t *user_shared_mem = user_info.Ptr[0];
@@ -597,7 +596,6 @@ void dump_handles( void )
 			user_handle_table[i].highpart);
 	}
 }
-*/
 
 void* kernel_to_user( void *kptr )
 {
