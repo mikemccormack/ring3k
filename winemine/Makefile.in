@@ -21,15 +21,21 @@ SOURCE = \
 	dialog.c \
 	main.c
 
+RESOURCES = rsrc.rc
+
 TARGET = winemine.exe
 
 all: $(TARGET)
 
 .PHONY: all clean
 
-OBJECTS = $(SOURCE:.c=.o)
+OBJECTS += $(SOURCE:.c=.o)
+OBJECTS += $(RESOURCES:.rc=.res)
 
-$(TARGET): $(OBJECTS)
+%.res: %.rc
+	$(WINDRES) -i $< -o $@ -O coff
+
+$(TARGET): $(OBJECTS) rsrc.res
 	$(CC) -o $@ $^ -lgdi32 -luser32
 
 include $(wildcard .*.d)
