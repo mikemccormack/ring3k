@@ -296,6 +296,8 @@
  <type>C</type>
  <path>libudis86/udis86.c</path>
  <type>C</type>
+ <path>packagemap.xml</path>
+ <type>xml</type>
  <path>ring3k-setup.in</path>
  <type>shell</type>
  <path>ring3k.in</path>
@@ -406,6 +408,8 @@
  <type>makefile</type>
  <path>unpack/unpack.c</path>
  <type>C</type>
+ <path>winemine/Makefile.in</path>
+ <type>makefile</type>
  <path>winemine/dialog.c</path>
  <type>C</type>
  <path>winemine/main.c</path>

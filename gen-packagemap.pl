@@ -51,6 +51,8 @@ while(<IN>)
 		$type = "autoconf";
 	} elsif ($file =~ /\.xml\.in$/ ) {
 		$type = "xml";
+	} elsif ($file =~ /\.xml$/ ) {
+		$type = "xml";
 	} elsif ($file =~ /\.pl$/ ) {
 		$type = "perl";
 	} elsif ($file =~ /\.svg$/ ) {
