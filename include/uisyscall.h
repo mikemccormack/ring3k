@@ -556,7 +556,7 @@ NUL(NtUserSendNotifyMessage),
 #endif
 NUL(NtUserSetActiveWindow),
 NUL(NtUserSetAppImeLevel),
-NUL(NtUserSetCapture),
+IMP(NtUserSetCapture, 1),
 NUL(NtUserSetClassLong),
 NUL(NtUserSetClassWord),
 NUL(NtUserSetClipboardData),
