@@ -36,7 +36,7 @@ OBJECTS += $(RESOURCES:.rc=.res)
 	$(WINDRES) -i $< -o $@ -O coff
 
 $(TARGET): $(OBJECTS) rsrc.res
-	$(CC) -o $@ $^ -lgdi32 -luser32
+	$(CC) -o $@ $^ -lgdi32 -luser32 -Wl,--subsystem=windows
 
 include $(wildcard .*.d)
 
