@@ -151,6 +151,8 @@ BOOL win32k_sdl_t::bitblt(
 
 	// keep everything on the source bitmap
 	bitmap_t *bitmap = src->get_selected_bitmap();
+	if (!bitmap)
+		return FALSE;
 	xSrc = max( xSrc, 0 );
 	ySrc = max( ySrc, 0 );
 	if ((xSrc + cx) > bitmap->get_width())
