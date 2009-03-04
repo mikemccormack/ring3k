@@ -1574,3 +1574,8 @@ HWND NTAPI NtUserSetCapture( HWND Window )
 {
 	return 0;
 }
+
+int NTAPI NtUserTranslateAccelerator( HWND Window, HACCEL AcceleratorTable, PMSG Message )
+{
+	return 0;
+}

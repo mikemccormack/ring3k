@@ -621,7 +621,7 @@ NUL(NtUserTrackPopupMenuEx),
 NUL(NtUserCalcMenuBar), // 5
 NUL(NtUserPaintMenuBar), // 6
 #endif
-NUL(NtUserTranslateAccelerator),
+IMP(NtUserTranslateAccelerator, 3),
 NUL(NtUserTranslateMessage),
 NUL(NtUserUnhookWindowsHookEx),
 NUL(NtUserUnhookWinEvent),

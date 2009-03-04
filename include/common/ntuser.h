@@ -309,6 +309,7 @@ UINT NTAPI     NtUserSetTimer(HWND,UINT,UINT,PVOID);
 BOOLEAN NTAPI  NtUserSetWindowStationUser(HANDLE,PVOID,ULONG,ULONG);
 BOOLEAN NTAPI  NtUserShowWindow(HANDLE,INT);
 BOOLEAN NTAPI  NtUserSystemParametersInfo(ULONG,ULONG,ULONG,ULONG);
+int NTAPI      NtUserTranslateAccelerator(HWND,HACCEL,PMSG);
 BOOLEAN NTAPI  NtUserUpdatePerUserSystemParameters(ULONG,ULONG);
 BOOLEAN NTAPI  NtUserValidateRect(HWND,PRECT);
 
