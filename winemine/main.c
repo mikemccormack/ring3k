@@ -33,10 +33,17 @@
 #define MONITOR_DEFAULTTONEAREST    0x00000002
 #endif
 
-#define WINE_DEFAULT_DEBUG_CHANNEL(x)
-#define WINE_TRACE(msg)
+#define WINE_TRACE dprintf
 
-WINE_DEFAULT_DEBUG_CHANNEL(winemine);
+void dprintf( const char *format, ... )
+{
+	char str[0x100];
+	va_list va;
+	va_start( va, format );
+	vsprintf( str, format, va );
+	va_end( va );
+	OutputDebugString( str );
+}
 
 static const DWORD wnd_style = WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX;
 
