@@ -1579,3 +1579,8 @@ int NTAPI NtUserTranslateAccelerator( HWND Window, HACCEL AcceleratorTable, PMSG
 {
 	return 0;
 }
+
+BOOLEAN NTAPI NtUserTranslateMessage( PMSG Message, ULONG )
+{
+	return 0;
+}

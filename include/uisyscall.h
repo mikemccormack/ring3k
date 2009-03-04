@@ -622,7 +622,7 @@ NUL(NtUserCalcMenuBar), // 5
 NUL(NtUserPaintMenuBar), // 6
 #endif
 IMP(NtUserTranslateAccelerator, 3),
-NUL(NtUserTranslateMessage),
+IMP(NtUserTranslateMessage, 2),
 NUL(NtUserUnhookWindowsHookEx),
 NUL(NtUserUnhookWinEvent),
 NUL(NtUserUnloadKeyboardLayout),

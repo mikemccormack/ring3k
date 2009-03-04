@@ -310,6 +310,7 @@ BOOLEAN NTAPI  NtUserSetWindowStationUser(HANDLE,PVOID,ULONG,ULONG);
 BOOLEAN NTAPI  NtUserShowWindow(HANDLE,INT);
 BOOLEAN NTAPI  NtUserSystemParametersInfo(ULONG,ULONG,ULONG,ULONG);
 int NTAPI      NtUserTranslateAccelerator(HWND,HACCEL,PMSG);
+BOOLEAN NTAPI  NtUserTranslateMessage(PMSG,ULONG);
 BOOLEAN NTAPI  NtUserUpdatePerUserSystemParameters(ULONG,ULONG);
 BOOLEAN NTAPI  NtUserValidateRect(HWND,PRECT);
 
