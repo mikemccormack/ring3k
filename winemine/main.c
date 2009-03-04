@@ -90,7 +90,7 @@ int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR cmdline, int cmd
 
     if (!RegisterClass(&wc)) ExitProcess(1);
     hWnd = CreateWindow( appname, appname,
-	wnd_style,
+	wnd_style | WS_VISIBLE,
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
         0, 0, hInst, NULL );
 
