@@ -61,6 +61,7 @@ AC_CONFIG_FILES(
 	libudis86/Makefile
 	libmspack/Makefile
 	unpack/Makefile
+	winemine/Makefile
 )
 
 AC_OUTPUT

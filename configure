@@ -5155,7 +5155,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile kernel/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile unpack/Makefile"
+ac_config_files="$ac_config_files Makefile kernel/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile unpack/Makefile winemine/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -5719,6 +5719,7 @@ do
     "libudis86/Makefile") CONFIG_FILES="$CONFIG_FILES libudis86/Makefile" ;;
     "libmspack/Makefile") CONFIG_FILES="$CONFIG_FILES libmspack/Makefile" ;;
     "unpack/Makefile") CONFIG_FILES="$CONFIG_FILES unpack/Makefile" ;;
+    "winemine/Makefile") CONFIG_FILES="$CONFIG_FILES winemine/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
