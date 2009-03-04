@@ -223,6 +223,11 @@ LRESULT WINAPI MainProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return 0;
     }
 
+    case WM_KEYDOWN:
+        if (VK_ESCAPE == wParam)
+            PostQuitMessage(0);
+        break;
+
     case WM_COMMAND:
         switch(LOWORD(wParam)) {
         case IDM_NEW:
