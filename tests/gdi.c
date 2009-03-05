@@ -924,6 +924,17 @@ void test_multiregion( void )
 	ok( r == TRUE, "delete failed\n");
 }
 
+void test_savedc(void)
+{
+	int r;
+
+	r = NtGdiSaveDC(0);
+	ok( r == FALSE, "savedc failed\n");
+
+	r = NtGdiRestoreDC(0, 0);
+	ok( r == FALSE, "restoredc failed\n");
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -939,5 +950,6 @@ void NtProcessStartup( void )
 	test_region();
 	test_region_shared();
 	test_multiregion();
+	test_savedc();
 	log_fini();
 }

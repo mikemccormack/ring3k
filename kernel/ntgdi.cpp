@@ -1036,14 +1036,20 @@ BOOLEAN NTAPI NtGdiFlush(void)
 
 int NTAPI NtGdiSaveDC(HGDIOBJ hdc)
 {
+	device_context_t* dc = dc_from_handle( hdc );
+	if (!dc)
+		return 0;
+
 	static int count = 1;
-	dprintf("%p\n", hdc);
 	return count++;
 }
 
-BOOLEAN NTAPI NtGdiRestoreDC(HGDIOBJ hdc, int saved_dc)
+BOOLEAN NTAPI NtGdiRestoreDC( HGDIOBJ hdc, int saved_dc )
 {
-	dprintf("%p %d\n", hdc, saved_dc);
+	device_context_t* dc = dc_from_handle( hdc );
+	if (!dc)
+		return FALSE;
+
 	return TRUE;
 }
 
