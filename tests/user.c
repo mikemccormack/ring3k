@@ -251,6 +251,12 @@ void basicmsg_callback(NTSIMPLEMESSAGEPACKEDINFO *pack)
 		ok( pack->lparam == 0, "lparam wrong\n");
 		ok( pack->wparam == 0, "wparam wrong\n");
 		dc = NtUserBeginPaint( pack->wininfo->handle, &ps );
+		ok(ps.rcPaint.left == 0, "left wrong\n");
+		ok(ps.rcPaint.right == test_cs.cx, "right wrong %ld %d\n",
+			ps.rcPaint.right, test_cs.cx);
+		ok(ps.rcPaint.top == 0, "top wrong\n");
+		ok(ps.rcPaint.bottom == test_cs.cy, "bottom wrong %ld %d\n",
+			ps.rcPaint.bottom, test_cs.cy);
 		NtUserEndPaint( pack->wininfo->handle, &ps );
 		break;
 	default:

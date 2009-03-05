@@ -1545,6 +1545,10 @@ HDC NTAPI NtUserBeginPaint( HWND Window, PAINTSTRUCT* pps)
 
 	PAINTSTRUCT ps;
 	memset( &ps, 0, sizeof ps );
+	ps.rcPaint.left = 0;
+	ps.rcPaint.top = 0;
+	ps.rcPaint.bottom = win->rcClient.bottom - win->rcClient.top;
+	ps.rcPaint.right = win->rcClient.right - win->rcClient.left;
 	NTSTATUS r = copy_to_user( pps, &ps );
 	if (r < STATUS_SUCCESS)
 		return NULL;
