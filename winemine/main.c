@@ -294,7 +294,11 @@ void InitBoard( BOARD *p_board )
     p_board->hLedsBMP = LoadBitmap( p_board->hInst, "leds");
 
     if (!p_board->hMinesBMP)
-	fprintf(stderr, "failed to load mines\n");
+	WINE_TRACE("hMinesBMP NULL\n");
+    if (!p_board->hFacesBMP)
+	WINE_TRACE("hFacesBMP NULL\n");
+    if (!p_board->hLedsBMP)
+	WINE_TRACE("hLedsBMP NULL\n");
 
     LoadBoard( p_board );
 
