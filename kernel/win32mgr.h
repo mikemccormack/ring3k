@@ -152,10 +152,19 @@ public:
 	virtual ~device_context_factory_t() {};
 };
 
+class dc_state_tt
+{
+public:
+	dc_state_tt *next;
+	RECT BoundsRect;
+};
+
 class device_context_t : public gdi_object_t
 {
 	bitmap_t* selected_bitmap;
 	RECT BoundsRect;
+	dc_state_tt *saved_dc;
+	INT saveLevel;
 public:
 	static const ULONG max_device_contexts = 0x100;
 	static const ULONG dc_size = 0x100;
@@ -170,6 +179,8 @@ public:
 	bitmap_t* get_selected_bitmap();
 	void set_bounds_rect( RECT& r ) {BoundsRect = r;}
 	RECT& get_bounds_rect() {return BoundsRect;}
+	int save_dc();
+	BOOL restore_dc( int level );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options,

@@ -558,6 +558,7 @@ void test_get_dc( void )
 	ULONG type;
 	HANDLE dc;
 	DEVICE_CONTEXT_SHARED_MEMORY *dcshm;
+	BOOL r;
 	//HANDLE white_brush = NtGdiGetStockObject( WHITE_BRUSH );
 	//HANDLE black_pen = NtGdiGetStockObject( BLACK_PEN );
 
@@ -575,6 +576,9 @@ void test_get_dc( void )
 	}
 	else
 		ok( 0, "dcshm null\n" );
+
+	r = NtGdiDeleteObjectApp( dc );
+	ok( r == TRUE, "delete failed\n");
 }
 
 void check_stock_brush( ULONG id )
@@ -926,13 +930,63 @@ void test_multiregion( void )
 
 void test_savedc(void)
 {
+	ULONG type;
+	HDC dc;
 	int r;
 
-	r = NtGdiSaveDC(0);
+	r = NtGdiSaveDC( 0 );
 	ok( r == FALSE, "savedc failed\n");
 
-	r = NtGdiRestoreDC(0, 0);
+	r = NtGdiRestoreDC( 0, 0 );
 	ok( r == FALSE, "restoredc failed\n");
+
+	dc = NtUserGetDC( 0 );
+	ok( check_gdi_handle( dc ), "invalid gdi handle %p\n", dc );
+
+	type = get_handle_type( dc );
+	ok( type == GDI_OBJECT_DC, "wrong handle type %ld\n", type );
+
+	r = NtGdiRestoreDC( dc, -1 );
+	ok( r == FALSE, "restoredc failed\n");
+
+	r = NtGdiSaveDC( dc );
+	ok( r == 1, "savedc failed %d\n", r);
+
+	r = NtGdiRestoreDC( dc, r );
+	ok( r == TRUE, "restoredc failed\n");
+
+	r = NtGdiRestoreDC( dc, r );
+	ok( r == FALSE, "restoredc failed\n");
+
+	r = NtGdiSaveDC( dc );
+	ok( r == 1, "savedc failed %d\n", r);
+
+	r = NtGdiRestoreDC( dc, -1 );
+	ok( r == TRUE, "restoredc failed\n");
+
+	r = NtGdiRestoreDC( dc, -1 );
+	ok( r == FALSE, "restoredc failed\n");
+
+	r = NtGdiSaveDC( dc );
+	ok( r == 1, "savedc failed %d\n", r);
+
+	r = NtGdiSaveDC( dc );
+	ok( r == 2, "savedc failed %d\n", r);
+
+	r = NtGdiSaveDC( dc );
+	ok( r == 3, "savedc failed %d\n", r);
+
+	r = NtGdiRestoreDC( dc, 0 );
+	ok( r == FALSE, "restoredc failed\n");
+
+	r = NtGdiRestoreDC( dc, -3 );
+	ok( r == TRUE, "restoredc failed\n");
+
+	r = NtGdiRestoreDC( dc, 1 );
+	ok( r == FALSE, "restoredc failed\n");
+
+	r = NtGdiDeleteObjectApp( dc );
+	ok( r == TRUE, "delete failed\n");
 }
 
 void NtProcessStartup( void )

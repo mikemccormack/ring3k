@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -546,8 +547,50 @@ void gdi_object_t::init_gdi_shared_mem()
 }
 
 device_context_t::device_context_t() :
-	selected_bitmap( 0 )
+	selected_bitmap( 0 ),
+	saved_dc( 0 ),
+	saveLevel( 0 )
 {
+}
+
+// see SaveDC in wine/dlls/gdi32/dc.c
+int device_context_t::save_dc()
+{
+	dc_state_tt *dcs = new dc_state_tt;
+	dcs->next = saved_dc;
+	saved_dc = dcs;
+
+	// FIXME: actually copy the state
+
+	return ++saveLevel;
+}
+
+// see RestoreDC in wine/dlls/gdi32/dc.c
+BOOL device_context_t::restore_dc( int level )
+{
+	if (level == 0)
+		return FALSE;
+
+	if (abs(level) > saveLevel)
+		return FALSE;
+
+	if (level < 0)
+		level = saveLevel + level + 1;
+
+	BOOL success=TRUE;
+	while (saveLevel >= level)
+	{
+		dc_state_tt *dcs = saved_dc;
+		saved_dc = dcs->next;
+		dcs->next = 0;
+		if (--saveLevel < level)
+		{
+			// FIXME: actually restore the state
+			//set_dc_state( hdc, hdcs );
+		}
+		delete dcs;
+	}
+	return success;
 }
 
 BYTE* gdi_object_t::get_shared_mem() const
@@ -1040,17 +1083,16 @@ int NTAPI NtGdiSaveDC(HGDIOBJ hdc)
 	if (!dc)
 		return 0;
 
-	static int count = 1;
-	return count++;
+	return dc->save_dc();
 }
 
-BOOLEAN NTAPI NtGdiRestoreDC( HGDIOBJ hdc, int saved_dc )
+BOOLEAN NTAPI NtGdiRestoreDC( HGDIOBJ hdc, int level )
 {
 	device_context_t* dc = dc_from_handle( hdc );
 	if (!dc)
 		return FALSE;
 
-	return TRUE;
+	return dc->restore_dc( level );
 }
 
 HGDIOBJ NTAPI NtGdiGetDCObject(HGDIOBJ hdc, ULONG object_type)
