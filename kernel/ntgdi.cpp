@@ -1073,8 +1073,7 @@ BOOLEAN NTAPI NtGdiGetFontResourceInfoInternalW(
 
 BOOLEAN NTAPI NtGdiFlush(void)
 {
-	dprintf("\n");
-	return FALSE;
+	return 0x93;
 }
 
 int NTAPI NtGdiSaveDC(HGDIOBJ hdc)

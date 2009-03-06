@@ -987,6 +987,13 @@ void test_savedc(void)
 
 	r = NtGdiDeleteObjectApp( dc );
 	ok( r == TRUE, "delete failed\n");
+
+	// NtGdiFlush appears to return 0x93...
+	r = NtGdiFlush();
+	ok( r == 0x93, "flush failed %d\n", r);
+
+	r = NtGdiFlush();
+	ok( r == 0x93, "flush failed %d\n", r);
 }
 
 void NtProcessStartup( void )
