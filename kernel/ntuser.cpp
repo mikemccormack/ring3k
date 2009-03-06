@@ -600,7 +600,7 @@ ULONG NTAPI NtUserCallOneParam(ULONG Param, ULONG Index)
 		return TRUE;
 	case 0x28: // used by ClientThreadSetup
 		return TRUE;
-	case 0x29: // used by ReleaseDC + DeleteDC (deref DC?)
+	case NTUCOP_RELEASEDC: // used by ReleaseDC + DeleteDC (deref DC?)
 		return NtReleaseDC( (HANDLE) Param );
 	case 0x2a: // ReplyMessage
 		return TRUE;
