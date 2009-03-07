@@ -639,6 +639,8 @@ device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 
 	GDI_DEVICE_CONTEXT_SHARED *dcshm = dc->get_dc_shared_mem();
 	dcshm->Brush = (HBRUSH) win32k_manager->get_stock_object( WHITE_BRUSH );
+	dcshm->TextColor = RGB( 0, 0, 0 );
+	dcshm->BackgroundColor = RGB( 255, 255, 255 );
 
 	return dc;
 }

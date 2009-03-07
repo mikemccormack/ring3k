@@ -570,6 +570,9 @@ void test_get_dc( void )
 	else
 		ok( 0, "dcshm null\n" );
 
+	ok( dcshm->BackgroundColor == RGB( 255, 255, 255 ), "default bk color wrong\n");
+	ok( dcshm->TextColor == RGB( 0, 0, 0 ), "default text color wrong\n");
+
 	r = NtGdiDeleteObjectApp( dc );
 	ok( r == TRUE, "delete failed\n");
 }

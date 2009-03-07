@@ -107,10 +107,10 @@ typedef struct _GDI_DEVICE_CONTEXT_SHARED {
 	ULONG Flags;
 	HBRUSH Brush;
 	HPEN Pen;
-	ULONG unk4[2];
-	ULONG TextColor;
-	ULONG BackGroundColor;
-	ULONG unk8[15];
+	COLORREF BackgroundColor;
+	ULONG unk5;
+	COLORREF TextColor;
+	ULONG unk7[16];
 	ULONG unk23;
 } GDI_DEVICE_CONTEXT_SHARED;
 
