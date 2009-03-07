@@ -996,6 +996,29 @@ void test_savedc(void)
 	ok( r == 0x93, "flush failed %d\n", r);
 }
 
+static inline BOOLEAN NtUserReleaseDC( HDC dc )
+{
+	return NtUserCallOneParam( (ULONG) dc, NTUCOP_RELEASEDC );
+}
+
+void test_bitmap(void)
+{
+	HDC hdc;
+	HBITMAP bitmap;
+	ULONG type;
+
+	hdc = NtUserGetDC( 0 );
+	bitmap = NtGdiCreateCompatibleBitmap( hdc, 16, 16 );
+
+	type = get_handle_type( bitmap );
+	ok( type == GDI_OBJECT_BITMAP, "wrong handle type %ld\n", type );
+	ok( check_gdi_handle( bitmap ), "invalid gdi handle %p\n", bitmap );
+	ok( NULL == get_user_info( bitmap ), "info was not NULL\n");
+
+	NtUserReleaseDC( hdc );
+	NtGdiDeleteObjectApp( bitmap );
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -1012,5 +1035,6 @@ void NtProcessStartup( void )
 	test_region_shared();
 	test_multiregion();
 	test_savedc();
+	test_bitmap();
 	log_fini();
 }
