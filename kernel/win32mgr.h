@@ -137,12 +137,6 @@ public:
 	COLORREF get_pixel( int x, int y );
 };
 
-typedef struct _DEVICE_CONTEXT_SHARED_MEMORY {
-	HANDLE unk;
-	ULONG Flags;
-	HGDIOBJ Brush;
-} DEVICE_CONTEXT_SHARED_MEMORY;
-
 class device_context_t;
 
 class device_context_factory_t
@@ -173,7 +167,7 @@ protected:
 	device_context_t();
 public:
 	static device_context_t* alloc( device_context_factory_t *factory );
-	DEVICE_CONTEXT_SHARED_MEMORY* get_dc_shared_mem() const;
+	GDI_DEVICE_CONTEXT_SHARED* get_dc_shared_mem() const;
 	virtual BOOL release();
 	brush_t* get_selected_brush();
 	bitmap_t* get_selected_bitmap();

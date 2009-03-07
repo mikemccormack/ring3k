@@ -546,18 +546,11 @@ void test_create_compat_dc( void )
 	ok (verify_gdi_handle_deleted(hdc), "handle %p still valid\n", hdc );
 }
 
-typedef struct _DEVICE_CONTEXT_SHARED_MEMORY {
-	ULONG unk;	// zero
-	ULONG Flags;
-	HANDLE Brush;
-	HANDLE Pen;
-} DEVICE_CONTEXT_SHARED_MEMORY;
-
 void test_get_dc( void )
 {
 	ULONG type;
 	HANDLE dc;
-	DEVICE_CONTEXT_SHARED_MEMORY *dcshm;
+	GDI_DEVICE_CONTEXT_SHARED *dcshm;
 	BOOL r;
 	//HANDLE white_brush = NtGdiGetStockObject( WHITE_BRUSH );
 	//HANDLE black_pen = NtGdiGetStockObject( BLACK_PEN );
@@ -1006,9 +999,13 @@ void test_bitmap(void)
 	HDC hdc;
 	HBITMAP bitmap, old;
 	ULONG type;
-	DEVICE_CONTEXT_SHARED_MEMORY *info;
+	GDI_DEVICE_CONTEXT_SHARED *info;
 
 	hdc = NtUserGetDC( 0 );
+	info = get_user_info( hdc );
+	//dprintf("after NtUserGetDC\n");
+	//dump_bin( info, sizeof *info );
+
 	bitmap = NtGdiCreateCompatibleBitmap( hdc, 16, 16 );
 
 	type = get_handle_type( bitmap );
@@ -1021,9 +1018,13 @@ void test_bitmap(void)
 
 	info = get_user_info( hdc );
 	ok( info != NULL, "info was null\n");
+	//dprintf("after NtGdiSelectBitmap\n");
+	//dump_bin( info, sizeof *info );
 
 	old = NtGdiSelectBitmap( hdc, old );
 	ok( NULL == old, "NtGdiSelectBitmap should return NULL\n");
+	//dprintf("after NtGdiSelectBitmap 2\n");
+	//dump_bin( info, sizeof *info );
 
 	NtUserReleaseDC( hdc );
 	NtGdiDeleteObjectApp( bitmap );
