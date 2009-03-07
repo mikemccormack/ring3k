@@ -290,6 +290,17 @@ LRESULT WINAPI MainProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void InitBoard( BOARD *p_board )
 {
     HMENU hMenu;
+    HRSRC resource;
+
+    resource = FindResource( p_board->hInst, "mines", RT_BITMAP );
+    if (!resource)
+    {
+	WINE_TRACE("FindResource failed %d\n", GetLastError());
+        ExitProcess( 0 );
+    }
+    else
+	WINE_TRACE("FindResource ok\n");
+
 
     WINE_TRACE("loading mines\n");
     p_board->hMinesBMP = LoadBitmap( p_board->hInst, "mines");
