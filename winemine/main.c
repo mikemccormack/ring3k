@@ -291,6 +291,8 @@ void InitBoard( BOARD *p_board )
 {
     HMENU hMenu;
     HRSRC resource;
+    HGLOBAL handle;
+    PVOID data;
 
     resource = FindResource( p_board->hInst, "mines", RT_BITMAP );
     if (!resource)
@@ -301,6 +303,23 @@ void InitBoard( BOARD *p_board )
     else
 	WINE_TRACE("FindResource ok\n");
 
+    handle = LoadResource( p_board->hInst, resource );
+    if (!handle)
+    {
+	WINE_TRACE("LoadResource failed %d\n", GetLastError());
+        ExitProcess( 0 );
+    }
+    else
+	WINE_TRACE("LoadResource ok\n");
+
+    data = LockResource( handle );
+    if (!handle)
+    {
+	WINE_TRACE("LockResource failed %d\n", GetLastError());
+        ExitProcess( 0 );
+    }
+    else
+	WINE_TRACE("LockResource ok\n");
 
     WINE_TRACE("loading mines\n");
     p_board->hMinesBMP = LoadBitmap( p_board->hInst, "mines");
