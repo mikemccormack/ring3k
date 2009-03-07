@@ -997,17 +997,37 @@ static inline BOOLEAN NtUserReleaseDC( HDC dc )
 	return NtUserCallOneParam( (ULONG) dc, NTUCOP_RELEASEDC );
 }
 
+BOOLEAN dc_info_changed(
+	GDI_DEVICE_CONTEXT_SHARED *info,
+	GDI_DEVICE_CONTEXT_SHARED *backup )
+{
+	BYTE *p1, *p2;
+	ULONG i;
+	p1 = (BYTE*) info;
+	p2 = (BYTE*) backup;
+	for (i=0; i<sizeof *info; i++)
+	{
+		if (p1[i] != p2[i])
+		{
+			dprintf("changed at offset %04lx\n", i);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 void test_bitmap(void)
 {
 	HDC hdc;
 	HBITMAP bitmap, old;
 	ULONG type;
 	GDI_DEVICE_CONTEXT_SHARED *info;
+	GDI_DEVICE_CONTEXT_SHARED backup;
 
 	hdc = NtUserGetDC( 0 );
 	info = get_user_info( hdc );
 	//dprintf("after NtUserGetDC\n");
-	//dump_bin( info, sizeof *info );
+	memcpy( &backup, info, sizeof *info );
 
 	bitmap = NtGdiCreateCompatibleBitmap( hdc, 16, 16 );
 
@@ -1021,13 +1041,12 @@ void test_bitmap(void)
 
 	info = get_user_info( hdc );
 	ok( info != NULL, "info was null\n");
-	//dprintf("after NtGdiSelectBitmap\n");
-	//dump_bin( info, sizeof *info );
+	ok( !dc_info_changed( info, &backup ), "dc info changed\n");
 
 	old = NtGdiSelectBitmap( hdc, old );
 	ok( NULL == old, "NtGdiSelectBitmap should return NULL\n");
 	//dprintf("after NtGdiSelectBitmap 2\n");
-	//dump_bin( info, sizeof *info );
+	ok( !dc_info_changed( info, &backup ), "dc info changed\n");
 
 	NtUserReleaseDC( hdc );
 	NtGdiDeleteObjectApp( bitmap );
