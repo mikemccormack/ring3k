@@ -651,7 +651,7 @@ GDI_DEVICE_CONTEXT_SHARED* device_context_t::get_dc_shared_mem() const
 BYTE *gdi_object_t::alloc_gdi_shared_memory( size_t len, BYTE** kernel_shm )
 {
 	init_gdi_shared_mem();
-	return g_gdi_shared_bitmap->alloc( 0x100 );
+	return g_gdi_shared_bitmap->alloc( len );
 }
 
 void gdi_object_t::free_gdi_shared_memory( BYTE *shm )
@@ -687,7 +687,7 @@ device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 BOOL device_context_t::release()
 {
 	GDI_DEVICE_CONTEXT_SHARED *shm = get_dc_shared_mem();
-	g_gdi_shared_bitmap->free( (unsigned char*) shm, 0x100 );
+	g_gdi_shared_bitmap->free( (unsigned char*) shm, sizeof *shm );
 	gdi_object_t::release();
 	return TRUE;
 }
