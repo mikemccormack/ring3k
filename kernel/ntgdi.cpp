@@ -384,7 +384,6 @@ NTSTATUS win32k_thread_init(thread_t *thread)
 
 ULONG NTAPI NtGdiQueryFontAssocInfo( HANDLE hdc )
 {
-	dprintf("%p\n", hdc);
 	return 0;
 }
 
@@ -952,7 +951,6 @@ bitmap_t* bitmap_from_handle( HANDLE handle )
 // parameters look the same as gdi32.CreateBitmap
 HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPerPixel, VOID* Pixels)
 {
-	dprintf("(%dx%d) %d %d %p\n", Width, Height, Planes, BitsPerPixel, Pixels);
 	// FIXME: handle negative heights
 	assert(Height >=0);
 	assert(Width >=0);
@@ -962,7 +960,6 @@ HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPer
 // gdi32.CreateComptabibleDC
 HGDIOBJ NTAPI NtGdiCreateCompatibleDC(HGDIOBJ hdc)
 {
-	dprintf("%p\n", hdc);
 	return win32k_manager->alloc_compatible_dc();
 }
 
@@ -986,14 +983,11 @@ HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(
 	ULONG u_arg10,
 	ULONG u_arg11 )
 {
-	dprintf("%p %08lx %08lx %08lx %08lx %p %08lx %08lx %08lx %08lx %08lx\n",
-			hdc, Width, Height, Bpp, u_arg5, u_arg6, u_arg7, u_arg8, u_arg9, u_arg10, u_arg11 );
 	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
 }
 
 HGDIOBJ NTAPI NtGdiGetDCforBitmap(HGDIOBJ Bitmap)
 {
-	dprintf("%p\n", Bitmap);
 	return win32k_manager->alloc_screen_dc();
 }
 
@@ -1041,8 +1035,6 @@ const char *get_object_type_name( HGDIOBJ object )
 
 HGDIOBJ NTAPI NtGdiSelectBitmap( HGDIOBJ hdc, HGDIOBJ hbm )
 {
-	dprintf("%p %p\n", hdc, hbm );
-
 	device_context_t* dc = dc_from_handle( hdc );
 	if (!dc)
 		return FALSE;
@@ -1067,7 +1059,6 @@ BOOLEAN NTAPI NtGdiGetFontResourceInfoInternalW(
 	PVOID Buffer,
 	ULONG Info)
 {
-	dprintf("\n");
 	return FALSE;
 }
 
@@ -1096,7 +1087,6 @@ BOOLEAN NTAPI NtGdiRestoreDC( HGDIOBJ hdc, int level )
 
 HGDIOBJ NTAPI NtGdiGetDCObject(HGDIOBJ hdc, ULONG object_type)
 {
-	dprintf("%p %08lx\n", hdc, object_type);
 	return win32k_manager->alloc_screen_dc();
 }
 
@@ -1106,7 +1096,6 @@ ULONG NTAPI NtGdiSetDIBitsToDeviceInternal(
 	int xSrc, int ySrc, ULONG StartScan, ULONG ScanLines,
 	PVOID Bits, PVOID bmi, ULONG Color, ULONG, ULONG, ULONG, ULONG)
 {
-	dprintf("%p %d %d %ld %ld %d %d...\n", hdc, xDest, yDest, cx, cy, xSrc, ySrc);
 	return cy;
 }
 
@@ -1116,8 +1105,6 @@ ULONG NTAPI NtGdiExtGetObjectW(HGDIOBJ Object, ULONG Size, PVOID Buffer)
 		BITMAP bm;
 	} info;
 	ULONG len = 0;
-
-	dprintf("%p %ld %p\n", Object, Size, Buffer);
 
 	memset( &info, 0, sizeof info );
 	switch (get_handle_type(Object))
@@ -1148,8 +1135,6 @@ ULONG NTAPI NtGdiExtGetObjectW(HGDIOBJ Object, ULONG Size, PVOID Buffer)
 
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ hdcDest, INT xDest, INT yDest, INT cx, INT cy, HGDIOBJ hdcSrc, INT xSrc, INT ySrc, ULONG rop, ULONG, ULONG)
 {
-	dprintf("\n");
-
 	device_context_t* src = dc_from_handle( hdcSrc );
 	if (!src)
 		return FALSE;
