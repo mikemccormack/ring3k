@@ -75,7 +75,9 @@ int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR cmdline, int cmd
     //HINSTANCE hInst = 0;
     //INT cmdshow = SW_SHOW;
 
-    init_window_station();
+	HWINSTA hwsta = GetProcessWindowStation();
+	if (!hwsta)
+		init_window_station();
 
     wc.style = 0;
     wc.lpfnWndProc = MainProc;
