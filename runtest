@@ -24,6 +24,10 @@ do
 		trace=1
 		shift
 		;;
+	--trace*)
+		tracespec=$1
+		shift
+		;;
 	-v)
 		valgrind=1
 		shift
@@ -44,4 +48,4 @@ fi
 cp -f tests/win2k/ntwin32.dll drive
 cp -f "tests/$t" drive/tests
 ntexepath="\\??\\c:\\tests\\$t"
-exec ${valgrind:+"valgrind"} "$kernel" ${debug:+"-d"} ${tt:+"-s"} ${quiet:+"-q"} ${trace:+"-t"} "$ntexepath"
+exec ${valgrind:+"valgrind"} "$kernel" ${debug:+"-d"} ${tracespec} ${tt:+"-s"} ${quiet:+"-q"} ${trace:+"-t"} "$ntexepath"
