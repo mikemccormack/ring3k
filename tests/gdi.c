@@ -1004,8 +1004,9 @@ static inline BOOLEAN NtUserReleaseDC( HDC dc )
 void test_bitmap(void)
 {
 	HDC hdc;
-	HBITMAP bitmap;
+	HBITMAP bitmap, old;
 	ULONG type;
+	DEVICE_CONTEXT_SHARED_MEMORY *info;
 
 	hdc = NtUserGetDC( 0 );
 	bitmap = NtGdiCreateCompatibleBitmap( hdc, 16, 16 );
@@ -1014,6 +1015,15 @@ void test_bitmap(void)
 	ok( type == GDI_OBJECT_BITMAP, "wrong handle type %ld\n", type );
 	ok( check_gdi_handle( bitmap ), "invalid gdi handle %p\n", bitmap );
 	ok( NULL == get_user_info( bitmap ), "info was not NULL\n");
+
+	old = NtGdiSelectBitmap( hdc, bitmap );
+	ok( NULL == old, "NtGdiSelectBitmap should return NULL\n");
+
+	info = get_user_info( hdc );
+	ok( info != NULL, "info was null\n");
+
+	old = NtGdiSelectBitmap( hdc, old );
+	ok( NULL == old, "NtGdiSelectBitmap should return NULL\n");
 
 	NtUserReleaseDC( hdc );
 	NtGdiDeleteObjectApp( bitmap );
