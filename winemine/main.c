@@ -291,17 +291,18 @@ void InitBoard( BOARD *p_board )
 
     WINE_TRACE("loading mines\n");
     p_board->hMinesBMP = LoadBitmap( p_board->hInst, "mines");
+    if (!p_board->hMinesBMP)
+	WINE_TRACE("LoadBitmap hMinesBMP failed %d\n", GetLastError());
+
     WINE_TRACE("loading faces\n");
     p_board->hFacesBMP = LoadBitmap( p_board->hInst, "faces");
+    if (!p_board->hFacesBMP)
+	WINE_TRACE("LoadBitmap hFacesBMP failed %d\n", GetLastError());
+
     WINE_TRACE("loading leds\n");
     p_board->hLedsBMP = LoadBitmap( p_board->hInst, "leds");
-
-    if (!p_board->hMinesBMP)
-	WINE_TRACE("hMinesBMP NULL\n");
-    if (!p_board->hFacesBMP)
-	WINE_TRACE("hFacesBMP NULL\n");
     if (!p_board->hLedsBMP)
-	WINE_TRACE("hLedsBMP NULL\n");
+	WINE_TRACE("LoadBitmap hLedsBMP failed %d\n", GetLastError());
 
     LoadBoard( p_board );
 
