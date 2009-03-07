@@ -1388,7 +1388,7 @@ BOOLEAN window_tt::destroy()
 	return TRUE;
 }
 
-BOOLEAN NTAPI NtUserSetLogonNotifyWindow( HANDLE Window )
+BOOLEAN NTAPI NtUserSetLogonNotifyWindow( HWND Window )
 {
 	return TRUE;
 }
@@ -1429,7 +1429,7 @@ BOOLEAN NTAPI NtUserResolveDesktop(HANDLE Process, PVOID, PVOID, PHANDLE Desktop
 	return TRUE;
 }
 
-BOOLEAN NTAPI NtUserShowWindow( HANDLE Window, INT Show )
+BOOLEAN NTAPI NtUserShowWindow( HWND Window, INT Show )
 {
 	window_tt *win = window_from_handle( Window );
 	if (!win)
@@ -1444,12 +1444,12 @@ HANDLE NTAPI NtUserCreateAcceleratorTable( PVOID Accelerators, UINT Count )
 	return (HANDLE) accelerator++;
 }
 
-BOOLEAN NTAPI NtUserMoveWindow( HANDLE Window, int x, int y, int width, int height, BOOLEAN repaint )
+BOOLEAN NTAPI NtUserMoveWindow( HWND Window, int x, int y, int width, int height, BOOLEAN repaint )
 {
 	return TRUE;
 }
 
-BOOLEAN NTAPI NtUserRedrawWindow( HANDLE Window, RECT *Update, HANDLE Region, UINT Flags )
+BOOLEAN NTAPI NtUserRedrawWindow( HWND Window, RECT *Update, HANDLE Region, UINT Flags )
 {
 	return TRUE;
 }
