@@ -289,8 +289,11 @@ void InitBoard( BOARD *p_board )
 {
     HMENU hMenu;
 
+    WINE_TRACE("loading mines\n");
     p_board->hMinesBMP = LoadBitmap( p_board->hInst, "mines");
+    WINE_TRACE("loading faces\n");
     p_board->hFacesBMP = LoadBitmap( p_board->hInst, "faces");
+    WINE_TRACE("loading leds\n");
     p_board->hLedsBMP = LoadBitmap( p_board->hInst, "leds");
 
     if (!p_board->hMinesBMP)
