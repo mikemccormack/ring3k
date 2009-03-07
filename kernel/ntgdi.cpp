@@ -632,7 +632,7 @@ device_context_t* device_context_t::alloc( device_context_factory_t *factory )
 	BYTE *shm = alloc_gdi_shared_memory( 0x100 );
 	if (!shm)
 		return NULL;
-	dprintf("dc address %p\n", shm );
+	dprintf("dc offset %08x\n", shm - g_gdi_shared_memory );
 	BYTE *user_shm = gdi_object_t::kernel_to_user( shm );
 
 	dc->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, user_shm, dc );
