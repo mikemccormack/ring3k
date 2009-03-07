@@ -461,11 +461,50 @@ public:
 	virtual bool enabled() const;
 };
 
+static inline ULONG get_gdi_type_size( ULONG type )
+{
+	switch (type)
+	{
+	case GDI_OBJECT_DC:
+		return sizeof (GDI_DEVICE_CONTEXT_SHARED);
+	default:
+		return 0;
+	}
+}
+
+ULONG object_from_memory( BYTE *address )
+{
+	gdi_handle_table_entry *table = (gdi_handle_table_entry*) gdi_handle_table;
+	for (ULONG i=0; i<MAX_GDI_HANDLE; i++)
+	{
+		ULONG sz = get_gdi_type_size( table[i].Type );
+		if (!sz)
+			continue;
+		BYTE* ptr = (BYTE*) table[i].user_info;
+		if (ptr > address)
+			continue;
+		if ((ptr+sz) > address)
+			return i;
+	}
+	return 0;
+}
+
 void gdishm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
-	ULONG ofs = address - mb->get_base_address();
-	fprintf(stderr, "%04lx: accessed gdishm[%04lx] from %08lx\n",
+	ULONG n = object_from_memory( address );
+	if (n)
+	{
+		gdi_handle_table_entry *table = (gdi_handle_table_entry*) gdi_handle_table;
+		ULONG ofs = address - (BYTE*) table[n].user_info;
+		fprintf(stderr, "%04lx: accessed gdishm[%04lx][%04lx] from %08lx\n",
+				current->trace_id(), n, ofs, eip);
+	}
+	else
+	{
+		ULONG ofs = address - mb->get_base_address();
+		fprintf(stderr, "%04lx: accessed gdishm[%04lx] from %08lx\n",
 				current->trace_id(), ofs, eip);
+	}
 }
 
 bool gdishm_tracer::enabled() const
