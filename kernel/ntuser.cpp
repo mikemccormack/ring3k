@@ -539,11 +539,13 @@ ULONG NTAPI NtUserCallNoParam(ULONG Index)
 
 BOOLEAN NtReleaseDC( HANDLE hdc )
 {
+	dprintf("%p\n", hdc );
 	return win32k_manager->release_dc( hdc );
 }
 
 BOOLEAN NtPostQuitMessage( ULONG ret )
 {
+	dprintf("%08lx\n", ret );
 	if (current->queue)
 		current->queue->post_quit_message( ret );
 	return TRUE;
@@ -551,6 +553,7 @@ BOOLEAN NtPostQuitMessage( ULONG ret )
 
 PVOID NtGetWindowPointer( HWND window )
 {
+	dprintf("%p\n", window );
 	window_tt *win = window_from_handle( window );
 	if (!win)
 		return 0;
@@ -559,7 +562,6 @@ PVOID NtGetWindowPointer( HWND window )
 
 ULONG NTAPI NtUserCallOneParam(ULONG Param, ULONG Index)
 {
-	dprintf("%lu (%08lx)\n", Index, Param);
 	switch (Index)
 	{
 	case 0x16: // BeginDeferWindowPos
