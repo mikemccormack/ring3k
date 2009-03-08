@@ -1431,3 +1431,14 @@ HPEN NTAPI NtGdiCreatePen(int style, int width, COLORREF color, ULONG)
 {
 	return (HPEN) alloc_gdi_object( FALSE, GDI_OBJECT_PEN );
 }
+
+BOOLEAN NTAPI NtGdiStretchDIBitsInternal(
+	HDC handle,
+	int dest_x, int dest_y, int dest_width, int dest_height,
+	int src_x, int src_y, int src_width, int src_height,
+	const VOID *bits, const BITMAPINFO *info, UINT usage, DWORD rop,
+	ULONG, ULONG, ULONG )
+{
+	return TRUE;
+}
+
