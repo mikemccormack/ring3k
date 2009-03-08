@@ -39,9 +39,14 @@ void dprintf( const char *format, ... )
 {
 	char str[0x100];
 	va_list va;
+	int len;
+
 	va_start( va, format );
 	vsprintf( str, format, va );
 	va_end( va );
+	len = strlen(str);
+	if (len && str[len - 1] == '\n')
+		str[len-1] = 0;
 	OutputDebugString( str );
 }
 
