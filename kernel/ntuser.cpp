@@ -1453,6 +1453,28 @@ BOOLEAN NTAPI NtUserMoveWindow( HWND Window, int x, int y, int width, int height
 
 BOOLEAN NTAPI NtUserRedrawWindow( HWND Window, RECT *Update, HANDLE Region, UINT Flags )
 {
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return FALSE;
+
+	if (!(win->style & WS_VISIBLE))
+		return TRUE;
+
+	RECT rect;
+	if (Update)
+	{
+		NTSTATUS r = copy_from_user( &rect, Update );
+		if (r < STATUS_SUCCESS)
+			return FALSE;
+	}
+	else
+	{
+		rect = win->rcClient;
+	}
+
+	region_tt*& region = win->get_invalid_region();
+	region->set_rect( rect );
+
 	return TRUE;
 }
 

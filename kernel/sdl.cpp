@@ -358,6 +358,8 @@ int win32k_sdl_t::getcaps( int index )
 	{
 	case NUMCOLORS:
 		return 1 << screen->format->BitsPerPixel;
+	case BITSPIXEL:
+		return screen->format->BitsPerPixel;
 	default:
 		dprintf("%d\n", index );
 		return 0;
@@ -473,6 +475,7 @@ void win32k_sdl_16bpp_t::bitblt_l(
 		for (int j=0; j<cx; j++)
 		{
 			pixel = src->get_pixel( xSrc+j, ySrc+i );
+			dprintf("pixel = %08lx\n", pixel );
 			set_pixel_l( xDest+j, yDest+i, pixel );
 		}
 	}

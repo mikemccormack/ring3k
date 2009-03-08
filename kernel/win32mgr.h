@@ -103,7 +103,15 @@ public:
 	BYTE *get_user_shared_mem() const;
 };
 
-
+struct stretch_di_bits_args {
+	int dest_x, dest_y, dest_width, dest_height;
+	int src_x, src_y, src_width, src_height;
+	const VOID *bits;
+	BITMAPINFOHEADER *info;
+	UINT usage;
+	DWORD rop;
+	RGBQUAD* colors;
+};
 
 class brush_t : public gdi_object_t
 {
@@ -118,6 +126,8 @@ public:
 
 class bitmap_t : public gdi_object_t
 {
+	static const int magic_val = 0xbb11aa22;
+	int magic;
 	unsigned char *bits;
 	int width;
 	int height;
@@ -135,6 +145,8 @@ public:
 	int get_planes() {return planes;}
 	ULONG get_rowsize();
 	COLORREF get_pixel( int x, int y );
+	BOOL set_pixel( INT x, INT y, COLORREF color );
+	bool is_valid() const { return magic == magic_val; }
 };
 
 class device_context_t;
@@ -184,6 +196,7 @@ public:
 	virtual COLORREF get_pixel( INT x, INT y ) = 0;
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
 	virtual int getcaps( int index ) = 0;
+	virtual BOOL stretch_di_bits( stretch_di_bits_args& args );
 };
 
 class memory_device_context_t : public device_context_t

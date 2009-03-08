@@ -694,17 +694,21 @@ BOOL device_context_t::release()
 
 HANDLE device_context_t::select_bitmap( bitmap_t *bitmap )
 {
+	assert( bitmap->is_valid() );
 	bitmap_t* old = selected_bitmap;
 	selected_bitmap = bitmap;
 	bitmap->select();
 	if (!old)
 		return NULL;
+	assert( old->is_valid() );
 	old->deselect();
 	return old->get_handle();
 }
 
 bitmap_t* device_context_t::get_selected_bitmap()
 {
+	if (selected_bitmap)
+		assert( selected_bitmap->is_valid() );
 	return selected_bitmap;
 }
 
@@ -773,7 +777,9 @@ BOOL memory_device_context_t::rectangle(INT left, INT top, INT right, INT bottom
 
 BOOL memory_device_context_t::set_pixel( INT x, INT y, COLORREF color )
 {
-	dprintf("\n");
+	bitmap_t* bitmap = get_selected_bitmap();
+	if (bitmap)
+		return bitmap->set_pixel( x, y, color );
 	return TRUE;
 }
 
@@ -849,6 +855,72 @@ device_context_t* dc_from_handle( HGDIOBJ handle )
 	return (device_context_t*) entry->kernel_info;
 }
 
+COLORREF get_di_pixel_4bpp( stretch_di_bits_args& args, int x, int y )
+{
+	int bytes_per_line = (args.info->biWidth+1)>>1;
+	int ofs = (args.info->biHeight - y - 1) * bytes_per_line + (x>>1);
+
+	// slow!
+	BYTE pixel = 0;
+	NTSTATUS r;
+	r = copy_from_user( &pixel, (BYTE*) args.bits + ofs, 1 );
+	if ( r < STATUS_SUCCESS)
+	{
+		dprintf("copy failed\n");
+		return 0;
+	}
+
+	BYTE val = (pixel >> (~x&1)) & 0x0f;
+
+	assert( val < 16);
+
+	return RGB( args.colors[val].rgbRed,
+		args.colors[val].rgbGreen,
+		args.colors[val].rgbBlue );
+}
+
+COLORREF get_di_pixel( stretch_di_bits_args& args, int x, int y )
+{
+	switch (args.info->biBitCount)
+	{
+	case 4:
+		return get_di_pixel_4bpp( args, x, y );
+	default:
+		dprintf("%d bpp\n", args.info->biBitCount);
+	}
+	return 0;
+}
+
+BOOL device_context_t::stretch_di_bits( stretch_di_bits_args& args )
+{
+	bitmap_t* bitmap = get_selected_bitmap();
+	if (!bitmap)
+		return FALSE;
+
+	args.src_x = max( args.src_x, 0 );
+	args.src_y = max( args.src_y, 0 );
+	args.src_x = min( args.src_x, args.info->biWidth );
+	args.src_y = min( args.src_y, args.info->biHeight );
+
+	args.src_width = max( args.src_width, 0 );
+	args.src_height = max( args.src_height, 0 );
+	args.src_width = min( args.src_width, args.info->biWidth - args.src_x );
+	args.src_height = min( args.src_height, args.info->biHeight - args.src_y );
+
+	// copy the pixels
+	COLORREF pixel;
+	for (int i=0; i<args.src_height; i++)
+	{
+		for (int j=0; j<args.src_width; j++)
+		{
+			pixel = get_di_pixel( args, args.src_x+j, args.src_y+i );
+			set_pixel( args.dest_x+j, args.dest_y+i, pixel );
+		}
+	}
+
+	return TRUE;
+}
+
 BOOL win32k_manager_t::release_dc( HGDIOBJ handle )
 {
 	device_context_t* dc = dc_from_handle( handle );
@@ -913,6 +985,7 @@ HANDLE win32k_manager_t::get_stock_object( ULONG Index )
 }
 
 bitmap_t::bitmap_t( int _width, int _height, int _planes, int _bpp ) :
+	magic( magic_val ),
 	bits( 0 ),
 	width( _width ),
 	height( _height ),
@@ -923,22 +996,26 @@ bitmap_t::bitmap_t( int _width, int _height, int _planes, int _bpp ) :
 
 bitmap_t::~bitmap_t()
 {
+	assert( magic == magic_val );
 	delete bits;
 }
 
 ULONG bitmap_t::get_rowsize()
 {
+	assert( magic == magic_val );
 	ULONG row_size = (width*bpp)/8;
 	return (row_size + 1)& ~1;
 }
 
 ULONG bitmap_t::bitmap_size()
 {
+	assert( magic == magic_val );
 	return height * get_rowsize();
 }
 
 void bitmap_t::dump()
 {
+	assert( magic == magic_val );
 	for (int j=0; j<height; j++)
 	{
 		for (int i=0; i<width; i++)
@@ -954,28 +1031,68 @@ HANDLE bitmap_t::alloc( int width, int height, int planes, int bpp, void *pixels
 		return NULL;
 	bitmap->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, bitmap );
 	bitmap->bits = new unsigned char [bitmap->bitmap_size()];
-	copy_from_user( bitmap->bits, pixels, bitmap->bitmap_size() );
+	if (pixels)
+		copy_from_user( bitmap->bits, pixels, bitmap->bitmap_size() );
+	assert( bitmap->magic == magic_val );
 	return bitmap->handle;
 }
 
 COLORREF bitmap_t::get_pixel( int x, int y )
 {
+	assert( magic == magic_val );
 	if (x < 0 || x >= width)
 		return 0;
 	if (y < 0 || y >= height)
 		return 0;
 	ULONG row_size = get_rowsize();
+	ULONG val;
 	switch (bpp)
 	{
 	case 1:
-		if ((bits[row_size * y + x*bpp/8 ]>> (7 - (x%8))) & 1)
+		if ((bits[row_size * y + x/8 ]>> (7 - (x%8))) & 1)
 			return RGB( 255, 255, 255 );
 		else
 			return RGB( 0, 0, 0 );
+	case 16:
+		val = *(ULONG*) &bits[row_size * y + x*2 ];
+		return RGB( (val & 0xf800) >> 8, (val & 0x07e0) >> 3, (val & 0x1f) << 3 );
 	default:
 		dprintf("%d bpp not implemented\n", bpp);
 	}
 	return 0;
+}
+
+BOOL bitmap_t::set_pixel( int x, int y, COLORREF color )
+{
+	assert( magic == magic_val );
+	assert( width != 0 );
+	assert( height != 0 );
+	if (x < 0 || x >= width)
+		return FALSE;
+	if (y < 0 || y >= height)
+		return FALSE;
+	ULONG row_size = get_rowsize();
+	switch (bpp)
+	{
+	case 1:
+		if (color == RGB( 0, 0, 0 ))
+			bits[row_size * y + x/8 ] &= ~ (1 << (7 - (x%8)));
+		else if (color == RGB( 255, 255, 255 ))
+			bits[row_size * y + x/8 ] |= (1 << (7 - (x%8)));
+		else
+			// implement color translation
+			assert(0);
+		break;
+	case 16:
+		*((USHORT*) &bits[row_size * y + x*2 ]) =
+			((GetRValue(color)&0xf8) << 8) |
+			((GetGValue(color)&0xfc) << 3) |
+			((GetBValue(color)&0xf8) >> 3);
+		break;
+	default:
+		dprintf("%d bpp not implemented\n", bpp);
+	}
+	return TRUE;
 }
 
 bitmap_t* bitmap_from_handle( HANDLE handle )
@@ -1016,15 +1133,15 @@ HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(
 	ULONG Width,
 	ULONG Height,
 	ULONG Bpp,
-	ULONG u_arg5,
-	PVOID u_arg6,
-	ULONG u_arg7,
-	ULONG u_arg8,
-	ULONG u_arg9,
-	ULONG u_arg10,
-	ULONG u_arg11 )
+	ULONG,
+	PVOID,
+	ULONG,
+	ULONG,
+	ULONG,
+	ULONG,
+	ULONG)
 {
-	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
+	return bitmap_t::alloc( Width, Height, 1, Bpp, 0 );
 }
 
 HGDIOBJ NTAPI NtGdiGetDCforBitmap(HGDIOBJ Bitmap)
@@ -1083,6 +1200,8 @@ HGDIOBJ NTAPI NtGdiSelectBitmap( HGDIOBJ hdc, HGDIOBJ hbm )
 	bitmap_t* bitmap = bitmap_from_handle( hbm );
 	if (!bitmap)
 		return FALSE;
+
+	assert( bitmap->is_valid() );
 
 	return dc->select_bitmap( bitmap );
 }
@@ -1379,9 +1498,17 @@ BOOLEAN NTAPI NtGdiExtTextOutW( HANDLE handle, INT x, INT y, UINT options,
 	return dc->exttextout( x, y, options, rect, text );
 }
 
-HANDLE NTAPI NtGdiCreateCompatibleBitmap(HANDLE DeviceContext, int width, int height)
+HANDLE NTAPI NtGdiCreateCompatibleBitmap( HANDLE DeviceContext, int width, int height )
 {
-	return alloc_gdi_object( FALSE, GDI_OBJECT_BITMAP );
+	device_context_t* dc = dc_from_handle( DeviceContext );
+	if (!dc)
+		return FALSE;
+
+	int bpp = dc->getcaps( BITSPIXEL );
+	if (!bpp)
+		return FALSE;
+
+	return bitmap_t::alloc( width, height, 1, bpp, 0 );
 }
 
 int NTAPI NtGdiGetAppClipBox( HANDLE handle, RECT* rectangle )
@@ -1439,6 +1566,42 @@ BOOLEAN NTAPI NtGdiStretchDIBitsInternal(
 	const VOID *bits, const BITMAPINFO *info, UINT usage, DWORD rop,
 	ULONG, ULONG, ULONG )
 {
-	return TRUE;
-}
+	device_context_t* dc = dc_from_handle( handle );
+	if (!dc)
+		return FALSE;
 
+	BITMAPINFOHEADER bmi;
+	NTSTATUS r;
+	RGBQUAD colors[0x100];
+
+	r = copy_from_user( &bmi, &info->bmiHeader );
+	if (r < STATUS_SUCCESS)
+		return FALSE;
+
+	stretch_di_bits_args args;
+	args.dest_x = dest_x;
+	args.dest_y = dest_y;
+	args.dest_width = dest_width;
+	args.dest_height = dest_height;
+	args.src_x = src_x;
+	args.src_y = src_y;
+	args.src_width = src_width;
+	args.src_height = src_height;
+	args.bits = bits;
+	args.info = &bmi;
+	args.usage = usage;
+	args.rop = rop;
+
+	if (bmi.biBitCount <= 8)
+	{
+		dprintf("copying %d colors\n",  bmi.biBitCount);
+		r = copy_from_user( colors, &info->bmiColors, (1 << bmi.biBitCount) * sizeof (RGBQUAD));
+		if (r < STATUS_SUCCESS)
+			return FALSE;
+		args.colors = colors;
+	}
+	else
+		args.colors = NULL;
+
+	return dc->stretch_di_bits( args );
+}
