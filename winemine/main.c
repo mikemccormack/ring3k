@@ -287,14 +287,46 @@ LRESULT WINAPI MainProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return( DefWindowProc( hWnd, msg, wParam, lParam ));
 }
 
-void InitBoard( BOARD *p_board )
+// extracted from wine/dlls/user32/cursoricon.c
+static int bitmap_info_size( const BITMAPINFO * info, WORD coloruse )
 {
-    HMENU hMenu;
+    int colors, masks = 0;
+
+    if (info->bmiHeader.biSize == sizeof(BITMAPCOREHEADER))
+    {
+        const BITMAPCOREHEADER *core = (const BITMAPCOREHEADER *)info;
+        colors = (core->bcBitCount <= 8) ? 1 << core->bcBitCount : 0;
+        return sizeof(BITMAPCOREHEADER) + colors *
+             ((coloruse == DIB_RGB_COLORS) ? sizeof(RGBTRIPLE) : sizeof(WORD));
+    }
+    else  /* assume BITMAPINFOHEADER */
+    {
+        colors = info->bmiHeader.biClrUsed;
+        if (colors > 256) /* buffer overflow otherwise */
+                colors = 256;
+        if (!colors && (info->bmiHeader.biBitCount <= 8))
+            colors = 1 << info->bmiHeader.biBitCount;
+        if (info->bmiHeader.biCompression == BI_BITFIELDS) masks = 3;
+        return sizeof(BITMAPINFOHEADER) + masks * sizeof(DWORD) + colors *
+               ((coloruse == DIB_RGB_COLORS) ? sizeof(RGBQUAD) : sizeof(WORD));
+    }
+}
+
+static HDC screen_dc;
+
+HBITMAP winemine_test_LoadBitmap( HINSTANCE hInst, const char *name )
+{
     HRSRC resource;
     HGLOBAL handle;
     PVOID data;
+    HDC screen_mem_dc;
+    HBITMAP orig_bm, hbitmap;
+    const BITMAPINFO * info;
+    int width, height;
+    int size;
+    char *bits;
 
-    resource = FindResource( p_board->hInst, "mines", RT_BITMAP );
+    resource = FindResource( hInst, name, RT_BITMAP );
     if (!resource)
     {
 	WINE_TRACE("FindResource failed %d\n", GetLastError());
@@ -303,7 +335,7 @@ void InitBoard( BOARD *p_board )
     else
 	WINE_TRACE("FindResource ok\n");
 
-    handle = LoadResource( p_board->hInst, resource );
+    handle = LoadResource( hInst, resource );
     if (!handle)
     {
 	WINE_TRACE("LoadResource failed %d\n", GetLastError());
@@ -320,6 +352,52 @@ void InitBoard( BOARD *p_board )
     }
     else
 	WINE_TRACE("LockResource ok\n");
+
+    // extracted from wine/dlls/user32/cursoricon.c
+    info = data;
+
+    size = bitmap_info_size(info, DIB_RGB_COLORS);
+
+    bits = (char *)info + size;
+
+    width = info->bmiHeader.biWidth;
+    height = info->bmiHeader.biHeight;
+
+    WINE_TRACE("width,height = %d,%d size = %d\n", width, height, size );
+
+    if (!screen_dc)
+        screen_dc = CreateDC( "display", NULL, NULL, NULL );
+    screen_mem_dc = CreateCompatibleDC( screen_dc );
+    if (screen_mem_dc == 0)
+    {
+	WINE_TRACE("CreateCompatibleDC failed\n");
+        ExitProcess( 0 );
+    }
+
+    hbitmap = CreateCompatibleBitmap( screen_dc, width, height );
+
+    if (hbitmap == 0)
+    {
+	WINE_TRACE("CreateCompatibleBitmap failed\n");
+        ExitProcess( 0 );
+    }
+
+    orig_bm = SelectObject( screen_mem_dc, hbitmap );
+    StretchDIBits(screen_mem_dc, 0, 0, width, height, 0, 0, width, height, bits, info, DIB_RGB_COLORS, SRCCOPY);
+
+    SelectObject(screen_mem_dc, orig_bm);
+
+    DeleteDC( screen_mem_dc );
+
+    return hbitmap;
+}
+
+#undef LoadBitmap
+#define LoadBitmap winemine_test_LoadBitmap
+
+void InitBoard( BOARD *p_board )
+    {
+    HMENU hMenu;
 
     WINE_TRACE("loading mines\n");
     p_board->hMinesBMP = LoadBitmap( p_board->hInst, "mines");
