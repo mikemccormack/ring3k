@@ -1448,6 +1448,27 @@ HANDLE NTAPI NtUserCreateAcceleratorTable( PVOID Accelerators, UINT Count )
 
 BOOLEAN NTAPI NtUserMoveWindow( HWND Window, int x, int y, int width, int height, BOOLEAN repaint )
 {
+	window_tt *win = window_from_handle( Window );
+	if (!win)
+		return FALSE;
+
+	return win->move_window( x, y, width, height, repaint );
+}
+
+BOOLEAN window_tt::move_window( int x, int y, int width, int height, BOOLEAN repaint )
+{
+	WINDOWPOS wp;
+	memset( &wp, 0, sizeof wp );
+
+	winposchanging_tt poschanging( wp );
+	send( poschanging );
+
+	nccalcsize_message_tt nccalcsize;
+	send( nccalcsize );
+
+	winposchanged_tt poschanged( wp );
+	send( poschanged );
+
 	return TRUE;
 }
 

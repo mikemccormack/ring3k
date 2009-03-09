@@ -795,6 +795,18 @@ void test_create_window( ULONG style )
 	r = NtUserKillTimer( window, timer_id );
 	ok( r == TRUE, "NtUserKillTimer failed\n");
 
+	// move the window
+	test_cs.x = TEST_XPOS + 15;
+	test_cs.y = TEST_YPOS + 16;
+	test_cs.cx = TEST_WIDTH + 17;
+	test_cs.cy = TEST_HEIGHT + 18;
+	r = NtUserMoveWindow( window, test_cs.x, test_cs.y, test_cs.cx, test_cs.cy, 0 );
+	ok( TRUE == r, "NtPostMessage failed\n");
+
+	check_msg( window, WM_WINDOWPOSCHANGING, &n );
+	check_msg( window, WM_NCCALCSIZE, &n );
+	check_msg( window, WM_WINDOWPOSCHANGED, &n );
+
 	// check that PostQuitMessage will work
 	r = NtUserCallOneParam( quit_magic, NTUCOP_POSTQUITMESSAGE );
 	ok( TRUE == r, "NtPostMessage failed\n");

@@ -77,6 +77,7 @@ public:
 	static window_tt* find_window_to_repaint( HWND window, thread_t* thread );
 	void link_window( window_tt *parent );
 	void unlink_window();
+	BOOLEAN move_window( int x, int y, int width, int height, BOOLEAN repaint );
 };
 
 window_tt *window_from_handle( HANDLE handle );
