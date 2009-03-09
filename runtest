@@ -44,8 +44,13 @@ then
 	sh ring3k-setup
 fi
 
+if [ ! -d drive ]
+then
+	exit 1
+fi
+
 # copy the test into the NT directory
-cp -f tests/win2k/ntwin32.dll drive
+cp -f "tests/win2k/ntwin32.dll" drive
 cp -f "tests/$t" drive/tests
 ntexepath="\\??\\c:\\tests\\$t"
 exec ${valgrind:+"valgrind"} "$kernel" ${debug:+"-d"} ${tracespec} ${tt:+"-s"} ${quiet:+"-q"} ${trace:+"-t"} "$ntexepath"

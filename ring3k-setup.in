@@ -252,6 +252,11 @@ fi
 
 # create the various system directories
 mkdir -p "$target"
+if test \! -d "$target"
+then
+	echo "Failed to make directory $target"
+	exit
+fi
 mkdir -p "$root/winnt/temp"
 mkdir -p "$root/winnt/security"
 mkdir -p "$root/winnt/security/logs"
