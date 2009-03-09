@@ -668,5 +668,3 @@ dd if=/dev/null of="$root/winnt/security/edb.chk" bs=8192 count=1
 dd if=/dev/null of="$root/winnt/security/edb.log" bs=1024 count=1024
 dd if=/dev/null of="$root/winnt/security/edb007ec.log" bs=1024 count=1024
 
-# replace winlogon with a gdi testing application for the moment
-cp "$minitris" "$root/winnt/system32/winlogon.exe"

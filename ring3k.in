@@ -63,7 +63,8 @@ fi
 winlogon_replacement="winemine/winemine.exe"
 if test -f "$winlogon_replacement"
 then
-	cp -uf "$winlogon_replacement" "drive/winnt/system32/winlogon.exe"
+	echo copying winemine
+	cp -f "$winlogon_replacement" "drive/winnt/system32/winlogon.exe"
 fi
 
 exec "$kernel" $*
