@@ -857,7 +857,7 @@ device_context_t* dc_from_handle( HGDIOBJ handle )
 
 COLORREF get_di_pixel_4bpp( stretch_di_bits_args& args, int x, int y )
 {
-	int bytes_per_line = (args.info->biWidth+1)>>1;
+	int bytes_per_line = ((args.info->biWidth+3)&~3)>>1;
 	int ofs = (args.info->biHeight - y - 1) * bytes_per_line + (x>>1);
 
 	// slow!
@@ -870,7 +870,7 @@ COLORREF get_di_pixel_4bpp( stretch_di_bits_args& args, int x, int y )
 		return 0;
 	}
 
-	BYTE val = (pixel >> (~x&1)) & 0x0f;
+	BYTE val = (pixel >> (x&1?0:4)) & 0x0f;
 
 	assert( val < 16);
 
@@ -906,6 +906,11 @@ BOOL device_context_t::stretch_di_bits( stretch_di_bits_args& args )
 	args.src_height = max( args.src_height, 0 );
 	args.src_width = min( args.src_width, args.info->biWidth - args.src_x );
 	args.src_height = min( args.src_height, args.info->biHeight - args.src_y );
+
+	dprintf("w,h %ld,%ld\n", args.info->biWidth, args.info->biHeight);
+	dprintf("bits, planes %d,%d\n", args.info->biBitCount, args.info->biPlanes);
+	dprintf("compression %08lx\n", args.info->biCompression );
+	dprintf("size %08lx\n", args.info->biSize );
 
 	// copy the pixels
 	COLORREF pixel;
@@ -1045,7 +1050,6 @@ COLORREF bitmap_t::get_pixel( int x, int y )
 	if (y < 0 || y >= height)
 		return 0;
 	ULONG row_size = get_rowsize();
-	ULONG val;
 	switch (bpp)
 	{
 	case 1:
@@ -1054,8 +1058,10 @@ COLORREF bitmap_t::get_pixel( int x, int y )
 		else
 			return RGB( 0, 0, 0 );
 	case 16:
-		val = *(ULONG*) &bits[row_size * y + x*2 ];
+		{
+		USHORT val = *(USHORT*) &bits[row_size * y + x*2 ];
 		return RGB( (val & 0xf800) >> 8, (val & 0x07e0) >> 3, (val & 0x1f) << 3 );
+		}
 	default:
 		dprintf("%d bpp not implemented\n", bpp);
 	}
