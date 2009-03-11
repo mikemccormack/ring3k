@@ -1486,6 +1486,8 @@ BOOLEAN window_tt::move_window( int x, int y, int width, int height, BOOLEAN rep
 	rcWnd.right = x + width;
 	rcWnd.bottom = y + height;
 
+	rcClient = rcWnd;
+
 	nccalcsize_message_tt nccalcsize;
 	send( nccalcsize );
 
