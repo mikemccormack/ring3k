@@ -347,6 +347,8 @@ void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 
+	ok( pack->params.rgrc[0].left == test_cs.x, "x position wrong %ld %d\n", pack->params.rgrc[0].left, test_cs.x);
+	ok( pack->params.rgrc[0].top == test_cs.y, "y position wrong %ld %d\n", pack->params.rgrc[0].top, test_cs.y);
 	ret.val = 0;
 	ret.size = sizeof pack->params + sizeof pack->winpos;
 	ret.buf = &pack->params;
@@ -829,6 +831,10 @@ void test_create_window( ULONG style )
 	test_winpos.y = TEST_YPOS + 16;
 	test_winpos.cx = TEST_WIDTH + 17;
 	test_winpos.cy = TEST_HEIGHT + 18;
+	test_cs.x = test_winpos.x;
+	test_cs.y = test_winpos.y;
+	test_cs.cx = test_winpos.cx;
+	test_cs.cy = test_winpos.cy;
 	r = NtUserMoveWindow( window, test_winpos.x, test_winpos.y, test_winpos.cx, test_winpos.cy, 0 );
 	ok( TRUE == r, "NtPostMessage failed\n");
 

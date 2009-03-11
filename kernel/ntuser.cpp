@@ -1244,7 +1244,7 @@ window_tt* window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, 
 	win->rcClient = win->rcWnd;
 
 	// send WM_NCCALCSIZE
-	nccalcsize_message_tt nccalcsize;
+	nccalcsize_message_tt nccalcsize( win->rcWnd );
 	win->send( nccalcsize );
 
 	win->style |= WS_CLIPSIBLINGS;
@@ -1488,7 +1488,7 @@ BOOLEAN window_tt::move_window( int x, int y, int width, int height, BOOLEAN rep
 
 	rcClient = rcWnd;
 
-	nccalcsize_message_tt nccalcsize;
+	nccalcsize_message_tt nccalcsize( rcWnd );
 	send( nccalcsize );
 
 	winposchanged_tt poschanged( wp );

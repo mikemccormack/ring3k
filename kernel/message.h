@@ -81,7 +81,7 @@ public:
 class nccalcsize_message_tt : public generic_message_tt<NTNCCALCSIZEPACKEDINFO>
 {
 public:
-	nccalcsize_message_tt();
+	nccalcsize_message_tt( RECT& new_rect );
 	virtual ULONG get_callback_num() const;
 };
 

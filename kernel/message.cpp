@@ -109,9 +109,10 @@ ULONG getminmaxinfo_tt::get_callback_num() const
 	return NTWIN32_MINMAX_CALLBACK;
 }
 
-nccalcsize_message_tt::nccalcsize_message_tt()
+nccalcsize_message_tt::nccalcsize_message_tt( RECT& new_rect )
 {
 	info.msg = WM_NCCALCSIZE;
+	info.params.rgrc[0] = new_rect;
 }
 
 ULONG nccalcsize_message_tt::get_callback_num() const
