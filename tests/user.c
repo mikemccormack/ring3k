@@ -832,6 +832,14 @@ void test_create_window( ULONG style )
 	r = NtUserMoveWindow( window, test_winpos.x, test_winpos.y, test_winpos.cx, test_winpos.cy, 0 );
 	ok( TRUE == r, "NtPostMessage failed\n");
 
+	ptr = (PWND) NtUserCallOneParam( (ULONG) window, NTUCOP_GETWNDPTR );
+	ok(ptr->rcWnd.left == test_winpos.x, "rcWnd.left wrong\n");
+	ok(ptr->rcWnd.top == test_winpos.y, "rcWnd.top wrong\n");
+	ok(ptr->rcWnd.right == test_winpos.cx + test_winpos.x, "rcWnd.right wrong %ld %d\n",
+		ptr->rcWnd.right, test_winpos.cx + test_winpos.x);
+	ok(ptr->rcWnd.bottom == test_winpos.cy + test_winpos.y, "rcWnd.bottom wrong %ld %d\n",
+		ptr->rcWnd.bottom, test_winpos.cy + test_winpos.y);
+
 	check_msg( window, WM_WINDOWPOSCHANGING, &n );
 	check_msg( window, WM_NCCALCSIZE, &n );
 	check_msg( window, WM_WINDOWPOSCHANGED, &n );
