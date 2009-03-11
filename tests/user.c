@@ -185,6 +185,7 @@ HWND received_hwnd[MAX_RECEIVED_MESSAGES];
 
 CREATESTRUCTW test_cs;
 WINDOWPOS test_winpos;
+BOOL testCalcSizeWparam;
 
 void clear_msg_sequence(void)
 {
@@ -344,6 +345,7 @@ void nccalc_callback( NTNCCALCSIZEPACKEDINFO *pack )
 	record_received( pack->wininfo->handle, pack->msg );
 	ok( pack->msg == WM_NCCALCSIZE, "message wrong %08lx\n", pack->msg );
 	ok( pack->wndproc == testWndProc, "wndproc wrong %p\n", pack->wndproc );
+	ok( pack->wparam == testCalcSizeWparam, "wparam wrong\n");
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
 
@@ -696,6 +698,7 @@ void test_create_window( ULONG style )
 		test_winpos.cx = 0;
 		test_winpos.cy = 0;
 	}
+	testCalcSizeWparam = FALSE;
 
 	window = NtUserCreateWindowEx(0x80000000, &cls, &title, test_cs.style,
 		test_cs.x, test_cs.y, test_cs.cx, test_cs.cy,
@@ -835,6 +838,7 @@ void test_create_window( ULONG style )
 	test_cs.y = test_winpos.y;
 	test_cs.cx = test_winpos.cx;
 	test_cs.cy = test_winpos.cy;
+	testCalcSizeWparam = TRUE;
 	r = NtUserMoveWindow( window, test_winpos.x, test_winpos.y, test_winpos.cx, test_winpos.cy, 0 );
 	ok( TRUE == r, "NtPostMessage failed\n");
 
