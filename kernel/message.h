@@ -103,9 +103,8 @@ public:
 // WM_WINDOWPOSCHANGING and WM_WINDOWPOSCHANGED
 class winposchange_tt : public generic_message_tt<NTPOSCHANGINGPACKEDINFO>
 {
-	WINDOWPOS& pos;
 public:
-	winposchange_tt( ULONG message, WINDOWPOS& _pos );
+	winposchange_tt( ULONG message, WINDOWPOS& pos );
 	virtual ULONG get_callback_num() const = 0;
 };
 

@@ -184,6 +184,7 @@ HWND received_hwnd[MAX_RECEIVED_MESSAGES];
 #define TEST_HEIGHT 240
 
 CREATESTRUCTW test_cs;
+WINDOWPOS test_winpos;
 
 void clear_msg_sequence(void)
 {
@@ -357,6 +358,7 @@ void position_changing_callback( PNTPOSCHANGINGPACKEDINFO pack )
 {
 	NTWINCALLBACKRETINFO ret;
 
+	//dprintf("position changing\n");
 	ok( pack->wininfo != NULL && pack->wininfo->handle != NULL, "*wininfo NULL\n" );
 	record_received( pack->wininfo->handle, pack->msg );
 	ok( pack->msg == WM_WINDOWPOSCHANGING, "message wrong %08lx\n", pack->msg );
@@ -364,6 +366,16 @@ void position_changing_callback( PNTPOSCHANGINGPACKEDINFO pack )
 	ok( pack->func != NULL, "func NULL\n" );
 	ok( get_cached_window_handle() == pack->wininfo->handle, "cached handle mismatch\n");
 	ok( get_cached_window_pointer() == pack->wininfo, "cached pointer mismatch\n");
+	ok( pack->winpos.hwnd == pack->wininfo->handle, "handle wrong\n");
+	//ok( test_cs.style & WS_VISIBLE, "invisible window received WM_POSCHANGING\n");
+
+	// check the position
+	//dprintf("WM_WINDOWPOSCHANGING: %d,%d-%d,%d %08x\n",
+		//pack->winpos.x, pack->winpos.y, pack->winpos.cx, pack->winpos.cy, pack->winpos.flags );
+	ok( pack->winpos.x == test_winpos.x, "x pos wrong %d\n", pack->winpos.x);
+	ok( pack->winpos.y == test_winpos.y, "y pos wrong %d\n", pack->winpos.y);
+	ok( pack->winpos.cx == test_winpos.cx, "cx pos wrong %d\n", pack->winpos.cx);
+	ok( pack->winpos.cy == test_winpos.cy, "cy pos wrong %d\n", pack->winpos.cy);
 
 	ret.val = 0;
 	ret.size = sizeof pack->winpos;
@@ -667,6 +679,22 @@ void test_create_window( ULONG style )
 	test_cs.style = style;
 	test_cs.dwExStyle = WS_EX_WINDOWEDGE;	// set by NtUserCreateWindowEx
 
+	//dprintf("Creating window\n");
+	if (!(style & WS_VISIBLE))
+	{
+		test_winpos.x = TEST_XPOS;
+		test_winpos.y = TEST_YPOS;
+		test_winpos.cx = TEST_WIDTH;
+		test_winpos.cy = TEST_HEIGHT;
+	}
+	else
+	{
+		test_winpos.x = 0;
+		test_winpos.y = 0;
+		test_winpos.cx = 0;
+		test_winpos.cy = 0;
+	}
+
 	window = NtUserCreateWindowEx(0x80000000, &cls, &title, test_cs.style,
 		test_cs.x, test_cs.y, test_cs.cx, test_cs.cy,
 		test_cs.hwndParent, test_cs.hMenu, test_cs.hInstance, test_cs.lpCreateParams, 0x400 );
@@ -796,11 +824,12 @@ void test_create_window( ULONG style )
 	ok( r == TRUE, "NtUserKillTimer failed\n");
 
 	// move the window
-	test_cs.x = TEST_XPOS + 15;
-	test_cs.y = TEST_YPOS + 16;
-	test_cs.cx = TEST_WIDTH + 17;
-	test_cs.cy = TEST_HEIGHT + 18;
-	r = NtUserMoveWindow( window, test_cs.x, test_cs.y, test_cs.cx, test_cs.cy, 0 );
+	//dprintf("moving window\n");
+	test_winpos.x = TEST_XPOS + 15;
+	test_winpos.y = TEST_YPOS + 16;
+	test_winpos.cx = TEST_WIDTH + 17;
+	test_winpos.cy = TEST_HEIGHT + 18;
+	r = NtUserMoveWindow( window, test_winpos.x, test_winpos.y, test_winpos.cx, test_winpos.cy, 0 );
 	ok( TRUE == r, "NtPostMessage failed\n");
 
 	check_msg( window, WM_WINDOWPOSCHANGING, &n );
@@ -819,6 +848,12 @@ void test_create_window( ULONG style )
 	ok( msg.lParam == 0, "lParam wrong %08lx\n", msg.lParam );
 	ok( get_cached_window_handle() == 0, "cached handle not clear\n");
 	ok( get_cached_window_pointer() == 0, "cached pointer not clear\n");
+
+	//dprintf("destroying window\n");
+	test_winpos.x = 0;
+	test_winpos.y = 0;
+	test_winpos.cx = 0;
+	test_winpos.cy = 0;
 
 	r = NtUserDestroyWindow( window );
 	ok( TRUE == r, "NtUserDestroyWindow failed\n");

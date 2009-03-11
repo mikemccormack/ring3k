@@ -140,9 +140,9 @@ showwindowmsg_tt::showwindowmsg_tt( bool show )
 	info.lparam = 0;
 }
 
-winposchange_tt::winposchange_tt( ULONG message, WINDOWPOS& _pos ) :
-	pos( _pos )
+winposchange_tt::winposchange_tt( ULONG message, WINDOWPOS& pos )
 {
+	memcpy( &info.winpos, &pos, sizeof pos );
 	info.msg = message;
 }
 

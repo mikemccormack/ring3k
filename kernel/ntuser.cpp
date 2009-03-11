@@ -1256,7 +1256,11 @@ window_tt* window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, 
 	if (win->style & WS_VISIBLE)
 	{
 		dprintf("Window has WS_VISIBLE\n");
-		win->set_window_pos( SWP_SHOWWINDOW );
+		win->set_window_pos( SWP_SHOWWINDOW | SWP_NOMOVE );
+
+		// move manually afterwards
+		movemsg_tt move( win->rcWnd.left, win->rcWnd.top );
+		win->send( move );
 	}
 
 	return win;
@@ -1292,6 +1296,14 @@ void window_tt::set_window_pos( UINT flags )
 
 	WINDOWPOS wp;
 	memset( &wp, 0, sizeof wp );
+	wp.hwnd = handle;
+	if (!(flags & SWP_NOMOVE))
+	{
+		wp.x = rcWnd.left;
+		wp.y = rcWnd.right;
+		wp.cx = rcWnd.right - rcWnd.left;
+		wp.cy = rcWnd.bottom - rcWnd.top;
+	}
 
 	if (flags & (SWP_SHOWWINDOW | SWP_HIDEWINDOW))
 	{
@@ -1459,9 +1471,20 @@ BOOLEAN window_tt::move_window( int x, int y, int width, int height, BOOLEAN rep
 {
 	WINDOWPOS wp;
 	memset( &wp, 0, sizeof wp );
+	wp.hwnd = handle;
+
+	wp.x = x;
+	wp.y = y;
+	wp.cx = width;
+	wp.cy = height;
 
 	winposchanging_tt poschanging( wp );
 	send( poschanging );
+
+	rcWnd.left = x;
+	rcWnd.top = y;
+	rcWnd.right = x + width;
+	rcWnd.bottom = y + height;
 
 	nccalcsize_message_tt nccalcsize;
 	send( nccalcsize );
