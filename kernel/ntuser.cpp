@@ -1658,3 +1658,8 @@ BOOLEAN NTAPI NtUserTranslateMessage( PMSG Message, ULONG )
 {
 	return 0;
 }
+
+HWND NTAPI NtUserWindowFromPoint( POINT pt )
+{
+	return 0;
+}
