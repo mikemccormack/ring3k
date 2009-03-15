@@ -109,10 +109,13 @@ SOFTWARE.
 class rect_tt : public RECT
 {
 public:
+	rect_tt() { clear(); }
+	rect_tt( RECT& r ) { left = r.left; top = r.top; right = r.right; bottom = r.bottom; }
 	void clear();
 	void set( int left, int top, int right, int bottom );
 	BOOL equal( const RECT& other ) const;
 	BOOL contains_point( int x, int y ) const;
+	BOOL contains_point( POINT& pt ) const {return contains_point( pt.x, pt.y );}
 	BOOL overlaps( const RECT& other ) const;
 	void offset( INT x, INT y );
 	void dump() const;
