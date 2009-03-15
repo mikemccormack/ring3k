@@ -20,10 +20,20 @@
 srcdir = @srcdir@
 VPATH  = @srcdir@
 
-XML_INCLUDES=-I/usr/include/libxml2
-INCLUDE_DIRS=-I$(srcdir) -I$(srcdir)/../include $(XML_INCLUDES) -I$(srcdir)/../libudis86 -I../libudis86 -I$(srcdir)/../include/common
+XML_INCLUDES = -I/usr/include/libxml2
+
+INCLUDE_DIRS += $(srcdir)
+INCLUDE_DIRS += $(srcdir)/../include
+INCLUDE_DIRS += $(srcdir)/../libudis86
+INCLUDE_DIRS += ../libudis86
+INCLUDE_DIRS += $(srcdir)/../include/common
+
+CFLAGS_COMMON += $(FREETYPEINCL)
+CFLAGS_COMMON += $(XML_INCLUDES)
+CFLAGS_COMMON += $(INCLUDE_DIRS:%=-I%)
+CFLAGS_COMMON += -g -Wall -O2 -D__i386__ -fshort-wchar -fno-strict-aliasing
+
 DEPFLAG=-Wp,-MD,.$@.d
-CFLAGS_COMMON=-g -Wall -O2 -D__i386__ -fshort-wchar -fno-strict-aliasing $(INCLUDE_DIRS)
 CFLAGS=-Wpointer-arith
 CPPFLAGS=$(CFLAGS_COMMON) $(DEPFLAG)
 LIBS=-lxml2 @LIBSDL@ ../libudis86/libudis86.a
