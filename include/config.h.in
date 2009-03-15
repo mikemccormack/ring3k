@@ -9,8 +9,17 @@
 /* Define to 1 if you have the `clone' function. */
 #undef HAVE_CLONE
 
+/* Define if you have the Freetype 2 library */
+#undef HAVE_FREETYPE
+
+/* Define to 1 if you have the <freetype/freetype.h> header file. */
+#undef HAVE_FREETYPE_FREETYPE_H
+
 /* Define to 1 if you have the `fstatat' function. */
 #undef HAVE_FSTATAT
+
+/* Define to 1 if you have the <ft2build.h> header file. */
+#undef HAVE_FT2BUILD_H
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
@@ -24,7 +33,7 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
-/* Define if you have the SDL library */
+/* Define if you have the SDL-1.2 library */
 #undef HAVE_SDL
 
 /* Define to 1 if you have the <SDL/SDL.h> header file. */

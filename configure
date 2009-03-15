@@ -669,6 +669,9 @@ CPP
 GREP
 EGREP
 LIBSDL
+ft_devel
+FREETYPELIBS
+FREETYPEINCL
 MINGW32CC
 MINGW32STRIP
 MINGW32AS
@@ -4084,6 +4087,7 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 
+ac_save_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS -I/usr/include/libxml2"
 
 for ac_header in libxml/parser.h
@@ -4575,6 +4579,202 @@ fi
 
 done
 
+CPPFLAGS="$ac_save_CPPFLAGS"
+
+for ac_prog in freetype-config freetype2-config
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_prog_ft_devel+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test -n "$ft_devel"; then
+  ac_cv_prog_ft_devel="$ft_devel" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ft_devel="$ac_prog"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+fi
+fi
+ft_devel=$ac_cv_prog_ft_devel
+if test -n "$ft_devel"; then
+  { echo "$as_me:$LINENO: result: $ft_devel" >&5
+echo "${ECHO_T}$ft_devel" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  test -n "$ft_devel" && break
+done
+test -n "$ft_devel" || ft_devel="no"
+
+if test "$ft_devel" != "no"
+then
+	ac_freetype_incl=`$ft_devel --cflags`
+	ac_freetype_libs=`$ft_devel --libs`
+fi
+ac_save_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $ac_freetype_incl"
+
+
+for ac_header in ft2build.h \
+	freetype/freetype.h
+do
+as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
+{ echo "$as_me:$LINENO: checking for $ac_header" >&5
+echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6; }
+if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+	#ifdef HAVE_FT2BUILD_H
+	# include <ft2build.h>
+	#endif
+
+
+#include <$ac_header>
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  eval "$as_ac_Header=yes"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	eval "$as_ac_Header=no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+ac_res=`eval echo '${'$as_ac_Header'}'`
+	       { echo "$as_me:$LINENO: result: $ac_res" >&5
+echo "${ECHO_T}$ac_res" >&6; }
+if test `eval echo '${'$as_ac_Header'}'` = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define `echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+{ echo "$as_me:$LINENO: checking for FT_Init_FreeType in -lfreetype" >&5
+echo $ECHO_N "checking for FT_Init_FreeType in -lfreetype... $ECHO_C" >&6; }
+if test "${ac_cv_lib_freetype_FT_Init_FreeType+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lfreetype $ac_freetype_libs $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char FT_Init_FreeType ();
+int
+main ()
+{
+return FT_Init_FreeType ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_freetype_FT_Init_FreeType=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_freetype_FT_Init_FreeType=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_freetype_FT_Init_FreeType" >&5
+echo "${ECHO_T}$ac_cv_lib_freetype_FT_Init_FreeType" >&6; }
+if test $ac_cv_lib_freetype_FT_Init_FreeType = yes; then
+  ft_lib=yes
+else
+  ft_lib=no
+fi
+
+CPPFLAGS="$ac_save_CPPFLAGS"
+if test "$ac_cv_header_freetype_freetype_h" = "yes" -a "$ft_lib" = "yes"
+then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_FREETYPE 1
+_ACEOF
+
+	FREETYPELIBS="$ac_freetype_libs"
+
+	FREETYPEINCL="$ac_freetype_incl"
+
+fi
 
 for ac_prog in i686-pc-mingw32-gcc i586-mingw32msvc-cc no
 do
@@ -5837,6 +6037,9 @@ CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 LIBSDL!$LIBSDL$ac_delim
+ft_devel!$ft_devel$ac_delim
+FREETYPELIBS!$FREETYPELIBS$ac_delim
+FREETYPEINCL!$FREETYPEINCL$ac_delim
 MINGW32CC!$MINGW32CC$ac_delim
 MINGW32STRIP!$MINGW32STRIP$ac_delim
 MINGW32AS!$MINGW32AS$ac_delim
@@ -5848,7 +6051,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 65; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 68; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -6290,6 +6493,13 @@ if test "$ac_cv_lib_SDL_1_2_SDL_Init" != "yes" -a \
 then
 	{ echo "$as_me:$LINENO: WARNING: libSDL development libraries not present (Debian package is libsdl1.2-dev)" >&5
 echo "$as_me: WARNING: libSDL development libraries not present (Debian package is libsdl1.2-dev)" >&2;}
+fi
+
+if test "$ac_cv_header_freetype_freetype_h" != "yes" -o \
+	"$ft_lib" != "yes"
+then
+	{ echo "$as_me:$LINENO: WARNING: freetype2 development libraries not present (Debian package is libfreetype6-dev)" >&5
+echo "$as_me: WARNING: freetype2 development libraries not present (Debian package is libfreetype6-dev)" >&2;}
 fi
 
 if test x"$MINGW32CC" = "x"

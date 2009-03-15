@@ -20,6 +20,7 @@ AC_CONFIG_HEADERS([include/config.h])
 AC_CHECK_HEADERS([asm/ptrace.h])
 AC_CHECK_HEADERS([valgrind/valgrind.h])
 
+dnl Check how to jmp to a C function from asm
 AC_MSG_CHECKING([asm symbol prefix])
 AC_TRY_LINK([], [__asm__("\n\tjmp _main\n":::"memory");],
 	[AC_DEFINE([ASM_NAME_PREFIX],["_"],[Symbol prefix])
@@ -27,19 +28,48 @@ AC_TRY_LINK([], [__asm__("\n\tjmp _main\n":::"memory");],
 	[AC_DEFINE([ASM_NAME_PREFIX],[""],[Symbol prefix])
 	AC_MSG_RESULT(none)])
 
+dnl Check for libxml2
+ac_save_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS -I/usr/include/libxml2"
 AC_CHECK_HEADERS(libxml/parser.h,
 	[AC_CHECK_LIB(xml2, xmlParseMemory,
 		[AC_DEFINE(HAVE_LIBXML2, 1, [Define if you have the libxml2 library])])])
 
+dnl Check for SDL
 AC_CHECK_HEADERS(SDL/SDL.h,
 	[AC_CHECK_LIB(SDL, SDL_Init,
 		[AC_DEFINE(HAVE_SDL, 1, [Define if you have the SDL library])]
 		[AC_SUBST(LIBSDL,"-lSDL")])]
 	[AC_CHECK_LIB(SDL-1.2, SDL_Init,
-		[AC_DEFINE(HAVE_SDL, 1, [Define if you have the SDL library])]
+		[AC_DEFINE(HAVE_SDL, 1, [Define if you have the SDL-1.2 library])]
 		[AC_SUBST(LIBSDL,"-lSDL-1.2")])])
+CPPFLAGS="$ac_save_CPPFLAGS"
 
+dnl Check for Freetype (mostly borrowed from Wine's configure.ac)
+AC_CHECK_PROGS(ft_devel,[freetype-config freetype2-config],no)
+if test "$ft_devel" != "no"
+then
+	ac_freetype_incl=`$ft_devel --cflags`
+	ac_freetype_libs=`$ft_devel --libs`
+fi
+ac_save_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $ac_freetype_incl"
+AC_CHECK_HEADERS(ft2build.h \
+	freetype/freetype.h,,,[
+	#ifdef HAVE_FT2BUILD_H
+	# include <ft2build.h>
+	#endif
+	])
+AC_CHECK_LIB(freetype,FT_Init_FreeType,[ft_lib=yes],[ft_lib=no],[$ac_freetype_libs])
+CPPFLAGS="$ac_save_CPPFLAGS"
+if test "$ac_cv_header_freetype_freetype_h" = "yes" -a "$ft_lib" = "yes"
+then
+	AC_DEFINE(HAVE_FREETYPE, 1, [Define if you have the Freetype 2 library])
+	AC_SUBST(FREETYPELIBS,"$ac_freetype_libs")
+	AC_SUBST(FREETYPEINCL,"$ac_freetype_incl")
+fi
+
+dnl Check for mingw32 cross compilation environment
 AC_CHECK_PROGS(MINGW32CC,i686-pc-mingw32-gcc i586-mingw32msvc-cc no)
 AC_CHECK_PROGS(MINGW32STRIP,i686-pc-mingw32-strip i586-mingw32msvc-strip no)
 AC_CHECK_PROGS(MINGW32AS,i686-pc-mingw32-as i586-mingw32msvc-as no)
@@ -77,6 +107,12 @@ if test "$ac_cv_lib_SDL_1_2_SDL_Init" != "yes" -a \
 	"$ac_cv_lib_SDL_SDL_Init" != "yes"
 then
 	AC_MSG_WARN([libSDL development libraries not present (Debian package is libsdl1.2-dev)])
+fi
+
+if test "$ac_cv_header_freetype_freetype_h" != "yes" -o \
+	"$ft_lib" != "yes"
+then
+	AC_MSG_WARN([freetype2 development libraries not present (Debian package is libfreetype6-dev)])
 fi
 
 if test x"$MINGW32CC" = "x"
