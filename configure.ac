@@ -34,6 +34,8 @@ CPPFLAGS="$CPPFLAGS -I/usr/include/libxml2"
 AC_CHECK_HEADERS(libxml/parser.h,
 	[AC_CHECK_LIB(xml2, xmlParseMemory,
 		[AC_DEFINE(HAVE_LIBXML2, 1, [Define if you have the libxml2 library])])])
+AC_SUBST(XML2LIBS,"-lxml2")
+AC_SUBST(XML2INCL,"-I/usr/include/libxml2")
 
 dnl Check for SDL
 AC_CHECK_HEADERS(SDL/SDL.h,

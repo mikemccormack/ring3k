@@ -1,6 +1,6 @@
 # nt loader
 #
-# Copyright 2006-2008 Mike McCormack
+# Copyright 2006-2009 Mike McCormack
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,7 @@
 srcdir = @srcdir@
 VPATH  = @srcdir@
 
-XML_INCLUDES = -I/usr/include/libxml2
+XML_INCLUDES = @XML2INCL@
 
 INCLUDE_DIRS += $(srcdir)
 INCLUDE_DIRS += $(srcdir)/../include
@@ -33,11 +33,11 @@ CFLAGS_COMMON += $(XML_INCLUDES)
 CFLAGS_COMMON += $(INCLUDE_DIRS:%=-I%)
 CFLAGS_COMMON += -g -Wall -O2 -D__i386__ -fshort-wchar -fno-strict-aliasing
 
-DEPFLAG=-Wp,-MD,.$@.d
-CFLAGS=-Wpointer-arith
-CPPFLAGS=$(CFLAGS_COMMON) $(DEPFLAG)
-LIBS=-lxml2 @LIBSDL@ ../libudis86/libudis86.a
-LDFLAGS=-rdynamic
+DEPFLAG = -Wp,-MD,.$@.d
+CFLAGS = -Wpointer-arith
+CPPFLAGS = $(CFLAGS_COMMON) $(DEPFLAG)
+LIBS = @XML2LIBS@ @LIBSDL@ ../libudis86/libudis86.a
+LDFLAGS = -rdynamic
 
 CC = @CC@
 CXX = @CXX@

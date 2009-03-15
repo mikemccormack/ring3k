@@ -668,6 +668,8 @@ INSTALL_DATA
 CPP
 GREP
 EGREP
+XML2LIBS
+XML2INCL
 LIBSDL
 ft_devel
 FREETYPELIBS
@@ -4297,6 +4299,10 @@ fi
 
 done
 
+XML2LIBS="-lxml2"
+
+XML2INCL="-I/usr/include/libxml2"
+
 
 
 for ac_header in SDL/SDL.h
@@ -6036,6 +6042,8 @@ INSTALL_DATA!$INSTALL_DATA$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
+XML2LIBS!$XML2LIBS$ac_delim
+XML2INCL!$XML2INCL$ac_delim
 LIBSDL!$LIBSDL$ac_delim
 ft_devel!$ft_devel$ac_delim
 FREETYPELIBS!$FREETYPELIBS$ac_delim
@@ -6051,7 +6059,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 68; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 70; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
