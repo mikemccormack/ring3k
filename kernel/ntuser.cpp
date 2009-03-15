@@ -344,6 +344,7 @@ void create_desktop_window()
 	if (!desktop_window)
 		return;
 
+	memset( desktop_window, 0, sizeof (window_tt) );
 	desktop_window->rcWnd.left = 0;
 	desktop_window->rcWnd.top = 0;
 	desktop_window->rcWnd.right = 640;
@@ -998,25 +999,19 @@ NTSTATUS user32_unicode_string_t::copy_from_user( PUSER32_UNICODE_STRING String 
 	return copy_wstr_from_user( str.Buffer, str.Length );
 }
 
-// window list
-WND *window_tt::first;
+window_tt::window_tt()
+{
+	memset( this, 0, sizeof *this );
+}
 
 void window_tt::link_window( window_tt* parent_win )
 {
 	assert( next == NULL );
 	assert( parent == NULL );
+	assert( parent_win != NULL );
 	parent = parent_win;
-	if (parent)
-	{
-		next = parent->first_child;
-		parent->first_child = this;
-	}
-	else
-	{
-		assert( first != this );
-		next = first;
-		first = this;
-	}
+	next = parent->first_child;
+	parent->first_child = this;
 	assert( next != this );
 }
 
@@ -1030,17 +1025,14 @@ void window_tt::unlink_window()
 		return;
 	}
 	WND **p;
-	if (parent)
-		p = &parent->first_child;
-	else
-		p = &first;
+	assert (parent != NULL);
+	p = &parent->first_child;
 
 	while (*p != this)
 		p = &((*p)->next);
 	assert (*p);
-	*p = this->next;
+	*p = next;
 	next = NULL;
-	assert( first != this );
 }
 
 void* window_tt::operator new(size_t sz)
@@ -1178,6 +1170,8 @@ window_tt* window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, 
 		if (!parent_win)
 			return FALSE;
 	}
+	else
+		parent_win = desktop_window;
 
 	wndcls_tt* wndcls = wndcls_tt::from_name( cls );
 	if (!wndcls)
@@ -1269,12 +1263,33 @@ window_tt* window_tt::do_create( unicode_string_t& name, unicode_string_t& cls, 
 
 window_tt* window_tt::find_window_to_repaint( HWND window, thread_t* thread )
 {
-	for (WND *p = first; p; p = p->next)
+	window_tt *win;
+	if (window)
 	{
-		window_tt *win = reinterpret_cast<window_tt*>( p );
-		region_tt*& region = win->get_invalid_region();
+		win = window_from_handle( window );
+		if (!win)
+			return FALSE;
+	}
+	else
+		win = desktop_window;
 
+	return find_window_to_repaint( win, thread );
+}
+
+window_tt* window_tt::find_window_to_repaint( window_tt* win, thread_t* thread )
+{
+	// special case the desktop window for the moment
+	if (win->parent)
+	{
+		region_tt*& region = win->get_invalid_region();
 		if (region->get_region_type() != NULLREGION)
+			return win;
+	}
+
+	for (WND *p = win->first_child; p; p = p->next)
+	{
+		win = find_window_to_repaint( p->handle, thread );
+		if (win)
 			return win;
 	}
 

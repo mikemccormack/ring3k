@@ -58,10 +58,9 @@ class window_tt : public WND
 {
 	// no virtual functions here, binary compatible with user side WND struct
 public:
-	static WND *first;
-public:
 	void* operator new(size_t sz);
 	void operator delete(void *p);
+	window_tt();
 	~window_tt();
 	static window_tt* do_create( unicode_string_t& name, unicode_string_t& cls, NTCREATESTRUCT& cs );
 	NTSTATUS send( message_tt& msg );
@@ -75,6 +74,7 @@ public:
 	BOOLEAN destroy();
 	void set_window_pos( UINT flags );
 	static window_tt* find_window_to_repaint( HWND window, thread_t* thread );
+	static window_tt* find_window_to_repaint( window_tt* win, thread_t* thread );
 	void link_window( window_tt *parent );
 	void unlink_window();
 	BOOLEAN move_window( int x, int y, int width, int height, BOOLEAN repaint );
