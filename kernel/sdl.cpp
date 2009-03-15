@@ -35,6 +35,9 @@
 #include "ntwin32.h"
 #include "sdl.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #if defined (HAVE_SDL) && defined (HAVE_SDL_SDL_H)
 #include <SDL/SDL.h>
 
@@ -42,6 +45,7 @@ class win32k_sdl_t : public win32k_manager_t, public sleeper_t
 {
 protected:
 	SDL_Surface *screen;
+	FT_Library ftlib;
 public:
 	virtual BOOL init();
 	virtual void fini();
@@ -379,6 +383,10 @@ BOOL win32k_sdl_t::init()
 	brush_t light_blue(0, RGB(0x3b, 0x72, 0xa9), 0);
 	rectangle( 0, 0, screen->w, screen->h, &light_blue );
 
+	FT_Error r = FT_Init_FreeType( &ftlib );
+	if (r != 0)
+		return FALSE;
+
 	sleeper = this;
 
 	return TRUE;
@@ -388,6 +396,7 @@ void win32k_sdl_t::fini()
 {
 	if ( !SDL_WasInit(SDL_INIT_VIDEO) )
 		return;
+	FT_Done_FreeType( ftlib );
 	SDL_Quit();
 }
 

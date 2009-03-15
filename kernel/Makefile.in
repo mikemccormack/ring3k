@@ -22,6 +22,8 @@ VPATH  = @srcdir@
 
 XML_INCLUDES = @XML2INCL@
 
+FREETYPEINCL = @FREETYPEINCL@
+
 INCLUDE_DIRS += $(srcdir)
 INCLUDE_DIRS += $(srcdir)/../include
 INCLUDE_DIRS += $(srcdir)/../libudis86
@@ -36,7 +38,12 @@ CFLAGS_COMMON += -g -Wall -O2 -D__i386__ -fshort-wchar -fno-strict-aliasing
 DEPFLAG = -Wp,-MD,.$@.d
 CFLAGS = -Wpointer-arith
 CPPFLAGS = $(CFLAGS_COMMON) $(DEPFLAG)
-LIBS = @XML2LIBS@ @LIBSDL@ ../libudis86/libudis86.a
+
+LIBS += @XML2LIBS@
+LIBS += @LIBSDL@
+LIBS += @FREETYPELIBS@
+LIBS += ../libudis86/libudis86.a
+
 LDFLAGS = -rdynamic
 
 CC = @CC@
