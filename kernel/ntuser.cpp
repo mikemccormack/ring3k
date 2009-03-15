@@ -1674,7 +1674,21 @@ BOOLEAN NTAPI NtUserTranslateMessage( PMSG Message, ULONG )
 	return 0;
 }
 
+HWND window_tt::from_point( POINT& pt )
+{
+	for (PWND win = first_child; win; win = win->next)
+	{
+		rect_tt r( win->rcWnd );
+		if (r.contains_point( pt ))
+			return win->handle;
+	}
+	return handle;
+}
+
 HWND NTAPI NtUserWindowFromPoint( POINT pt )
 {
-	return 0;
+	window_tt *win = desktop_window;
+	if (!win)
+		return 0;
+	return win->from_point( pt );
 }

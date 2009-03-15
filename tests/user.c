@@ -638,6 +638,35 @@ void check_classinfo( PCLASSINFO kernel_clsptr )
 	ok( cls->pSelf == kernel_clsptr, "self pointer wrong\n");
 }
 
+void test_point_from_window( HWND window, INT x, INT y, INT cx, INT cy )
+{
+	POINT pt;
+	HWND hwnd;
+
+	pt.x = x;
+	pt.y = y;
+	hwnd = NtUserWindowFromPoint( pt );
+	ok( hwnd == window, "window wrong %p %p\n", hwnd, window);
+
+	pt.x--;
+	hwnd = NtUserWindowFromPoint( pt );
+	ok( hwnd != window, "window wrong\n");
+
+	pt.x++;
+	pt.y--;
+	hwnd = NtUserWindowFromPoint( pt );
+	ok( hwnd != window, "window wrong\n");
+
+	pt.y++;
+	pt.x += test_cs.cx;
+	hwnd = NtUserWindowFromPoint( pt );
+	ok( hwnd != window, "window wrong\n");
+
+	pt.x--;
+	hwnd = NtUserWindowFromPoint( pt );
+	ok( hwnd == window, "window wrong %p %p\n", hwnd, window);
+}
+
 // argument selects a set of window styles
 void test_create_window( ULONG style )
 {
@@ -841,6 +870,9 @@ void test_create_window( ULONG style )
 	testCalcSizeWparam = TRUE;
 	r = NtUserMoveWindow( window, test_winpos.x, test_winpos.y, test_winpos.cx, test_winpos.cy, 0 );
 	ok( TRUE == r, "NtPostMessage failed\n");
+
+	if (style & WS_VISIBLE)
+		test_point_from_window( window, test_cs.x, test_cs.y, test_cs.cx, test_cs.cy );
 
 	ptr = (PWND) NtUserCallOneParam( (ULONG) window, NTUCOP_GETWNDPTR );
 	ok(ptr->rcWnd.left == test_winpos.x, "rcWnd.left wrong\n");

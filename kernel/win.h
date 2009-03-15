@@ -78,6 +78,7 @@ public:
 	void link_window( window_tt *parent );
 	void unlink_window();
 	BOOLEAN move_window( int x, int y, int width, int height, BOOLEAN repaint );
+	HWND from_point( POINT& pt );
 };
 
 window_tt *window_from_handle( HANDLE handle );
