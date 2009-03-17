@@ -210,10 +210,10 @@ BOOL win32k_sdl_t::exttextout( INT x, INT y, UINT options,
 			continue;
 
 		FT_BitmapGlyph bitmap = (FT_BitmapGlyph) glyph;
+		freetype_bitblt( x+dx+bitmap->left, y+dy+bitmap->top, &bitmap->bitmap );
+
 		dx += bitmap->bitmap.width;
 		dy += 0;
-
-		freetype_bitblt( x+dx+bitmap->left, y+dy+bitmap->top, &bitmap->bitmap );
 
 		FT_Done_Glyph( glyph );
 	}
