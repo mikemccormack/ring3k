@@ -1,7 +1,12 @@
 /*
  * nt loader
  *
- * Copyright 2006-2008 Mike McCormack
+ * Copyright 2006-2009 Mike McCormack
+ *
+ * Portions based upon Wine DIB engine implementation by:
+ *
+ *  Copyright 2007 Jesse Allen
+ *  Copyright 2008 Massimo Del Fedele
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,8 +40,10 @@
 #include "ntwin32.h"
 #include "sdl.h"
 
+// the freetype project certainly has their own way of doing things :/
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_GLYPH_H
 
 #if defined (HAVE_SDL) && defined (HAVE_SDL_SDL_H)
 #include <SDL/SDL.h>
@@ -46,6 +53,7 @@ class win32k_sdl_t : public win32k_manager_t, public sleeper_t
 protected:
 	SDL_Surface *screen;
 	FT_Library ftlib;
+	FT_Face face;
 public:
 	virtual BOOL init();
 	virtual void fini();
@@ -70,6 +78,8 @@ protected:
 	bool handle_sdl_event( SDL_Event& event );
 	WORD sdl_keysum_to_vkey( SDLKey sym );
 	ULONG get_mouse_button( Uint8 button, bool up );
+	void freetype_bitblt( int x, int y, FT_Bitmap* bitmap );
+	COLORREF freetype_get_pixel( int x, int y, FT_Bitmap* bitmap );
 };
 
 win32k_sdl_t::win32k_sdl_t()
@@ -123,18 +133,95 @@ BOOL win32k_sdl_t::rectangle(INT left, INT top, INT right, INT bottom, brush_t* 
 	return TRUE;
 }
 
+COLORREF win32k_sdl_t::freetype_get_pixel( int x, int y, FT_Bitmap* bitmap )
+{
+	int bytes_per_row;
+	int val;
+	switch (bitmap->pixel_mode)
+	{
+	case FT_PIXEL_MODE_MONO:
+		bytes_per_row = bitmap->pitch;
+		val = (bitmap->buffer[bytes_per_row*y + (x>>3)] << (x&7)) & 0x80;
+		return val ? RGB( 255, 255, 255 ) : RGB( 0, 0, 0 );
+	default:
+		dprintf("unknown freetype pixel mode %d\n", bitmap->pixel_mode);
+		return 0;
+	}
+}
+
+void win32k_sdl_t::freetype_bitblt( int x, int y, FT_Bitmap* bitmap )
+{
+	INT bmpX, bmpY;
+	BYTE *buf;
+	INT j, i;
+
+	dprintf("glyph is %dx%d\n", bitmap->rows, bitmap->width);
+	dprintf("pixel mode is %d\n", bitmap->pixel_mode );
+	dprintf("destination is %d,%d\n", x, y );
+	dprintf("pitch is %d\n", bitmap->pitch );
+
+	/* loop for every pixel in bitmap */
+	buf = bitmap->buffer;
+	for (bmpY = 0, i = y; bmpY < bitmap->rows; bmpY++, i++)
+	{
+		for (bmpX = 0, j = x; bmpX < bitmap->width; bmpX++, j++)
+		{
+			// FIXME: assumes text color is black
+			COLORREF color = freetype_get_pixel( bmpX, bmpY, bitmap );
+			set_pixel( j, i, color );
+		}
+	}
+
+}
+
 BOOL win32k_sdl_t::exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text )
 {
+	dprintf("text: %pus\n", &text );
+
+	FT_Open_Args args;
+	memset( &args, 0, sizeof args );
+	args.flags = FT_OPEN_PATHNAME;
+	args.pathname = "drive/winnt/system32/vgasys.fon";
+
+	FT_Error r = FT_Open_Face( ftlib, &args, 0, &face );
+	if (r)
+		return FALSE;
+
 	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
 		return FALSE;
 
-	dprintf("text: %pus\n", &text );
+	int dx = 0, dy = 0;
+	for (int i=0; i<text.Length/2; i++)
+	{
+		WCHAR ch = text.Buffer[i];
+		FT_UInt glyph_index = FT_Get_Char_Index( face, ch );
+
+		r = FT_Load_Glyph( face, glyph_index, FT_LOAD_DEFAULT );
+		if (r)
+			continue;
+
+		FT_Glyph glyph;
+		r = FT_Get_Glyph( face->glyph, &glyph );
+		if (r)
+			continue;
+
+		if (glyph->format != FT_GLYPH_FORMAT_BITMAP )
+			continue;
+
+		FT_BitmapGlyph bitmap = (FT_BitmapGlyph) glyph;
+		dx += bitmap->bitmap.width;
+		dy += 0;
+
+		freetype_bitblt( x+dx+bitmap->left, y+dy+bitmap->top, &bitmap->bitmap );
+
+		FT_Done_Glyph( glyph );
+	}
 
 	if ( SDL_MUSTLOCK(screen) )
 		SDL_UnlockSurface(screen);
 
-	//SDL_UpdateRect( screen, left, top, right - left, bottom - top );
+	SDL_UpdateRect( screen, x, y, x+dx, y+dy);
 
 	return TRUE;
 }
