@@ -518,29 +518,17 @@ section_t *gdi_object_t::g_gdi_section;
 BYTE *gdi_object_t::g_gdi_shared_memory;
 allocation_bitmap_t* gdi_object_t::g_gdi_shared_bitmap;
 
-class memory_device_context_factory_t : public device_context_factory_t {
-public:
-	device_context_t* alloc() { return new memory_device_context_t; }
-};
-
 HGDIOBJ win32k_manager_t::alloc_compatible_dc()
 {
-	memory_device_context_factory_t factory;
-	device_context_t* dc = device_context_t::alloc( &factory );
+	device_context_t* dc = new memory_device_context_t;
 	if (!dc)
 		return NULL;
 	return dc->get_handle();
 }
 
-class screen_device_context_factory_t : public device_context_factory_t {
-public:
-	device_context_t* alloc() { return new screen_device_context_t; }
-};
-
 device_context_t* win32k_manager_t::alloc_screen_dc_ptr()
 {
-	static screen_device_context_factory_t factory;
-	return device_context_t::alloc( &factory );
+	return new screen_device_context_t;
 }
 
 HGDIOBJ win32k_manager_t::alloc_screen_dc()
@@ -582,13 +570,6 @@ void gdi_object_t::init_gdi_shared_mem()
 
 		current->process->vm->set_tracer( dc_shared_mem, gdishm_trace );
 	}
-}
-
-device_context_t::device_context_t() :
-	selected_bitmap( 0 ),
-	saved_dc( 0 ),
-	saveLevel( 0 )
-{
 }
 
 // see SaveDC in wine/dlls/gdi32/dc.c
@@ -659,29 +640,27 @@ void gdi_object_t::free_gdi_shared_memory( BYTE *shm )
 	g_gdi_shared_bitmap->free( shm );
 }
 
-device_context_t* device_context_t::alloc( device_context_factory_t *factory )
+device_context_t::device_context_t() :
+	selected_bitmap( 0 ),
+	saved_dc( 0 ),
+	saveLevel( 0 )
 {
-	// make sure shared memory is allocated
-
-	device_context_t* dc = factory->alloc();
-	if (!dc)
-		return NULL;
-
 	// calculate user side pointer to the chunk
 	BYTE *shm = alloc_gdi_shared_memory( sizeof (GDI_DEVICE_CONTEXT_SHARED) );
 	if (!shm)
-		return NULL;
+		throw;
+
 	dprintf("dc offset %08x\n", shm - g_gdi_shared_memory );
 	BYTE *user_shm = gdi_object_t::kernel_to_user( shm );
 
-	dc->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, user_shm, dc );
+	handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, user_shm, this );
+	if (!handle)
+		throw;
 
-	GDI_DEVICE_CONTEXT_SHARED *dcshm = dc->get_dc_shared_mem();
+	GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
 	dcshm->Brush = (HBRUSH) win32k_manager->get_stock_object( WHITE_BRUSH );
 	dcshm->TextColor = RGB( 0, 0, 0 );
 	dcshm->BackgroundColor = RGB( 255, 255, 255 );
-
-	return dc;
 }
 
 BOOL device_context_t::release()

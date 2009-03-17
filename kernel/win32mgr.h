@@ -50,10 +50,10 @@ public:
 	virtual ~win32k_manager_t();
 	virtual BOOL init() = 0;
 	virtual void fini() = 0;
-	HGDIOBJ alloc_compatible_dc();
-	HGDIOBJ alloc_screen_dc();
-	device_context_t* alloc_screen_dc_ptr();
-	BOOL release_dc( HGDIOBJ dc );
+	virtual HGDIOBJ alloc_compatible_dc();
+	virtual HGDIOBJ alloc_screen_dc();
+	virtual device_context_t* alloc_screen_dc_ptr();
+	virtual BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
@@ -149,15 +149,6 @@ public:
 	bool is_valid() const { return magic == magic_val; }
 };
 
-class device_context_t;
-
-class device_context_factory_t
-{
-public:
-	virtual device_context_t* alloc() = 0;
-	virtual ~device_context_factory_t() {};
-};
-
 class dc_state_tt
 {
 public:
@@ -175,10 +166,8 @@ public:
 	static const ULONG max_device_contexts = 0x100;
 	static const ULONG dc_size = 0x100;
 
-protected:
-	device_context_t();
 public:
-	static device_context_t* alloc( device_context_factory_t *factory );
+	device_context_t();
 	GDI_DEVICE_CONTEXT_SHARED* get_dc_shared_mem() const;
 	virtual BOOL release();
 	brush_t* get_selected_brush();
