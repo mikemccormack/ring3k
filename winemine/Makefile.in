@@ -46,3 +46,9 @@ clean:
 install:
 
 uninstall:
+
+ISO = winemine.iso
+
+cdrom:
+	genisoimage -r -J -input-charset utf-8 -o $(ISO) $(TARGET)
+	
