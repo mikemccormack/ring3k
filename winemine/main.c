@@ -772,7 +772,7 @@ void DrawLeds( HDC hdc, HDC hMemDC, BOARD *p_board, int number, int x, int y )
     SelectObject( hMemDC, hOldObj );
 #else
     char buffer[10];
-    sprintf(buffer,"%3d", number);
+    sprintf(buffer,"%3d ", number);
     TextOut(hdc, x, y, buffer, strlen(buffer));
 #endif
 }
