@@ -232,5 +232,6 @@ HGDIOBJ alloc_gdi_handle( BOOL stock, ULONG type, void *user_info, gdi_object_t*
 HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type );
 gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle);
 BOOLEAN do_gdi_init();
+gdi_bitmap_t* bitmap_from_handle( HANDLE handle );
 
 #endif // __WIN32K_MANAGER__

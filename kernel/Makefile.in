@@ -62,6 +62,7 @@ C_SOURCES = \
 CPP_SOURCES = \
 	alloc_bitmap.cpp \
 	atom.cpp \
+	bitmap.cpp \
 	block.cpp \
 	completion.cpp \
 	debug.cpp \
