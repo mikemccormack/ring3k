@@ -124,7 +124,7 @@ public:
 	COLORREF get_color() {return color;}
 };
 
-class bitmap_t : public gdi_object_t
+class bitmap_t
 {
 	static const int magic_val = 0xbb11aa22;
 	int magic;
@@ -137,16 +137,23 @@ protected:
 	void dump();
 public:
 	bitmap_t( int _width, int _height, int _planes, int _bpp );
-	~bitmap_t();
+	virtual ~bitmap_t();
 	ULONG bitmap_size();
 	int get_width() {return width;}
 	int get_height() {return height;}
 	int get_planes() {return planes;}
 	ULONG get_rowsize();
-	COLORREF get_pixel( int x, int y );
-	BOOL set_pixel( INT x, INT y, COLORREF color );
+	virtual COLORREF get_pixel( int x, int y );
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	bool is_valid() const { return magic == magic_val; }
 	NTSTATUS copy_pixels( void* pixels );
+};
+
+class gdi_bitmap_t : public bitmap_t, public gdi_object_t
+{
+public:
+	gdi_bitmap_t( int _width, int _height, int _planes, int _bpp );
+	~gdi_bitmap_t();
 };
 
 class dc_state_tt
@@ -158,7 +165,7 @@ public:
 
 class device_context_t : public gdi_object_t
 {
-	bitmap_t* selected_bitmap;
+	gdi_bitmap_t* selected_bitmap;
 	RECT BoundsRect;
 	dc_state_tt *saved_dc;
 	INT saveLevel;
@@ -180,7 +187,7 @@ public:
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text ) = 0;
-	virtual HANDLE select_bitmap( bitmap_t *bitmap );
+	virtual HANDLE select_bitmap( gdi_bitmap_t *bitmap );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t* src, INT xSrc, INT ySrc, ULONG rop );
 	virtual COLORREF get_pixel( INT x, INT y ) = 0;
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;

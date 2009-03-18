@@ -103,7 +103,7 @@ BOOL gdi_object_t::release()
 		return FALSE;
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
 	assert( entry );
-	assert( entry->kernel_info == this );
+	assert( reinterpret_cast<gdi_object_t*>( entry->kernel_info ) == this );
 	memset( entry, 0, sizeof *entry );
 	delete this;
 	return TRUE;
@@ -432,7 +432,7 @@ HGDIOBJ alloc_gdi_handle( BOOL stock, ULONG type, void *user_info, gdi_object_t*
 	HGDIOBJ handle = makeHGDIOBJ(0,stock,type,index);
 	table[index].Upper = (ULONG)handle >> 16;
 	table[index].user_info = user_info;
-	table[index].kernel_info = (void*) obj;
+	table[index].kernel_info = reinterpret_cast<void*>( obj );
 
 	return handle;
 }
@@ -671,10 +671,10 @@ BOOL device_context_t::release()
 	return TRUE;
 }
 
-HANDLE device_context_t::select_bitmap( bitmap_t *bitmap )
+HANDLE device_context_t::select_bitmap( gdi_bitmap_t *bitmap )
 {
 	assert( bitmap->is_valid() );
-	bitmap_t* old = selected_bitmap;
+	gdi_bitmap_t* old = selected_bitmap;
 	selected_bitmap = bitmap;
 	bitmap->select();
 	if (!old)
@@ -811,8 +811,8 @@ brush_t* brush_from_handle( HGDIOBJ handle )
 		return FALSE;
 	if (entry->Type != GDI_OBJECT_BRUSH)
 		return FALSE;
-	assert( entry->kernel_info );
-	return (brush_t*) entry->kernel_info;
+	gdi_object_t* obj = reinterpret_cast<gdi_object_t*>( entry->kernel_info );
+	return static_cast<brush_t*>( obj );
 }
 
 brush_t* device_context_t::get_selected_brush()
@@ -830,8 +830,8 @@ device_context_t* dc_from_handle( HGDIOBJ handle )
 		return FALSE;
 	if (entry->Type != GDI_OBJECT_DC)
 		return FALSE;
-	assert( entry->kernel_info );
-	return (device_context_t*) entry->kernel_info;
+	gdi_object_t* obj = reinterpret_cast<gdi_object_t*>( entry->kernel_info );
+	return static_cast<device_context_t*>( obj );
 }
 
 COLORREF get_di_pixel_4bpp( stretch_di_bits_args& args, int x, int y )
@@ -1006,9 +1006,6 @@ bitmap_t::bitmap_t( int _width, int _height, int _planes, int _bpp ) :
 	planes( _planes ),
 	bpp( _bpp )
 {
-	handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, this );
-	if (!handle)
-		throw;
 	bits = new unsigned char [bitmap_size()];
 	if (!bits)
 		throw;
@@ -1079,7 +1076,19 @@ NTSTATUS bitmap_t::copy_pixels( void *pixels )
 	return copy_from_user( bits, pixels, bitmap_size() );
 }
 
-bitmap_t* bitmap_from_handle( HANDLE handle )
+gdi_bitmap_t::gdi_bitmap_t( int _width, int _height, int _planes, int _bpp ) :
+	bitmap_t( _width, _height, _planes, _bpp )
+{
+	handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, this );
+	if (!handle)
+		throw;
+}
+
+gdi_bitmap_t::~gdi_bitmap_t()
+{
+}
+
+gdi_bitmap_t* bitmap_from_handle( HANDLE handle )
 {
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
 	if (!entry)
@@ -1087,7 +1096,8 @@ bitmap_t* bitmap_from_handle( HANDLE handle )
 	if (entry->Type != GDI_OBJECT_BITMAP)
 		return FALSE;
 	assert( entry->kernel_info );
-	return (bitmap_t*) entry->kernel_info;
+	gdi_object_t* obj = reinterpret_cast<gdi_object_t*>( entry->kernel_info );
+	return static_cast<gdi_bitmap_t*>( obj );
 }
 
 // parameters look the same as gdi32.CreateBitmap
@@ -1096,8 +1106,8 @@ HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPer
 	// FIXME: handle negative heights
 	assert(Height >=0);
 	assert(Width >=0);
-	bitmap_t *bm = NULL;
-	bm = new bitmap_t( Width, Height, Planes, BitsPerPixel );
+	gdi_bitmap_t *bm = NULL;
+	bm = new gdi_bitmap_t( Width, Height, Planes, BitsPerPixel );
 	NTSTATUS r = bm->copy_pixels( Pixels );
 	if (r < STATUS_SUCCESS)
 	{
@@ -1133,7 +1143,7 @@ HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(
 	ULONG,
 	ULONG)
 {
-	bitmap_t *bm = new bitmap_t( Width, Height, 1, Bpp );
+	gdi_bitmap_t *bm = new gdi_bitmap_t( Width, Height, 1, Bpp );
 	return bm->get_handle();
 }
 
@@ -1165,7 +1175,7 @@ BOOLEAN NTAPI NtGdiDeleteObjectApp(HGDIOBJ Object)
 		return FALSE;
 	}
 
-	gdi_object_t *obj = (gdi_object_t*) entry->kernel_info;
+	gdi_object_t *obj = reinterpret_cast<gdi_object_t*>( entry->kernel_info );
 	assert( obj );
 
 	return obj->release();
@@ -1190,7 +1200,7 @@ HGDIOBJ NTAPI NtGdiSelectBitmap( HGDIOBJ hdc, HGDIOBJ hbm )
 	if (!dc)
 		return FALSE;
 
-	bitmap_t* bitmap = bitmap_from_handle( hbm );
+	gdi_bitmap_t* bitmap = bitmap_from_handle( hbm );
 	if (!bitmap)
 		return FALSE;
 
@@ -1501,7 +1511,7 @@ HANDLE NTAPI NtGdiCreateCompatibleBitmap( HANDLE DeviceContext, int width, int h
 	if (!bpp)
 		return FALSE;
 
-	bitmap_t *bm = new bitmap_t( width, height, 1, bpp );
+	gdi_bitmap_t *bm = new gdi_bitmap_t( width, height, 1, bpp );
 	return bm->get_handle();
 }
 
