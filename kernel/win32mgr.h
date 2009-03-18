@@ -134,11 +134,10 @@ class bitmap_t : public gdi_object_t
 	int planes;
 	int bpp;
 protected:
-	bitmap_t( int _width, int _height, int _planes, int _bpp );
 	void dump();
 public:
+	bitmap_t( int _width, int _height, int _planes, int _bpp );
 	~bitmap_t();
-	static HANDLE alloc( int _width, int _height, int _planes, int _bpp, void *pixels );
 	ULONG bitmap_size();
 	int get_width() {return width;}
 	int get_height() {return height;}
@@ -147,6 +146,7 @@ public:
 	COLORREF get_pixel( int x, int y );
 	BOOL set_pixel( INT x, INT y, COLORREF color );
 	bool is_valid() const { return magic == magic_val; }
+	NTSTATUS copy_pixels( void* pixels );
 };
 
 class dc_state_tt

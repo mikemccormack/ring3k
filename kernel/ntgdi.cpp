@@ -968,16 +968,6 @@ HANDLE win32k_manager_t::get_stock_object( ULONG Index )
 	return handle;
 }
 
-bitmap_t::bitmap_t( int _width, int _height, int _planes, int _bpp ) :
-	magic( magic_val ),
-	bits( 0 ),
-	width( _width ),
-	height( _height ),
-	planes( _planes ),
-	bpp( _bpp )
-{
-}
-
 bitmap_t::~bitmap_t()
 {
 	assert( magic == magic_val );
@@ -1008,17 +998,21 @@ void bitmap_t::dump()
 	}
 }
 
-HANDLE bitmap_t::alloc( int width, int height, int planes, int bpp, void *pixels )
+bitmap_t::bitmap_t( int _width, int _height, int _planes, int _bpp ) :
+	magic( magic_val ),
+	bits( 0 ),
+	width( _width ),
+	height( _height ),
+	planes( _planes ),
+	bpp( _bpp )
 {
-	bitmap_t* bitmap = new bitmap_t( width, height, planes, bpp );
-	if (!bitmap)
-		return NULL;
-	bitmap->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, bitmap );
-	bitmap->bits = new unsigned char [bitmap->bitmap_size()];
-	if (pixels)
-		copy_from_user( bitmap->bits, pixels, bitmap->bitmap_size() );
-	assert( bitmap->magic == magic_val );
-	return bitmap->handle;
+	handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, this );
+	if (!handle)
+		throw;
+	bits = new unsigned char [bitmap_size()];
+	if (!bits)
+		throw;
+	assert( magic == magic_val );
 }
 
 COLORREF bitmap_t::get_pixel( int x, int y )
@@ -1080,6 +1074,11 @@ BOOL bitmap_t::set_pixel( int x, int y, COLORREF color )
 	return TRUE;
 }
 
+NTSTATUS bitmap_t::copy_pixels( void *pixels )
+{
+	return copy_from_user( bits, pixels, bitmap_size() );
+}
+
 bitmap_t* bitmap_from_handle( HANDLE handle )
 {
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
@@ -1097,7 +1096,15 @@ HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPer
 	// FIXME: handle negative heights
 	assert(Height >=0);
 	assert(Width >=0);
-	return bitmap_t::alloc( Width, Height, Planes, BitsPerPixel, Pixels );
+	bitmap_t *bm = NULL;
+	bm = new bitmap_t( Width, Height, Planes, BitsPerPixel );
+	NTSTATUS r = bm->copy_pixels( Pixels );
+	if (r < STATUS_SUCCESS)
+	{
+		delete bm;
+		return 0;
+	}
+	return bm->get_handle();
 }
 
 // gdi32.CreateComptabibleDC
@@ -1126,7 +1133,8 @@ HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(
 	ULONG,
 	ULONG)
 {
-	return bitmap_t::alloc( Width, Height, 1, Bpp, 0 );
+	bitmap_t *bm = new bitmap_t( Width, Height, 1, Bpp );
+	return bm->get_handle();
 }
 
 HGDIOBJ NTAPI NtGdiGetDCforBitmap(HGDIOBJ Bitmap)
@@ -1493,7 +1501,8 @@ HANDLE NTAPI NtGdiCreateCompatibleBitmap( HANDLE DeviceContext, int width, int h
 	if (!bpp)
 		return FALSE;
 
-	return bitmap_t::alloc( width, height, 1, bpp, 0 );
+	bitmap_t *bm = new bitmap_t( width, height, 1, bpp );
+	return bm->get_handle();
 }
 
 int NTAPI NtGdiGetAppClipBox( HANDLE handle, RECT* rectangle )
