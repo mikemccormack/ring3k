@@ -52,7 +52,7 @@ public:
 	virtual void fini() = 0;
 	virtual HGDIOBJ alloc_compatible_dc();
 	virtual HGDIOBJ alloc_screen_dc();
-	virtual device_context_t* alloc_screen_dc_ptr();
+	virtual device_context_t* alloc_screen_dc_ptr() = 0;
 	virtual BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
@@ -209,21 +209,6 @@ public:
 };
 
 class window_tt;
-
-class screen_device_context_t : public device_context_t
-{
-public:
-	window_tt *win;
-public:
-	screen_device_context_t();
-	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
-	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
-	virtual BOOL exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text );
-	virtual COLORREF get_pixel( INT x, INT y );
-	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
-	virtual int getcaps( int index );
-};
 
 class window_tt;
 extern window_tt* active_window;

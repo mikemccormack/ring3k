@@ -1,7 +1,7 @@
 /*
  * nt loader
  *
- * Copyright 2006-2008 Mike McCormack
+ * Copyright 2006-2009 Mike McCormack
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -240,6 +240,7 @@ class win32k_null_t : public win32k_manager_t
 public:
 	virtual BOOL init();
 	virtual void fini();
+	virtual device_context_t* alloc_screen_dc_ptr();
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
@@ -288,6 +289,14 @@ int win32k_null_t::getcaps( int index )
 {
 	dprintf("%d\n", index);
 	return 0;
+}
+
+device_context_t* win32k_null_t::alloc_screen_dc_ptr()
+{
+	// FIXME: make graphics functions more generic
+	assert( 0 );
+	return 0;
+	//return new device_context_t;
 }
 
 win32k_null_t win32k_manager_null;
@@ -526,11 +535,6 @@ HGDIOBJ win32k_manager_t::alloc_compatible_dc()
 	return dc->get_handle();
 }
 
-device_context_t* win32k_manager_t::alloc_screen_dc_ptr()
-{
-	return new screen_device_context_t;
-}
-
 HGDIOBJ win32k_manager_t::alloc_screen_dc()
 {
 	device_context_t* dc = alloc_screen_dc_ptr();
@@ -699,46 +703,6 @@ BOOL device_context_t::bitblt(
 {
 	// FIXME translate coordinates
 	return win32k_manager->bitblt( xDest, yDest, cx, cy, src, xSrc, ySrc, rop );
-}
-
-BOOL screen_device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
-{
-	brush_t *brush = get_selected_brush();
-	if (!brush)
-		return FALSE;
-	dprintf("drawing with brush %p with color %08lx\n", brush->get_handle(), brush->get_color() );
-	return win32k_manager->rectangle( left, top, right, bottom, brush );
-}
-
-BOOL screen_device_context_t::polypatblt( ULONG Rop, PRECT rect )
-{
-	return win32k_manager->polypatblt( Rop, rect );
-}
-
-screen_device_context_t::screen_device_context_t() :
-	win( 0 )
-{
-}
-
-BOOL screen_device_context_t::set_pixel( INT x, INT y, COLORREF color )
-{
-	return win32k_manager->set_pixel( x, y, color );
-}
-
-BOOL screen_device_context_t::exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text )
-{
-	return win32k_manager->exttextout( x, y, options, rect, text );
-}
-
-COLORREF screen_device_context_t::get_pixel( INT x, INT y )
-{
-	return 0;
-}
-
-int screen_device_context_t::getcaps( int index )
-{
-	return win32k_manager->getcaps( index );
 }
 
 memory_device_context_t::memory_device_context_t()

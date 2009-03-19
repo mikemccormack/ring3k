@@ -48,6 +48,21 @@
 #if defined (HAVE_SDL) && defined (HAVE_SDL_SDL_H)
 #include <SDL/SDL.h>
 
+class sdl_device_context_t : public device_context_t
+{
+public:
+	window_tt *win;
+public:
+	sdl_device_context_t();
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
+	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
+	virtual BOOL exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text );
+	virtual COLORREF get_pixel( INT x, INT y );
+	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
+	virtual int getcaps( int index );
+};
+
 class win32k_sdl_t : public win32k_manager_t, public sleeper_t
 {
 protected:
@@ -64,6 +79,7 @@ public:
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
+	virtual device_context_t* alloc_screen_dc_ptr();
 
 protected:
 	Uint16 map_colorref( COLORREF );
@@ -611,6 +627,51 @@ win32k_sdl_16bpp_t win32k_manager_sdl_16bpp;
 win32k_manager_t* init_sdl_win32k_manager()
 {
 	return &win32k_manager_sdl_16bpp;
+}
+
+BOOL sdl_device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
+{
+	brush_t *brush = get_selected_brush();
+	if (!brush)
+		return FALSE;
+	dprintf("drawing with brush %p with color %08lx\n", brush->get_handle(), brush->get_color() );
+	return win32k_manager->rectangle( left, top, right, bottom, brush );
+}
+
+BOOL sdl_device_context_t::polypatblt( ULONG Rop, PRECT rect )
+{
+	return win32k_manager->polypatblt( Rop, rect );
+}
+
+sdl_device_context_t::sdl_device_context_t() :
+	win( 0 )
+{
+}
+
+BOOL sdl_device_context_t::set_pixel( INT x, INT y, COLORREF color )
+{
+	return win32k_manager->set_pixel( x, y, color );
+}
+
+BOOL sdl_device_context_t::exttextout( INT x, INT y, UINT options,
+		 LPRECT rect, UNICODE_STRING& text )
+{
+	return win32k_manager->exttextout( x, y, options, rect, text );
+}
+
+COLORREF sdl_device_context_t::get_pixel( INT x, INT y )
+{
+	return 0;
+}
+
+int sdl_device_context_t::getcaps( int index )
+{
+	return win32k_manager->getcaps( index );
+}
+
+device_context_t* win32k_sdl_t::alloc_screen_dc_ptr()
+{
+	return new sdl_device_context_t;
 }
 
 #else
