@@ -50,7 +50,13 @@
  <type>C++</type>
  <path>kernel/atom.cpp</path>
  <type>C++</type>
+ <path>kernel/bitmap.cpp</path>
+ <type>C++</type>
  <path>kernel/block.cpp</path>
+ <type>C++</type>
+ <path>kernel/cairo_display.cpp</path>
+ <type>C++</type>
+ <path>kernel/cairo_display.h</path>
  <type>C++</type>
  <path>kernel/client.c</path>
  <type>C</type>
@@ -113,6 +119,10 @@
  <path>kernel/ntuser.cpp</path>
  <type>C++</type>
  <path>kernel/ntwin32.h</path>
+ <type>C++</type>
+ <path>kernel/null_display.cpp</path>
+ <type>C++</type>
+ <path>kernel/null_display.h</path>
  <type>C++</type>
  <path>kernel/objdir.cpp</path>
  <type>C++</type>
