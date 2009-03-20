@@ -156,7 +156,20 @@ void win32k_cairo_t::handle_events() {
 	input.mi.dx = evt.xbutton.x;
 	input.mi.dy = evt.xbutton.y;
 	input.mi.mouseData = 0;
-	input.mi.dwFlags = evt.xbutton.button == 1 ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_RIGHTDOWN;
+
+        switch (evt.xbutton.button)
+        {
+        case 1:
+            input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+            break;
+        case 2:
+            input.mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
+            break;
+        case 3:
+            input.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+            break;
+        }
+
 	input.mi.time = timeout_t::get_tick_count();
 	input.mi.dwExtraInfo = 0;
 	send_input( &input );
@@ -168,7 +181,20 @@ void win32k_cairo_t::handle_events() {
 	input.mi.dx = evt.xbutton.x;
 	input.mi.dy = evt.xbutton.y;
 	input.mi.mouseData = 0;
-	input.mi.dwFlags = evt.xbutton.button == 1 ? MOUSEEVENTF_LEFTUP : MOUSEEVENTF_RIGHTUP;
+
+        switch (evt.xbutton.button)
+        {
+        case 1:
+            input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            break;
+        case 2:
+            input.mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
+            break;
+        case 3:
+            input.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+            break;
+        }
+
 	input.mi.time = timeout_t::get_tick_count();
 	input.mi.dwExtraInfo = 0;
 	send_input( &input );
