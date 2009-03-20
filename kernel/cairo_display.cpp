@@ -119,7 +119,7 @@ BOOL win32k_cairo_t::init()
 		    0, black, // border
 		    white );  // backgd
     XMapWindow(disp, win);
-    XStoreName(disp, win, "Hello World!");
+    XStoreName(disp, win, "ring3k");
     XSelectInput(disp, win, ExposureMask | ButtonReleaseMask | ButtonPressMask);
     cs = cairo_xlib_surface_create(disp, win, DefaultVisual(disp, 0), width, height);
     cr = cairo_create(cs);
