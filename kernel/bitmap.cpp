@@ -33,12 +33,8 @@
 #include "ntcall.h"
 #include "ntwin32.h"
 #include "mem.h"
-//#include "section.h"
 #include "debug.h"
 #include "win32mgr.h"
-//#include "sdl.h"
-//#include "win.h"
-//#include "queue.h"
 
 bitmap_t::~bitmap_t()
 {
