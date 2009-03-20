@@ -85,6 +85,7 @@ CPP_SOURCES = \
 	ntcall.cpp \
 	ntgdi.cpp \
 	ntuser.cpp \
+	null_display.cpp \
 	objdir.cpp \
 	object.cpp \
 	platform.cpp \

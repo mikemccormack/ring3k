@@ -38,6 +38,7 @@
 #include "win32mgr.h"
 #include "sdl.h"
 #include "cairo_display.h"
+#include "null_display.h"
 #include "win.h"
 #include "queue.h"
 #include "alloc_bitmap.h"
@@ -45,6 +46,8 @@
 // shared across all processes (in a window station)
 static section_t *gdi_ht_section;
 static void *gdi_handle_table = 0;
+
+win32k_manager_t *win32k_manager;
 
 class ntgdishm_tracer : public block_tracer
 {
@@ -235,79 +238,6 @@ ULONG win32k_manager_t::get_async_key_state( ULONG Key )
 		return 0;
 	return key_state[ Key ];
 }
-
-class win32k_null_t : public win32k_manager_t
-{
-public:
-	virtual BOOL init();
-	virtual void fini();
-	virtual device_context_t* alloc_screen_dc_ptr();
-	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
-	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
-	virtual BOOL exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text );
-	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
-	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
-	virtual int getcaps( int index );
-};
-
-BOOL win32k_null_t::init()
-{
-	return TRUE;
-}
-
-void win32k_null_t::fini()
-{
-}
-
-BOOL win32k_null_t::set_pixel( INT x, INT y, COLORREF color )
-{
-	return TRUE;
-}
-
-BOOL win32k_null_t::rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush )
-{
-	return TRUE;
-}
-
-BOOL win32k_null_t::exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text )
-{
-	return TRUE;
-}
-
-BOOL win32k_null_t::bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop )
-{
-	return TRUE;
-}
-
-BOOL win32k_null_t::polypatblt( ULONG Rop, PRECT rect )
-{
-	return TRUE;
-}
-
-int win32k_null_t::getcaps( int index )
-{
-	dprintf("%d\n", index);
-	return 0;
-}
-
-device_context_t* win32k_null_t::alloc_screen_dc_ptr()
-{
-	// FIXME: make graphics functions more generic
-	assert( 0 );
-	return 0;
-	//return new device_context_t;
-}
-
-win32k_null_t win32k_manager_null;
-
-win32k_manager_t* init_null_win32k_manager()
-{
-	return &win32k_manager_null;
-}
-
-win32k_manager_t *win32k_manager;
 
 void ntgdi_fini()
 {
