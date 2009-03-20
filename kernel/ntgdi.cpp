@@ -37,6 +37,7 @@
 #include "debug.h"
 #include "win32mgr.h"
 #include "sdl.h"
+#include "cairo_display.h"
 #include "win.h"
 #include "queue.h"
 #include "alloc_bitmap.h"
@@ -324,6 +325,9 @@ NTSTATUS win32k_process_init(process_t *process)
 	dprintf("\n");
 
 	// 16bpp by default for now
+	if (!win32k_manager)
+		win32k_manager = init_cairo_win32k_manager();
+
 	if (!win32k_manager)
 		win32k_manager = init_sdl_win32k_manager();
 

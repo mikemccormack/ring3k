@@ -6,6 +6,15 @@
 /* Define to 1 if you have the <asm/ptrace.h> header file. */
 #undef HAVE_ASM_PTRACE_H
 
+/* Define if you have the cairo library */
+#undef HAVE_CAIRO
+
+/* Define to 1 if you have the <cairo.h> header file. */
+#undef HAVE_CAIRO_H
+
+/* Define to 1 if you have the <cairo-xlib.h> header file. */
+#undef HAVE_CAIRO_XLIB_H
+
 /* Define to 1 if you have the `clone' function. */
 #undef HAVE_CLONE
 

@@ -71,6 +71,26 @@ then
 	AC_SUBST(FREETYPEINCL,"$ac_freetype_incl")
 fi
 
+dnl Check for Cairo
+AC_CHECK_PROGS(PKG_CONFIG, pkg-config, false)
+if test "$PKG_CONFIG" != "false"
+then
+	ac_cairo_libs="`$PKG_CONFIG --libs cairo 2>/dev/null`"
+	ac_cairo_incl="`$PKG_CONFIG --cflags cairo 2>/dev/null`"
+fi
+ac_save_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $ac_cairo_incl"
+AC_CHECK_HEADERS(cairo.h \
+	cairo-xlib.h,
+	[AC_CHECK_LIB(cairo, cairo_xlib_surface_create,
+		[cairo_lib=yes],[cairo_lib=no],[$ac_cairo_libs])])
+if test "$cairo_lib" != "no"
+then
+	AC_DEFINE(HAVE_CAIRO, 1, [Define if you have the cairo library])
+	AC_SUBST(CAIROLIBS,"$ac_cairo_libs")
+	AC_SUBST(CAIROINCL,"$ac_cairo_incl")
+fi
+
 dnl Check for mingw32 cross compilation environment
 AC_CHECK_PROGS(MINGW32CC,i686-pc-mingw32-gcc i586-mingw32msvc-cc no)
 AC_CHECK_PROGS(MINGW32STRIP,i686-pc-mingw32-strip i586-mingw32msvc-strip no)
