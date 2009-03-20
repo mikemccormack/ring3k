@@ -44,10 +44,6 @@
 #include <cairo.h>
 #include <cairo-xlib.h>
 #include <math.h>
-Display* disp;
-int screenNumber;
-unsigned long white, black;
-int width, height;
 
 class cairo_device_context_t : public device_context_t
 {
@@ -83,11 +79,14 @@ protected:
 	virtual int getcaps( int index );
 	void handle_events();
 
+protected:
 	Window win;
 	Display* disp;
 	cairo_surface_t *cs, *buffer;
 	cairo_t *cr;
 	int screenNumber;
+	int width, height;
+	unsigned long white, black;
 };
 
 template<typename T> void swap( T& A, T& B )
@@ -97,7 +96,10 @@ template<typename T> void swap( T& A, T& B )
 	B = x;
 }
 
-win32k_cairo_t::win32k_cairo_t() : disp(NULL)
+win32k_cairo_t::win32k_cairo_t() :
+	disp(NULL),
+	width(640),
+	height(480)
 {
 }
 
@@ -110,8 +112,6 @@ BOOL win32k_cairo_t::init()
 
     screenNumber = DefaultScreen(disp);
     white = WhitePixel(disp,screenNumber);
-    width = 300;
-    height = 300;
     win = XCreateSimpleWindow(disp,
 		    RootWindow(disp, screenNumber),
 		    0, 0,   // origin
@@ -121,14 +121,14 @@ BOOL win32k_cairo_t::init()
     XMapWindow(disp, win);
     XStoreName(disp, win, "Hello World!");
     XSelectInput(disp, win, ExposureMask | ButtonReleaseMask | ButtonPressMask);
-    cs = cairo_xlib_surface_create(disp, win, DefaultVisual(disp, 0), 200, 200);
+    cs = cairo_xlib_surface_create(disp, win, DefaultVisual(disp, 0), width, height);
     cr = cairo_create(cs);
 
-    buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24, 200, 200);
+    buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
 
     cairo_t *c = cairo_create(buffer);
     cairo_set_source_rgb(c, 0.231372549, 0.447058824, 0.662745098);
-    cairo_rectangle(c, 0, 0, 200, 200);
+    cairo_rectangle(c, 0, 0, width, height);
     cairo_fill(c);
     cairo_destroy(c);
 
@@ -218,7 +218,7 @@ BOOL win32k_cairo_t::set_pixel( INT x, INT y, COLORREF color )
 */
 	
 	unsigned int *buf = (unsigned int *) cairo_image_surface_get_data(buffer);
-	buf[y * 200 + x] = color;
+	buf[y * width + x] = color;
 
 	cairo_save(cr);
 	cairo_set_source_surface(cr, buffer, 0, 0);
@@ -293,7 +293,7 @@ BOOL win32k_cairo_t::bitblt(INT xDest, INT yDest, INT cx, INT cy,
 			c1 = pixel & 0x00FF;
 			c2 = (pixel >> 16) & 0x00FF;
 			pixel = (pixel & 0x0000FF00) | c2 | ( c1 << 16 );
-			buf[200 * (yDest + i) + (xDest + j)] = pixel;
+			buf[width * (yDest + i) + (xDest + j)] = pixel;
 		}
 	}
 
@@ -310,8 +310,8 @@ BOOL win32k_cairo_t::polypatblt( ULONG Rop, PRECT rect )
 	printf("######## polypatblt ########\n");
 	rect->left = max( rect->left, 0 );
 	rect->top = max( rect->top, 0 );
-	rect->right = min( 200, rect->right );
-	rect->bottom = min( 200, rect->bottom );
+	rect->right = min( width, rect->right );
+	rect->bottom = min( width, rect->bottom );
 
 	cairo_t *c = cairo_create(buffer);
 	cairo_set_source_rgb(c, 0.0, 0.0, 0.0);
