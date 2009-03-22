@@ -70,6 +70,3 @@ ccmd.exe: ccmd.c
 clean:
 	rm -f *.o *.dll *.exe .*.d
 
-install: minitris.exe
-	mkdir -p $(DESTDIR)$(datadir)
-	$(INSTALL_DATA) $(INSTALL_FLAGS) $< $(DESTDIR)$(datadir)

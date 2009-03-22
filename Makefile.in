@@ -32,19 +32,24 @@ SETUP_SCRIPT = ring3k-setup
 
 RM = rm -f
 
-DIRS = \
-	libudis86_dir \
-	libmspack_dir \
-	kernel_dir \
-	programs_dir \
-	tests_dir \
-	tools_dir \
-	unpack_dir
+SUBDIRS = \
+	libudis86 \
+	libmspack \
+	kernel \
+	programs \
+	tests \
+	tools \
+	unpack
 
-all: $(DIRS) $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
+INSTALLSUBDIRS = \
+	kernel \
+	programs \
+	unpack
+
+all: $(SUBDIRS) $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
 
 .PHONY: \
-	$(DIRS)
+	$(SUBDIRS)
 	all \
 	clean \
 	distclean \
@@ -56,58 +61,25 @@ $(LAUNCH_SCRIPT): ring3k.in
 $(SETUP_SCRIPT): ring3k-setup.in
 	cp -f $< $@
 
-kernel_dir: libudis86_dir
-	cd kernel && make
-
-programs_dir:
-	cd programs && make
-
-tests_dir:
-	cd tests && make
-
-tools_dir: tests_dir
-	cd tools && make
-
-libudis86_dir:
-	cd libudis86 && make
-
-libmspack_dir:
-	cd libmspack && make
-
-unpack_dir: libmspack_dir
-	cd unpack && make
-
 stat:
 	cd kernel && make stat
 
-clean:
+clean::
 	$(RM) $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
-	cd libudis86 && make clean
-	cd libmspack && make clean
-	cd kernel && make clean
-	cd programs && make clean
-	cd tests && make clean
-	cd tools && make clean
-	cd unpack && make clean
 
 distclean: clean
 	rm -rf drive
 	rm -rf config.status config.log autom4te.cache
 	find . -name Makefile -exec rm {} \;
 
-install: $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
+install:: $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
 	mkdir -p $(DESTDIR)$(bindir)
 	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(LAUNCH_SCRIPT) $(DESTDIR)$(bindir)
 	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(SETUP_SCRIPT) $(DESTDIR)$(bindir)
-	cd kernel && make install
-	cd programs && make install
-	cd tools && make install
-	cd unpack && make install
 
-uninstall:
+uninstall::
 	$(RM) $(DESTDIR)$(bindir)/$(LAUNCH_SCRIPT)
 	$(RM) $(DESTDIR)$(bindir)/$(SETUP_SCRIPT)
-	cd kernel && make uninstall
 
 TESTLIST = \
 	completion \
@@ -150,4 +122,22 @@ help:
 	@echo " test       Build and run regression tests (requires win2k.iso)"
 	@echo " uninstall  Remove installed files"
 	@echo
+
+dummy:
+
+$(SUBDIRS): dummy
+	@cd $@ && $(MAKE)
+
+$(SUBDIRS:%=%/__clean__): dummy
+	@cd `dirname $@` && $(MAKE) clean
+
+$(SUBDIRS:%=%/__install__): dummy
+	@cd `dirname $@` && $(MAKE) install
+
+$(SUBDIRS:%=%/__uninstall__): dummy
+	@cd `dirname $@` && $(MAKE) uninstall
+
+install:: $(INSTALLSUBDIRS:%=%/__install__) dummy
+uninstall:: $(INSTALLSUBDIRS:%=%/__uninstall__) dummy
+clean:: $(SUBDIRS:%=%/__clean__)
 
