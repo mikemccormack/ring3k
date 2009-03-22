@@ -1,0 +1,59 @@
+#
+# ring3k - a user mode kernel for windows executables
+#
+# Copyright 2006-2009 Mike McCormack
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+#
+
+srcdir = @srcdir@
+VPATH  = @srcdir@
+
+prefix = @prefix@
+bindir = ${prefix}/bin
+
+MAKE = make
+RM = rm -f
+
+SUBDIRS = \
+	minitris \
+	winemine
+
+all: $(SUBDIRS)
+
+.PHONY: \
+	all \
+	clean \
+	dummy \
+	test
+
+dummy:
+
+$(SUBDIRS): dummy
+	@cd $@ && $(MAKE)
+
+$(SUBDIRS:%=%/__clean__): dummy
+	@cd `dirname $@` && $(MAKE) clean
+
+$(SUBDIRS:%=%/__install__): dummy
+	@cd `dirname $@` && $(MAKE) install
+
+$(SUBDIRS:%=%/__uninstall__): dummy
+	@cd `dirname $@` && $(MAKE) uninstall
+
+install:: $(INSTALLSUBDIRS:%=%/__install__) dummy
+uninstall:: $(INSTALLSUBDIRS:%=%/__uninstall__) dummy
+clean:: $(SUBDIRS:%=%/__clean__)
+
