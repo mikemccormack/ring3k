@@ -96,29 +96,25 @@ runnt.exe: runnt.o
 hostnt.exe: hostnt.o
 	$(CC) -o $@ $< -lntdll -lkernel32
 
-res.o: res.rc
-	$(WINDRES) -o $@ $<
+NATIVEEXEFLAGS = -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
 
 gdi.exe: gdi.o log.o $(NTWIN32LIB)
-	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+	$(CC) -o $@ $^ $(NATIVEEXEFLAGS)
 
 user.exe: user.o log.o $(NTWIN32LIB)
-	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+	$(CC) -o $@ $^ $(NATIVEEXEFLAGS)
 
 font.exe: font.o log.o $(NTWIN32LIB)
-	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+	$(CC) -o $@ $^ $(NATIVEEXEFLAGS)
 
 atom.exe: atom.o log.o $(NTWIN32LIB)
-	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+	$(CC) -o $@ $^ $(NATIVEEXEFLAGS)
 
 wine-atom.exe: wine-atom.o log.o $(NTWIN32LIB)
-	$(CC) -o $@ $^ -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
+	$(CC) -o $@ $^ $(NATIVEEXEFLAGS)
 
 %.exe: %.c log.o
-	$(CC) $(CFLAGS) -o $@ log.o $< -lntdll -nostartfiles -nodefaultlibs -Wl,--subsystem=native -e _NtProcessStartup
-
-seh.s: seh.c
-	i586-mingw32msvc-cc $(CFLAGS) -S seh.c
+	$(CC) $(CFLAGS) -o $@ log.o $< $(NATIVEEXEFLAGS)
 
 # build an with the tests so that they can be easily run in QEMU
 $(ISO): $(SOURCE:.c=.exe) $(NTWIN32LIB)
