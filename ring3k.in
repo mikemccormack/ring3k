@@ -59,7 +59,7 @@ then
 fi
 
 # update minitris when it changes to help testing ...
-#winlogon_replacement="tools/minitris.exe"
+#winlogon_replacement="programs/minitris/minitris.exe"
 winlogon_replacement="winemine/winemine.exe"
 if test -f "$winlogon_replacement"
 then

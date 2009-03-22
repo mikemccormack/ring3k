@@ -36,6 +36,7 @@ DIRS = \
 	libudis86_dir \
 	libmspack_dir \
 	kernel_dir \
+	programs_dir \
 	tests_dir \
 	tools_dir \
 	unpack_dir \
@@ -58,6 +59,9 @@ $(SETUP_SCRIPT): ring3k-setup.in
 
 kernel_dir: libudis86_dir
 	cd kernel && make
+
+programs_dir:
+	cd programs && make
 
 tests_dir:
 	cd tests && make
@@ -85,6 +89,7 @@ clean:
 	cd libudis86 && make clean
 	cd libmspack && make clean
 	cd kernel && make clean
+	cd programs && make clean
 	cd tests && make clean
 	cd tools && make clean
 	cd unpack && make clean
@@ -100,6 +105,7 @@ install: $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
 	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(LAUNCH_SCRIPT) $(DESTDIR)$(bindir)
 	$(INSTALL_SCRIPT) $(INSTALL_FLAGS) $(SETUP_SCRIPT) $(DESTDIR)$(bindir)
 	cd kernel && make install
+	cd programs && make install
 	cd tools && make install
 	cd unpack && make install
 	cd winemine && make install
