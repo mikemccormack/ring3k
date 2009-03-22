@@ -119,7 +119,7 @@ TARGETCLIENT = ring3k-client
 
 all: $(TARGET) enc fiber $(TARGETCLIENT)
 
-include $(wildcard .*.d)
+-include $(OBJECTS:%=$(dir %).$(notdir %).d)
 
 $(TARGET): $(OBJECTS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
