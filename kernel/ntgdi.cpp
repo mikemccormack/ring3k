@@ -609,10 +609,10 @@ BOOL device_context_t::release()
 	return TRUE;
 }
 
-HANDLE device_context_t::select_bitmap( gdi_bitmap_t *bitmap )
+HANDLE device_context_t::select_bitmap( bitmap_t *bitmap )
 {
 	assert( bitmap->is_valid() );
-	gdi_bitmap_t* old = selected_bitmap;
+	bitmap_t* old = selected_bitmap;
 	selected_bitmap = bitmap;
 	bitmap->select();
 	if (!old)
@@ -892,7 +892,9 @@ HGDIOBJ NTAPI NtGdiCreateDIBitmapInternal(
 	ULONG,
 	ULONG)
 {
-	gdi_bitmap_t *bm = new gdi_bitmap_t( Width, Height, 1, Bpp );
+	bitmap_t *bm = alloc_bitmap( Width, Height, Bpp );
+	if (!bm)
+		return NULL;
 	return bm->get_handle();
 }
 
@@ -949,7 +951,7 @@ HGDIOBJ NTAPI NtGdiSelectBitmap( HGDIOBJ hdc, HGDIOBJ hbm )
 	if (!dc)
 		return FALSE;
 
-	gdi_bitmap_t* bitmap = bitmap_from_handle( hbm );
+	bitmap_t* bitmap = bitmap_from_handle( hbm );
 	if (!bitmap)
 		return FALSE;
 
@@ -1260,7 +1262,7 @@ HANDLE NTAPI NtGdiCreateCompatibleBitmap( HANDLE DeviceContext, int width, int h
 	if (!bpp)
 		return FALSE;
 
-	gdi_bitmap_t *bm = new gdi_bitmap_t( width, height, 1, bpp );
+	bitmap_t *bm = alloc_bitmap( width, height, bpp );
 	return bm->get_handle();
 }
 
