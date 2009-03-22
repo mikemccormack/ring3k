@@ -5635,7 +5635,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile kernel/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile programs/Makefile programs/minitris/Makefile unpack/Makefile winemine/Makefile"
+ac_config_files="$ac_config_files Makefile kernel/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile programs/Makefile programs/minitris/Makefile programs/winemine/Makefile unpack/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -6200,8 +6200,8 @@ do
     "libmspack/Makefile") CONFIG_FILES="$CONFIG_FILES libmspack/Makefile" ;;
     "programs/Makefile") CONFIG_FILES="$CONFIG_FILES programs/Makefile" ;;
     "programs/minitris/Makefile") CONFIG_FILES="$CONFIG_FILES programs/minitris/Makefile" ;;
+    "programs/winemine/Makefile") CONFIG_FILES="$CONFIG_FILES programs/winemine/Makefile" ;;
     "unpack/Makefile") CONFIG_FILES="$CONFIG_FILES unpack/Makefile" ;;
-    "winemine/Makefile") CONFIG_FILES="$CONFIG_FILES winemine/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

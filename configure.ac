@@ -114,8 +114,8 @@ AC_CONFIG_FILES(
 	libmspack/Makefile
 	programs/Makefile
 	programs/minitris/Makefile
+	programs/winemine/Makefile
 	unpack/Makefile
-	winemine/Makefile
 )
 
 AC_OUTPUT

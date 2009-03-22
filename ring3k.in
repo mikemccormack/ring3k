@@ -60,10 +60,10 @@ fi
 
 # update minitris when it changes to help testing ...
 #winlogon_replacement="programs/minitris/minitris.exe"
-winlogon_replacement="winemine/winemine.exe"
+winlogon_replacement="programs/winemine/winemine.exe"
 if test -f "$winlogon_replacement"
 then
-	echo copying winemine
+	echo "Replacing winlogon.exe with $winlogon_replacement"
 	cp -f "$winlogon_replacement" "drive/winnt/system32/winlogon.exe"
 fi
 
