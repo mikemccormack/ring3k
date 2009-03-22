@@ -69,7 +69,7 @@ clean::
 
 distclean: clean
 	rm -rf drive
-	rm -rf config.status config.log autom4te.cache
+	rm -rf config.status config.log autom4te.cache Make.rules
 	find . -name Makefile -exec rm {} \;
 
 install:: $(LAUNCH_SCRIPT) $(SETUP_SCRIPT)
@@ -123,21 +123,4 @@ help:
 	@echo " uninstall  Remove installed files"
 	@echo
 
-dummy:
-
-$(SUBDIRS): dummy
-	@cd $@ && $(MAKE)
-
-$(SUBDIRS:%=%/__clean__): dummy
-	@cd `dirname $@` && $(MAKE) clean
-
-$(SUBDIRS:%=%/__install__): dummy
-	@cd `dirname $@` && $(MAKE) install
-
-$(SUBDIRS:%=%/__uninstall__): dummy
-	@cd `dirname $@` && $(MAKE) uninstall
-
-install:: $(INSTALLSUBDIRS:%=%/__install__) dummy
-uninstall:: $(INSTALLSUBDIRS:%=%/__uninstall__) dummy
-clean:: $(SUBDIRS:%=%/__clean__)
-
+@MAKE_RULES@

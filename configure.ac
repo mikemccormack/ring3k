@@ -105,7 +105,11 @@ AC_CHECK_FUNCS(clone)
 AC_CHECK_FUNCS(sigqueue)
 AC_CHECK_FUNCS(fstatat)
 
+AC_SUBST_FILE([MAKE_RULES])
+MAKE_RULES=Make.rules
+
 AC_CONFIG_FILES(
+	Make.rules
 	Makefile
 	kernel/Makefile
 	tests/Makefile

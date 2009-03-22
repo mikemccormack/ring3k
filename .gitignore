@@ -9,6 +9,7 @@ config.log
 config.status
 drive
 Makefile
+Make.rules
 ring3k
 ring3k-setup
 reg.xml

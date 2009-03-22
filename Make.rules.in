@@ -1,0 +1,19 @@
+
+dummy:
+
+$(SUBDIRS): dummy
+	@cd $@ && $(MAKE)
+
+$(SUBDIRS:%=%/__clean__): dummy
+	@cd `dirname $@` && $(MAKE) clean
+
+$(SUBDIRS:%=%/__install__): dummy
+	@cd `dirname $@` && $(MAKE) install
+
+$(SUBDIRS:%=%/__uninstall__): dummy
+	@cd `dirname $@` && $(MAKE) uninstall
+
+install:: $(INSTALLSUBDIRS:%=%/__install__) dummy
+uninstall:: $(INSTALLSUBDIRS:%=%/__uninstall__) dummy
+clean:: $(SUBDIRS:%=%/__clean__)
+

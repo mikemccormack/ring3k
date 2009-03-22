@@ -686,7 +686,7 @@ MINGW32WINDRES
 ISOINFO
 LIBOBJS
 LTLIBOBJS'
-ac_subst_files=''
+ac_subst_files='MAKE_RULES'
       ac_precious_vars='build_alias
 host_alias
 target_alias
@@ -5635,7 +5635,10 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile kernel/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile programs/Makefile programs/minitris/Makefile programs/winemine/Makefile unpack/Makefile"
+
+MAKE_RULES=Make.rules
+
+ac_config_files="$ac_config_files Make.rules Makefile kernel/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile programs/Makefile programs/minitris/Makefile programs/winemine/Makefile unpack/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -6192,6 +6195,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "include/config.h") CONFIG_HEADERS="$CONFIG_HEADERS include/config.h" ;;
+    "Make.rules") CONFIG_FILES="$CONFIG_FILES Make.rules" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "kernel/Makefile") CONFIG_FILES="$CONFIG_FILES kernel/Makefile" ;;
     "tests/Makefile") CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
@@ -6257,6 +6261,11 @@ $debug ||
 if test -n "$CONFIG_FILES"; then
 
 _ACEOF
+
+# Create sed commands to just substitute file output variables.
+
+# Remaining file output variables are in a fragment that also has non-file
+# output varibles.
 
 
 
@@ -6358,6 +6367,10 @@ fi
 cat >>$CONFIG_STATUS <<_ACEOF
 cat >"\$tmp/subs-1.sed" <<\CEOF$ac_eof
 /@[a-zA-Z_][a-zA-Z_0-9]*@/!b end
+/^[	 ]*@MAKE_RULES@[	 ]*$/{
+r $MAKE_RULES
+d
+}
 _ACEOF
 sed '
 s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g
