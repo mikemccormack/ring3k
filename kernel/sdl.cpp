@@ -63,12 +63,25 @@ public:
 	virtual int getcaps( int index );
 };
 
-class win32k_sdl_t : public win32k_manager_t, public sleeper_t
+class sdl_sleeper_t : public sleeper_t
+{
+	win32k_manager_t *manager;
+public:
+	sdl_sleeper_t( win32k_manager_t* mgr );
+	virtual bool check_events( bool wait );
+	static Uint32 timeout_callback( Uint32 interval, void *arg );
+	bool handle_sdl_event( SDL_Event& event );
+	WORD sdl_keysum_to_vkey( SDLKey sym );
+	ULONG get_mouse_button( Uint8 button, bool up );
+};
+
+class win32k_sdl_t : public win32k_manager_t
 {
 protected:
 	SDL_Surface *screen;
 	FT_Library ftlib;
 	FT_Face face;
+	sdl_sleeper_t sdl_sleeper;
 public:
 	virtual BOOL init();
 	virtual void fini();
@@ -88,17 +101,13 @@ protected:
 	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush ) = 0;
 	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
 	virtual BOOL polypatblt_l( ULONG Rop, PRECT rect ) = 0;
-	virtual bool check_events( bool wait );
 	virtual int getcaps( int index );
-	static Uint32 timeout_callback( Uint32 interval, void *arg );
-	bool handle_sdl_event( SDL_Event& event );
-	WORD sdl_keysum_to_vkey( SDLKey sym );
-	ULONG get_mouse_button( Uint8 button, bool up );
 	void freetype_bitblt( int x, int y, FT_Bitmap* bitmap );
 	COLORREF freetype_get_pixel( int x, int y, FT_Bitmap* bitmap );
 };
 
-win32k_sdl_t::win32k_sdl_t()
+win32k_sdl_t::win32k_sdl_t() :
+	sdl_sleeper( this )
 {
 }
 
@@ -300,7 +309,12 @@ BOOL win32k_sdl_t::polypatblt( ULONG Rop, PRECT rect )
 	return TRUE;
 }
 
-Uint32 win32k_sdl_t::timeout_callback( Uint32 interval, void *arg )
+sdl_sleeper_t::sdl_sleeper_t( win32k_manager_t* mgr ) :
+	manager( mgr )
+{
+}
+
+Uint32 sdl_sleeper_t::timeout_callback( Uint32 interval, void *arg )
 {
 	SDL_Event event;
 	event.type = SDL_USEREVENT;
@@ -311,7 +325,7 @@ Uint32 win32k_sdl_t::timeout_callback( Uint32 interval, void *arg )
 	return 0;
 }
 
-WORD win32k_sdl_t::sdl_keysum_to_vkey( SDLKey sym )
+WORD sdl_sleeper_t::sdl_keysum_to_vkey( SDLKey sym )
 {
 	assert ( SDLK_a == 'a' );
 	assert ( SDLK_1 == '1' );
@@ -337,7 +351,7 @@ WORD win32k_sdl_t::sdl_keysum_to_vkey( SDLKey sym )
 	}
 }
 
-ULONG win32k_sdl_t::get_mouse_button( Uint8 button, bool up )
+ULONG sdl_sleeper_t::get_mouse_button( Uint8 button, bool up )
 {
 	switch (button)
 	{
@@ -353,7 +367,7 @@ ULONG win32k_sdl_t::get_mouse_button( Uint8 button, bool up )
 	}
 }
 
-bool win32k_sdl_t::handle_sdl_event( SDL_Event& event )
+bool sdl_sleeper_t::handle_sdl_event( SDL_Event& event )
 {
 	INPUT input;
 
@@ -371,7 +385,7 @@ bool win32k_sdl_t::handle_sdl_event( SDL_Event& event )
 		input.ki.wScan = event.key.keysym.scancode;
 		input.ki.dwFlags = (event.type == SDL_KEYUP) ? KEYEVENTF_KEYUP : 0;
 		input.ki.dwExtraInfo = 0;
-		send_input( &input );
+		manager->send_input( &input );
 		break;
 
 	case SDL_MOUSEBUTTONDOWN:
@@ -384,7 +398,7 @@ bool win32k_sdl_t::handle_sdl_event( SDL_Event& event )
 		input.mi.dwFlags = get_mouse_button( event.button.button, event.type == SDL_MOUSEBUTTONUP );
 		input.mi.time = timeout_t::get_tick_count();
 		input.mi.dwExtraInfo = 0;
-		send_input( &input );
+		manager->send_input( &input );
 		break;
 
 	case SDL_MOUSEMOTION:
@@ -396,7 +410,7 @@ bool win32k_sdl_t::handle_sdl_event( SDL_Event& event )
 		input.mi.dwFlags = MOUSEEVENTF_MOVE;
 		input.mi.time = timeout_t::get_tick_count();
 		input.mi.dwExtraInfo = 0;
-		send_input( &input );
+		manager->send_input( &input );
 		break;
 	}
 
@@ -405,7 +419,7 @@ bool win32k_sdl_t::handle_sdl_event( SDL_Event& event )
 
 // wait for timers or input
 // return true if we're quitting
-bool win32k_sdl_t::check_events( bool wait )
+bool sdl_sleeper_t::check_events( bool wait )
 {
 	LARGE_INTEGER timeout;
 	SDL_Event event;
@@ -433,7 +447,7 @@ bool win32k_sdl_t::check_events( bool wait )
 	if (timers_left)
 	{
 		interval = get_int_timeout( timeout );
-		id = SDL_AddTimer( interval, win32k_sdl_t::timeout_callback, 0 );
+		id = SDL_AddTimer( interval, sdl_sleeper_t::timeout_callback, 0 );
 	}
 
 	if (SDL_WaitEvent( &event ))
@@ -490,7 +504,7 @@ BOOL win32k_sdl_t::init()
 	if (r != 0)
 		return FALSE;
 
-	sleeper = this;
+	::sleeper = &sdl_sleeper;
 
 	return TRUE;
 }
