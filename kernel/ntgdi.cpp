@@ -47,6 +47,44 @@
 static section_t *gdi_ht_section;
 static void *gdi_handle_table = 0;
 
+win32k_manager_t* (*win32k_manager_create)();
+
+struct graphics_driver_list {
+	const char *name;
+	win32k_manager_t* (*create)();
+};
+
+struct graphics_driver_list graphics_drivers[] = {
+	{ "sdl", &init_sdl_win32k_manager, },
+	{ "cairo", &init_cairo_win32k_manager, },
+	{ "null", &init_null_win32k_manager, },
+	{ NULL, NULL, },
+};
+
+bool set_graphics_driver( const char *driver )
+{
+	int i;
+
+	for (i=0; graphics_drivers[i].name; i++)
+	{
+		if (!strcmp(graphics_drivers[i].name, driver))
+		{
+			win32k_manager_create = graphics_drivers[i].create;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void list_graphics_drivers()
+{
+	int i;
+
+	for (i=0; graphics_drivers[i].name; i++)
+		printf("%s ", graphics_drivers[i].name);
+}
+
 win32k_manager_t *win32k_manager;
 
 class ntgdishm_tracer : public block_tracer
@@ -254,15 +292,19 @@ NTSTATUS win32k_process_init(process_t *process)
 
 	dprintf("\n");
 
-	// 16bpp by default for now
 	if (!win32k_manager)
-		win32k_manager = init_cairo_win32k_manager();
+	{
+		if (win32k_manager_create)
+			win32k_manager = win32k_manager_create();
+		else
+		{
+			for (int i=0; graphics_drivers[i].name && !win32k_manager; i++)
+				win32k_manager = graphics_drivers[i].create();
+		}
+	}
 
 	if (!win32k_manager)
-		win32k_manager = init_sdl_win32k_manager();
-
-	if (!win32k_manager)
-		win32k_manager = init_null_win32k_manager();
+		die("failed to allocate graphics driver\n");
 
 	if (!win32k_manager->init())
 		die("unable to allocate screen\n");

@@ -307,6 +307,7 @@ void usage( void )
 		"Usage: %s [options] [native.exe]\n"
 		"Options:\n"
 		"  -d,--debug    break into debugger on exceptions\n"
+		"  -g,--graphics select screen driver\n"
 		"  -h,--help     print this message\n"
 		"  -q,--quiet    quiet, suppress debug messages\n"
 		"  -t,--trace=<options>    enable tracing\n"
@@ -314,10 +315,18 @@ void usage( void )
 		"  smss.exe is started by default\n\n";
 	printf( usage, PACKAGE_NAME );
 
+	// list the trace options
 	printf("  trace options: ");
 	for (int i=0; trace_option_list[i].name; i++)
 		printf("%s ", trace_option_list[i].name );
-	printf("\n\n");
+	printf("\n");
+
+	// list the graphics drivers
+	printf("  graphics drivers: ");
+	list_graphics_drivers();
+	printf("\n");
+
+	printf("\n");
 
 	exit(0);
 }
@@ -394,13 +403,14 @@ void parse_options(int argc, char **argv)
 		int option_index;
 		static struct option long_options[] = {
 			{"debug", no_argument, NULL, 'd' },
+			{"graphics", required_argument, NULL, 'g' },
 			{"help", no_argument, NULL, 'h' },
 			{"trace", optional_argument, NULL, 't' },
 			{"version", no_argument, NULL, 'v' },
 			{NULL, 0, 0, 0 },
 		};
 
-		int ch = getopt_long(argc, argv, "dhqt::v?", long_options, &option_index );
+		int ch = getopt_long(argc, argv, "g:dhqt::v?", long_options, &option_index );
 		if (ch == -1)
 			break;
 
@@ -408,6 +418,13 @@ void parse_options(int argc, char **argv)
 		{
 		case 'd':
 			option_debug = 1;
+			break;
+		case 'g':
+			if (!set_graphics_driver( optarg ))
+			{
+				fprintf(stderr, "unknown graphics driver %s\n", optarg);
+				usage();
+			}
 			break;
 		case '?':
 		case 'h':

@@ -111,6 +111,8 @@ void init_pipe_device();
 
 // from ntgdi.cpp
 void ntgdi_fini();
+void list_graphics_drivers();
+bool set_graphics_driver( const char *driver );
 
 #define GDI_SHARED_HANDLE_TABLE_ADDRESS ((BYTE*)0x00370000)
 #define GDI_SHARED_HANDLE_TABLE_SIZE 0x60000
