@@ -50,6 +50,7 @@ public:
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index );
+        virtual BOOL lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen );
 };
 
 BOOL win32k_null_t::init()
@@ -91,6 +92,10 @@ int win32k_null_t::getcaps( int index )
 {
 	dprintf("%d\n", index);
 	return 0;
+}
+
+BOOL win32k_null_t::lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen ) {
+    return TRUE;
 }
 
 device_context_t* win32k_null_t::alloc_screen_dc_ptr()

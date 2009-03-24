@@ -261,7 +261,7 @@ NUL(NtGdiMakeInfoDC),
 NUL(NtGdiMaskBlt),
 NUL(NtGdiModifyWorldTransform),
 NUL(NtGdiMonoBitmap),
-NUL(NtGdiMoveTo),
+IMP(NtGdiMoveTo, 4),
 NUL(NtGdiOffsetClipRgn),
 IMP(NtGdiOffsetRgn, 3),
 IMP(NtGdiOpenDCW, 7),
@@ -292,7 +292,7 @@ IMP(NtGdiSelectBitmap, 2),
 NUL(NtGdiSelectBrush),
 NUL(NtGdiSelectClipPath),
 NUL(NtGdiSelectFont),
-NUL(NtGdiSelectPen),
+IMP(NtGdiSelectPen, 2),
 #ifdef SYSCALL_WINXP
 NUL(NtGdiSetBitmapAttributes), // 2
 #endif

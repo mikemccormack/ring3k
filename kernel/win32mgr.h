@@ -37,6 +37,7 @@ public:
 };
 
 class brush_t;
+class pen_t;
 class device_context_t;
 
 class win32k_manager_t
@@ -47,6 +48,7 @@ public:
 	void init_stock_objects();
 	HANDLE get_stock_object( ULONG Index );
 	HANDLE create_solid_brush( COLORREF color );
+	HANDLE create_pen( UINT style, UINT width, COLORREF color );
 	virtual ~win32k_manager_t();
 	virtual BOOL init() = 0;
 	virtual void fini() = 0;
@@ -63,6 +65,7 @@ public:
 	virtual void send_input( INPUT* input );
 	ULONG get_async_key_state( ULONG Key );
 	virtual int getcaps( int index ) = 0;
+        virtual BOOL lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen ) = 0;
 };
 
 extern win32k_manager_t* win32k_manager;
@@ -124,6 +127,16 @@ public:
 	COLORREF get_color() {return color;}
 };
 
+class pen_t : public gdi_object_t
+{
+	ULONG style;
+        ULONG width;
+	COLORREF color;
+public:
+	pen_t( UINT style, UINT width, COLORREF color );
+	static HANDLE alloc( UINT style, UINT width, COLORREF color, BOOL stock = FALSE );
+};
+
 class bitmap_t : public gdi_object_t
 {
 	static const int magic_val = 0xbb11aa22;
@@ -183,6 +196,8 @@ public:
 	virtual BOOL release();
 	virtual brush_t* get_selected_brush();
 	virtual bitmap_t* get_bitmap();
+        virtual pen_t* get_selected_pen();
+	LPPOINT get_current_pen_pos();
 	void set_bounds_rect( RECT& r ) {BoundsRect = r;}
 	RECT& get_bounds_rect() {return BoundsRect;}
 	int save_dc();
@@ -197,6 +212,7 @@ public:
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
 	virtual int getcaps( int index ) = 0;
 	virtual BOOL stretch_di_bits( stretch_di_bits_args& args );
+        virtual BOOL lineto( INT xpos, INT ypos ) = 0;
 };
 
 class memory_device_context_t : public device_context_t
@@ -210,6 +226,7 @@ public:
 	virtual COLORREF get_pixel( INT x, INT y );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index );
+        virtual BOOL lineto( INT x, INT y);
 };
 
 class window_tt;

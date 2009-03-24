@@ -415,6 +415,7 @@ HGDIOBJ alloc_gdi_handle( BOOL stock, ULONG type, void *user_info, gdi_object_t*
 	table[index].ProcessId = current->process->id;
 	table[index].Type = type;
 	HGDIOBJ handle = makeHGDIOBJ(0,stock,type,index);
+        table[index].Count = 0;
 	table[index].Upper = (ULONG)handle >> 16;
 	table[index].user_info = user_info;
 	table[index].kernel_info = reinterpret_cast<void*>( obj );
@@ -639,6 +640,7 @@ device_context_t::device_context_t() :
 
 	GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
 	dcshm->Brush = (HBRUSH) win32k_manager->get_stock_object( WHITE_BRUSH );
+	dcshm->Pen = (HPEN) win32k_manager->get_stock_object( WHITE_PEN );
 	dcshm->TextColor = RGB( 0, 0, 0 );
 	dcshm->BackgroundColor = RGB( 255, 255, 255 );
 }
@@ -692,6 +694,11 @@ BOOL memory_device_context_t::rectangle(INT left, INT top, INT right, INT bottom
 		return FALSE;
 	dprintf("\n");
 	return TRUE;
+}
+
+BOOL memory_device_context_t::lineto(INT left, INT top)
+{
+    return TRUE;
 }
 
 BOOL memory_device_context_t::set_pixel( INT x, INT y, COLORREF color )
@@ -755,12 +762,61 @@ brush_t* brush_from_handle( HGDIOBJ handle )
 	return static_cast<brush_t*>( obj );
 }
 
+pen_t::pen_t( UINT _style, UINT _width, COLORREF _color ) :
+	style( _style ),
+    width( _width ),
+	color( _color )
+{
+}
+
+HANDLE pen_t::alloc( UINT style, UINT width, COLORREF color, BOOL stock )
+{
+	pen_t* pen = new pen_t( style, width, color );
+	if (!pen)
+		return NULL;
+	pen->handle = alloc_gdi_handle( stock, GDI_OBJECT_PEN, NULL, pen );
+	dprintf("created pen %p with color %08lx\n", pen->handle, color );
+	return pen->handle;
+}
+
+pen_t* pen_from_handle( HGDIOBJ handle )
+{
+  gdi_handle_table_entry *entry = get_handle_table_entry( handle );
+  if (!entry) 
+    return NULL;
+
+  if (entry->Type != GDI_OBJECT_PEN)
+    return NULL;
+
+
+  gdi_object_t* obj = reinterpret_cast<gdi_object_t*>( entry->kernel_info );
+  return static_cast<pen_t*>( obj );
+}
+
 brush_t* device_context_t::get_selected_brush()
 {
 	GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
 	if (!dcshm)
 		return NULL;
 	return brush_from_handle( dcshm->Brush );
+}
+
+pen_t* device_context_t::get_selected_pen()
+{
+  GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
+  if (!dcshm)
+    return NULL;
+
+  return pen_from_handle( dcshm->Pen );;
+}
+
+LPPOINT device_context_t::get_current_pen_pos()
+{
+  GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
+  if (!dcshm)
+    return NULL;
+
+  return &dcshm->CurrentPenPos;
 }
 
 device_context_t* dc_from_handle( HGDIOBJ handle )
@@ -863,6 +919,11 @@ HANDLE win32k_manager_t::create_solid_brush( COLORREF color )
 	return brush_t::alloc( BS_SOLID, color, 0 );
 }
 
+HANDLE win32k_manager_t::create_pen( UINT style, UINT width, COLORREF color )
+{
+	return pen_t::alloc( style, width, color );
+}
+
 HANDLE win32k_manager_t::get_stock_object( ULONG Index )
 {
 	if (Index > STOCK_LAST)
@@ -887,6 +948,8 @@ HANDLE win32k_manager_t::get_stock_object( ULONG Index )
 		handle = alloc_gdi_object( TRUE, GDI_OBJECT_BRUSH );
 		break;
 	case WHITE_PEN:
+        handle = pen_t::alloc( PS_SOLID, 1, RGB(255, 255, 255), TRUE );
+        break;
 	case BLACK_PEN:
 	case NULL_PEN:
 	case DC_PEN: // FIXME: probably per DC
@@ -1000,6 +1063,12 @@ HGDIOBJ NTAPI NtGdiSelectBitmap( HGDIOBJ hdc, HGDIOBJ hbm )
 	assert( bitmap->is_valid() );
 
 	return dc->select_bitmap( bitmap );
+}
+
+HGDIOBJ NTAPI NtGdiSelectPen( HGDIOBJ hdc, HGDIOBJ hbm )
+{
+ 
+        return NULL;
 }
 
 // Info
@@ -1337,9 +1406,18 @@ BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG Rop, PRECT Rectangle, ULONG,
 	return dc->polypatblt( Rop, &rect );
 }
 
-BOOLEAN NTAPI NtGdiLineTo( HDC handle, int xpos, int ypos )
+BOOLEAN NTAPI NtGdiMoveTo( HDC handle, int xpos, int ypos, LPPOINT pptOut)
 {
 	return TRUE;
+}
+
+BOOLEAN NTAPI NtGdiLineTo( HDC handle, int xpos, int ypos )
+{
+	device_context_t* dc = dc_from_handle( handle );
+	if (!dc)
+		return FALSE;
+
+	return dc->lineto( xpos, ypos );
 }
 
 int NTAPI NtGdiGetDeviceCaps( HDC handle, int index )
@@ -1353,7 +1431,7 @@ int NTAPI NtGdiGetDeviceCaps( HDC handle, int index )
 
 HPEN NTAPI NtGdiCreatePen(int style, int width, COLORREF color, ULONG)
 {
-	return (HPEN) alloc_gdi_object( FALSE, GDI_OBJECT_PEN );
+    return (HPEN) win32k_manager->create_pen( style, width, color );
 }
 
 BOOLEAN NTAPI NtGdiStretchDIBitsInternal(

@@ -61,6 +61,7 @@ public:
 	virtual COLORREF get_pixel( INT x, INT y );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index );
+        virtual int lineto( INT x, INT y);
 };
 
 class sdl_sleeper_t : public sleeper_t
@@ -92,6 +93,7 @@ public:
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
+        virtual BOOL lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen );
 	virtual device_context_t* alloc_screen_dc_ptr();
 
 protected:
@@ -306,6 +308,11 @@ BOOL win32k_sdl_t::polypatblt( ULONG Rop, PRECT rect )
 
 	SDL_UpdateRect( screen, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top );
 
+	return TRUE;
+}
+
+BOOL win32k_sdl_t::lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen )
+{
 	return TRUE;
 }
 
@@ -641,6 +648,11 @@ win32k_sdl_16bpp_t win32k_manager_sdl_16bpp;
 win32k_manager_t* init_sdl_win32k_manager()
 {
 	return &win32k_manager_sdl_16bpp;
+}
+
+BOOL sdl_device_context_t::lineto(INT x, INT y)
+{
+    return TRUE;
 }
 
 BOOL sdl_device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
