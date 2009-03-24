@@ -110,7 +110,10 @@ typedef struct _GDI_DEVICE_CONTEXT_SHARED {
 	COLORREF BackgroundColor;
 	ULONG unk5;
 	COLORREF TextColor;
-	ULONG unk7[0x40];
+    UCHAR unk6[30];
+    POINT CurrentPenPos;
+    UCHAR unk7[2];
+	ULONG unk8[0x35];
 } GDI_DEVICE_CONTEXT_SHARED;
 
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);
@@ -144,6 +147,7 @@ int     NTAPI NtGdiGetRgnBox(HRGN,PRECT);
 HGDIOBJ NTAPI NtGdiGetStockObject(ULONG);
 BOOLEAN NTAPI NtGdiGetTextMetricsW(HANDLE,PVOID,ULONG);
 BOOLEAN NTAPI NtGdiInit(void);
+BOOLEAN NTAPI NtGdiMoveTo(HDC,int,int,LPPOINT);
 BOOLEAN NTAPI NtGdiLineTo(HDC,int,int);
 int     NTAPI NtGdiOffsetRgn(HRGN,int,int);
 HANDLE  NTAPI NtGdiOpenDCW(ULONG,ULONG,ULONG,ULONG,ULONG,ULONG,PVOID);
@@ -161,5 +165,6 @@ BOOLEAN NTAPI NtGdiSetIcmMode(HANDLE,ULONG,ULONG);
 BOOLEAN NTAPI NtGdiSetPixel(HANDLE,INT,INT,COLORREF);
 BOOL    NTAPI NtGdiSetRectRgn(HRGN,int,int,int,int);
 BOOLEAN NTAPI NtGdiStretchDIBitsInternal(HDC,int,int,int,int,int,int,int,int,const VOID*,const BITMAPINFO*,UINT,DWORD,ULONG,ULONG,ULONG);
+HGDIOBJ NTAPI NtGdiSelectPen(HGDIOBJ,HGDIOBJ);
 
 #endif // __NTGDI_H__
