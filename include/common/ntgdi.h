@@ -110,9 +110,9 @@ typedef struct _GDI_DEVICE_CONTEXT_SHARED {
 	COLORREF BackgroundColor;
 	ULONG unk5;
 	COLORREF TextColor;
-    UCHAR unk6[30];
-    POINT CurrentPenPos;
-    UCHAR unk7[2];
+        UCHAR unk6[30];
+        POINT CurrentPenPos;
+        UCHAR unk7[2];
 	ULONG unk8[0x35];
 } GDI_DEVICE_CONTEXT_SHARED;
 

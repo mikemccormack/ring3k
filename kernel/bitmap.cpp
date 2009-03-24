@@ -36,6 +36,50 @@
 #include "debug.h"
 #include "win32mgr.h"
 
+template<const int DEPTH>
+bitmap_impl_t<DEPTH>::bitmap_impl_t( int _width, int _height ) :
+	bitmap_t( _width, _height, 1, DEPTH )
+{
+}
+
+template<const int DEPTH>
+bitmap_impl_t<DEPTH>::~bitmap_impl_t()
+{
+}
+
+template<>
+COLORREF bitmap_impl_t<1>::get_pixel( int x, int y )
+{
+	ULONG row_size = get_rowsize();
+	if ((bits[row_size * y + x/8 ]>> (7 - (x%8))) & 1)
+		return RGB( 255, 255, 255 );
+	else
+		return RGB( 0, 0, 0 );
+}
+
+template<>
+COLORREF bitmap_impl_t<2>::get_pixel( int x, int y )
+{
+	assert(0);
+	return RGB( 0, 0, 0 );
+}
+
+template<>
+COLORREF bitmap_impl_t<16>::get_pixel( int x, int y )
+{
+	ULONG row_size = get_rowsize();
+	USHORT val = *(USHORT*) &bits[row_size * y + x*2 ];
+	return RGB( (val & 0xf800) >> 8, (val & 0x07e0) >> 3, (val & 0x1f) << 3 );
+}
+
+template<>
+COLORREF bitmap_impl_t<24>::get_pixel( int x, int y )
+{
+	ULONG row_size = get_rowsize();
+	ULONG val = *(ULONG*) &bits[row_size * y + x*3 ];
+	return val&0xffffff;
+}
+
 bitmap_t::~bitmap_t()
 {
 	assert( magic == magic_val );
@@ -77,9 +121,13 @@ bitmap_t::bitmap_t( int _width, int _height, int _planes, int _bpp ) :
 	bits = new unsigned char [bitmap_size()];
 	if (!bits)
 		throw;
+	handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, this );
+	if (!handle)
+		throw;
 	assert( magic == magic_val );
 }
 
+/*
 COLORREF bitmap_t::get_pixel( int x, int y )
 {
 	assert( magic == magic_val );
@@ -105,6 +153,7 @@ COLORREF bitmap_t::get_pixel( int x, int y )
 	}
 	return 0;
 }
+*/
 
 BOOL bitmap_t::set_pixel( int x, int y, COLORREF color )
 {
@@ -144,19 +193,7 @@ NTSTATUS bitmap_t::copy_pixels( void *pixels )
 	return copy_from_user( bits, pixels, bitmap_size() );
 }
 
-gdi_bitmap_t::gdi_bitmap_t( int _width, int _height, int _planes, int _bpp ) :
-	bitmap_t( _width, _height, _planes, _bpp )
-{
-	handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, this );
-	if (!handle)
-		throw;
-}
-
-gdi_bitmap_t::~gdi_bitmap_t()
-{
-}
-
-gdi_bitmap_t* bitmap_from_handle( HANDLE handle )
+bitmap_t* bitmap_from_handle( HANDLE handle )
 {
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
 	if (!entry)
@@ -165,7 +202,39 @@ gdi_bitmap_t* bitmap_from_handle( HANDLE handle )
 		return FALSE;
 	assert( entry->kernel_info );
 	gdi_object_t* obj = reinterpret_cast<gdi_object_t*>( entry->kernel_info );
-	return static_cast<gdi_bitmap_t*>( obj );
+	return static_cast<bitmap_t*>( obj );
+}
+
+bitmap_t* alloc_bitmap( int width, int height, int depth )
+{
+	bitmap_t *bm = NULL;
+	switch (depth)
+	{
+	case 1:
+		bm = new bitmap_impl_t<1>( width, height );
+		break;
+	case 2:
+		bm = new bitmap_impl_t<2>( width, height );
+		break;
+/*
+	case 4:
+		bm = new bitmap_impl_t<4>( width, height );
+		break;
+	case 8:
+		bm = new bitmap_impl_t<8>( width, height );
+		break;
+*/
+	case 16:
+		bm = new bitmap_impl_t<16>( width, height );
+		break;
+	case 24:
+		bm = new bitmap_impl_t<24>( width, height );
+		break;
+	default:
+		fprintf(stderr, "%d bpp not supported\n", depth);
+		assert( 0 );
+	}
+	return bm;
 }
 
 // parameters look the same as gdi32.CreateBitmap
@@ -174,8 +243,10 @@ HGDIOBJ NTAPI NtGdiCreateBitmap(int Width, int Height, UINT Planes, UINT BitsPer
 	// FIXME: handle negative heights
 	assert(Height >=0);
 	assert(Width >=0);
-	gdi_bitmap_t *bm = NULL;
-	bm = new gdi_bitmap_t( Width, Height, Planes, BitsPerPixel );
+	bitmap_t *bm = NULL;
+	bm = alloc_bitmap( Width, Height, BitsPerPixel );
+	if (!bm)
+		return NULL;
 	NTSTATUS r = bm->copy_pixels( Pixels );
 	if (r < STATUS_SUCCESS)
 	{

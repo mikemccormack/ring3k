@@ -130,17 +130,18 @@ public:
 class pen_t : public gdi_object_t
 {
 	ULONG style;
-    ULONG width;
+        ULONG width;
 	COLORREF color;
 public:
 	pen_t( UINT style, UINT width, COLORREF color );
 	static HANDLE alloc( UINT style, UINT width, COLORREF color, BOOL stock = FALSE );
 };
 
-class bitmap_t
+class bitmap_t : public gdi_object_t
 {
 	static const int magic_val = 0xbb11aa22;
 	int magic;
+protected:
 	unsigned char *bits;
 	int width;
 	int height;
@@ -154,19 +155,22 @@ public:
 	ULONG bitmap_size();
 	int get_width() {return width;}
 	int get_height() {return height;}
-	int get_planes() {return planes;}
+	//int get_planes() {return planes;}
 	ULONG get_rowsize();
-	virtual COLORREF get_pixel( int x, int y );
+	virtual COLORREF get_pixel( int x, int y ) = 0;
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	bool is_valid() const { return magic == magic_val; }
 	NTSTATUS copy_pixels( void* pixels );
 };
 
-class gdi_bitmap_t : public bitmap_t, public gdi_object_t
+template<const int DEPTH>
+class bitmap_impl_t : public bitmap_t
 {
 public:
-	gdi_bitmap_t( int _width, int _height, int _planes, int _bpp );
-	~gdi_bitmap_t();
+	bitmap_impl_t( int _width, int _height );
+	virtual ~bitmap_impl_t();
+	virtual COLORREF get_pixel( int x, int y );
+	//virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 };
 
 class dc_state_tt
@@ -178,7 +182,7 @@ public:
 
 class device_context_t : public gdi_object_t
 {
-	gdi_bitmap_t* selected_bitmap;
+	bitmap_t* selected_bitmap;
 	RECT BoundsRect;
 	dc_state_tt *saved_dc;
 	INT saveLevel;
@@ -202,7 +206,7 @@ public:
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text ) = 0;
-	virtual HANDLE select_bitmap( gdi_bitmap_t *bitmap );
+	virtual HANDLE select_bitmap( bitmap_t *bitmap );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t* src, INT xSrc, INT ySrc, ULONG rop );
 	virtual COLORREF get_pixel( INT x, INT y ) = 0;
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
@@ -234,6 +238,7 @@ HGDIOBJ alloc_gdi_handle( BOOL stock, ULONG type, void *user_info, gdi_object_t*
 HGDIOBJ alloc_gdi_object( BOOL stock, ULONG type );
 gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle);
 BOOLEAN do_gdi_init();
-gdi_bitmap_t* bitmap_from_handle( HANDLE handle );
+bitmap_t* bitmap_from_handle( HANDLE handle );
+bitmap_t* alloc_bitmap( int width, int height, int depth );
 
 #endif // __WIN32K_MANAGER__

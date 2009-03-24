@@ -112,6 +112,8 @@ AC_CONFIG_FILES(
 	tools/Makefile
 	libudis86/Makefile
 	libmspack/Makefile
+	programs/Makefile
+	programs/minitris/Makefile
 	unpack/Makefile
 	winemine/Makefile
 )
