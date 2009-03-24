@@ -306,7 +306,7 @@ BOOL win32k_cairo_t::bitblt(INT xDest, INT yDest, INT cx, INT cy,
 {
 	unsigned int *buf = (unsigned int *) cairo_image_surface_get_data(buffer);
 
-	bitmap_t *bitmap = src->get_selected_bitmap();
+	bitmap_t *bitmap = src->get_bitmap();
 	if (!bitmap) return FALSE;
 
 	COLORREF pixel;

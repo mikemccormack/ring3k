@@ -266,7 +266,7 @@ BOOL win32k_sdl_t::bitblt(
 		cy = screen->h - yDest;
 
 	// keep everything on the source bitmap
-	bitmap_t *bitmap = src->get_selected_bitmap();
+	bitmap_t *bitmap = src->get_bitmap();
 	if (!bitmap)
 		return FALSE;
 	xSrc = max( xSrc, 0 );

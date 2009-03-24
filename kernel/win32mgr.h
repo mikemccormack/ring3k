@@ -181,8 +181,8 @@ public:
 	device_context_t();
 	GDI_DEVICE_CONTEXT_SHARED* get_dc_shared_mem() const;
 	virtual BOOL release();
-	brush_t* get_selected_brush();
-	bitmap_t* get_selected_bitmap();
+	virtual brush_t* get_selected_brush();
+	virtual bitmap_t* get_bitmap();
 	void set_bounds_rect( RECT& r ) {BoundsRect = r;}
 	RECT& get_bounds_rect() {return BoundsRect;}
 	int save_dc();

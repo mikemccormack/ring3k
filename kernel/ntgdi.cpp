@@ -664,7 +664,7 @@ HANDLE device_context_t::select_bitmap( bitmap_t *bitmap )
 	return old->get_handle();
 }
 
-bitmap_t* device_context_t::get_selected_bitmap()
+bitmap_t* device_context_t::get_bitmap()
 {
 	if (selected_bitmap)
 		assert( selected_bitmap->is_valid() );
@@ -696,7 +696,7 @@ BOOL memory_device_context_t::rectangle(INT left, INT top, INT right, INT bottom
 
 BOOL memory_device_context_t::set_pixel( INT x, INT y, COLORREF color )
 {
-	bitmap_t* bitmap = get_selected_bitmap();
+	bitmap_t* bitmap = get_bitmap();
 	if (bitmap)
 		return bitmap->set_pixel( x, y, color );
 	return TRUE;
@@ -704,7 +704,7 @@ BOOL memory_device_context_t::set_pixel( INT x, INT y, COLORREF color )
 
 COLORREF memory_device_context_t::get_pixel( INT x, INT y )
 {
-	bitmap_t* bitmap = get_selected_bitmap();
+	bitmap_t* bitmap = get_bitmap();
 	if (bitmap)
 		return bitmap->get_pixel( x, y );
 	return 0;
@@ -812,7 +812,7 @@ COLORREF get_di_pixel( stretch_di_bits_args& args, int x, int y )
 
 BOOL device_context_t::stretch_di_bits( stretch_di_bits_args& args )
 {
-	bitmap_t* bitmap = get_selected_bitmap();
+	bitmap_t* bitmap = get_bitmap();
 	if (!bitmap)
 		return FALSE;
 
