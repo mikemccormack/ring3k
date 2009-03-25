@@ -109,6 +109,14 @@ bitmap_t::bitmap_t( int _width, int _height, int _planes, int _bpp ) :
 {
 }
 
+void bitmap_t::lock()
+{
+}
+
+void bitmap_t::unlock()
+{
+}
+
 /*
 COLORREF bitmap_t::get_pixel( int x, int y )
 {

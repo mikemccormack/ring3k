@@ -150,6 +150,8 @@ protected:
 	int bpp;
 protected:
 	void dump();
+	virtual void lock();
+	virtual void unlock();
 public:
 	bitmap_t( int _width, int _height, int _planes, int _bpp );
 	virtual ~bitmap_t();

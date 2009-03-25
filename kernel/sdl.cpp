@@ -53,6 +53,8 @@ class sdl_16bpp_bitmap_t : public bitmap_impl_t<16>
 	SDL_Surface *surface;
 public:
 	sdl_16bpp_bitmap_t( SDL_Surface *s );
+	void lock();
+	void unlock();
 };
 
 class sdl_device_context_t : public device_context_t
@@ -542,6 +544,18 @@ sdl_16bpp_bitmap_t::sdl_16bpp_bitmap_t( SDL_Surface *s ) :
 	surface( s )
 {
 	bits = reinterpret_cast<unsigned char*>( s->pixels );
+}
+
+void sdl_16bpp_bitmap_t::lock()
+{
+	if ( SDL_MUSTLOCK(surface) )
+		SDL_LockSurface(surface);
+}
+
+void sdl_16bpp_bitmap_t::unlock()
+{
+	if ( SDL_MUSTLOCK(surface) )
+		SDL_UnlockSurface(surface);
 }
 
 class win32k_sdl_16bpp_t : public win32k_sdl_t
