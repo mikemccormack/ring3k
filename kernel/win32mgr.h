@@ -139,6 +139,7 @@ public:
 
 class bitmap_t : public gdi_object_t
 {
+	friend bitmap_t* alloc_bitmap( int width, int height, int depth );
 	static const int magic_val = 0xbb11aa22;
 	int magic;
 protected:
@@ -172,6 +173,17 @@ public:
 	virtual COLORREF get_pixel( int x, int y );
 	//virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 };
+
+template<const int DEPTH>
+bitmap_impl_t<DEPTH>::bitmap_impl_t( int _width, int _height ) :
+	bitmap_t( _width, _height, 1, DEPTH )
+{
+}
+
+template<const int DEPTH>
+bitmap_impl_t<DEPTH>::~bitmap_impl_t()
+{
+}
 
 class dc_state_tt
 {

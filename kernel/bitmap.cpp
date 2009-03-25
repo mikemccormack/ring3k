@@ -36,17 +36,6 @@
 #include "debug.h"
 #include "win32mgr.h"
 
-template<const int DEPTH>
-bitmap_impl_t<DEPTH>::bitmap_impl_t( int _width, int _height ) :
-	bitmap_t( _width, _height, 1, DEPTH )
-{
-}
-
-template<const int DEPTH>
-bitmap_impl_t<DEPTH>::~bitmap_impl_t()
-{
-}
-
 template<>
 COLORREF bitmap_impl_t<1>::get_pixel( int x, int y )
 {
@@ -118,13 +107,6 @@ bitmap_t::bitmap_t( int _width, int _height, int _planes, int _bpp ) :
 	planes( _planes ),
 	bpp( _bpp )
 {
-	bits = new unsigned char [bitmap_size()];
-	if (!bits)
-		throw;
-	handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, this );
-	if (!handle)
-		throw;
-	assert( magic == magic_val );
 }
 
 /*
@@ -234,6 +216,14 @@ bitmap_t* alloc_bitmap( int width, int height, int depth )
 		fprintf(stderr, "%d bpp not supported\n", depth);
 		assert( 0 );
 	}
+
+	bm->bits = new unsigned char [bm->bitmap_size()];
+	if (!bm->bits)
+		throw;
+	bm->handle = alloc_gdi_handle( FALSE, GDI_OBJECT_BITMAP, 0, bm );
+	if (!bm->handle)
+		throw;
+
 	return bm;
 }
 
