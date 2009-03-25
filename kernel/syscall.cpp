@@ -127,8 +127,6 @@ NTSTATUS do_nt_syscall(ULONG id, ULONG func, ULONG *uargs, ULONG retaddr)
 	int magic = magic_val;
 	BOOLEAN win32k_func = FALSE;
 
-    dprintf("********** syscall %ld\n", func);
-
 	/* check the call number is in range */
 	if (func >= 0 && func < number_of_ntcalls)
 		ntcall = &ntcalls[func];
