@@ -18,8 +18,46 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+/*
+ * Careful!  Playing with winlogon.exe will make your system unbootable!
+ *
+ * How to use this program:
+ *
+ * Mount your windows partition:
+ * # mount -o loop,offset=32256,uid=1000 ~mike/win2k.img /mnt/
+ *
+ * Copy winlogon.exe to _winlogon.exe
+ * # cp -i /mnt/winnt/system32/winlogon.exe /mnt/winnt/system32/_winlogon.exe
+ *
+ * Unmount your window partition before booting it
+ * # umount /mnt
+ *
+ * Run qemu (Windows will boot normally until you change the start key):
+ * $ qemu -hda ~mike/win2k.img
+ *
+ * Set the value "start" in the key HKEY_LOCAL_MACHINE\Software\ring3k
+ *  to the program you want to run instead of winlogon.
+ *
+ * Touch c:\start-ignore or delete that the start value to revert to using winlogon.
+ *
+ * To restore winlogon completely:
+ * # cp -i /mnt/winnt/system32/_winlogon.exe /mnt/winnt/system32/winlogon.exe
+ */
+
 #include <windows.h>
 #include <stdio.h>
+
+// renamed original winlogon.exe
+const char backup_winlogon[] = "_winlogon.exe";
+
+// name of the key to look in for the start_value
+const char ring3k_key[] = "Software\\ring3k";
+
+// name of the value containing a program to start instead of backup_winlogon
+const char start_value[] = "start";
+
+// if this file is present, backup_winlogon will be started
+const char ignore_file[] = "c:\\start-ignore";
 
 // from ntdll
 int __cdecl vsprintf(char *, const char *, va_list);
@@ -151,8 +189,45 @@ void init_desktop(void)
 		dprintf("SetThreadDesktop failed %ld\n", GetLastError());
 }
 
+BOOL get_start_program( char *buffer, int len )
+{
+	HKEY hkey;
+	LONG r;
+	DWORD type = 0, sz;
+
+	r = RegOpenKey( HKEY_LOCAL_MACHINE, ring3k_key, &hkey );
+	if (r != ERROR_SUCCESS)
+		return FALSE;
+
+	sz = len;
+	r = RegQueryValueEx( hkey, start_value, NULL, &type, (LPBYTE) buffer, &sz );
+	if (r != ERROR_SUCCESS)
+		return FALSE;
+
+	RegCloseKey( hkey );
+
+	if (type != REG_SZ)
+		return FALSE;
+
+	return TRUE;
+}
+
+BOOL ignore_start_key( void )
+{
+	HANDLE file;
+
+	file = CreateFile(ignore_file, GENERIC_READ,
+		 FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+	if (file == INVALID_HANDLE_VALUE)
+		return FALSE;
+	CloseHandle( file );
+	return TRUE;
+}
+
 int main( int argc, char **argv )
 {
+	char prog[0x40];
+
 	log_open();
 	dprintf("started\n");
 
@@ -161,8 +236,11 @@ int main( int argc, char **argv )
 
 	dprintf("desktop window = %p\n", GetDesktopWindow());
 
+	if (ignore_start_key() || !get_start_program( prog, sizeof prog ))
+		strcpy( prog, backup_winlogon );
+
 	// start the process in the desktop
-	start_process( "winmine.exe" );
+	start_process( prog );
 
 	log_close();
 	Sleep(1000);
