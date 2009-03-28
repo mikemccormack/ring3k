@@ -25,7 +25,6 @@ datadir = ${prefix}/data
 SOURCE = \
 	console.c \
 	dumphandles.c \
-	hello.c \
 	pixels.c \
 	qdf.c \
 	startcmd.c \
@@ -44,9 +43,6 @@ advapi32.dll: advapi32.c
 
 dumphandles.exe: dumphandles.c $(NTWIN32LIB)
 	$(CC) $(CFLAGS) -o $@ $< $(NTWIN32LIB) -lntdll -lkernel32 -luser32
-
-hello.exe: hello.c
-	$(CC) $(CFLAGS) -o $@ $< -lntdll -lkernel32 -mconsole
 
 qdf.exe: qdf.c
 	$(CC) $(CFLAGS) -o $@ $< -luser32 -lkernel32 -lntdll -lgdi32
