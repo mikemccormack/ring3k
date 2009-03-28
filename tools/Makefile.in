@@ -25,7 +25,6 @@ datadir = ${prefix}/data
 SOURCE = \
 	console.c \
 	dumphandles.c \
-	pixels.c \
 	qdf.c \
 	startcmd.c \
 	track.c
@@ -51,9 +50,6 @@ startcmd.exe: startcmd.c
 	$(CC) $(CFLAGS) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
 
 console.exe: console.c
-	$(CC) $(CFLAGS) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
-
-pixels.exe: pixels.c
 	$(CC) $(CFLAGS) -o $@ $< -lntdll -lkernel32 -lgdi32 -Wl,--subsystem=windows
 
 track.exe: track.c

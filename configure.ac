@@ -118,6 +118,7 @@ AC_CONFIG_FILES(
 	libmspack/Makefile
 	programs/Makefile
 	programs/minitris/Makefile
+	programs/pixels/Makefile
 	programs/winemine/Makefile
 	programs/winlogon/Makefile
 	unpack/Makefile
