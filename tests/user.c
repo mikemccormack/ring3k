@@ -668,10 +668,11 @@ void test_point_from_window( HWND window, INT x, INT y, INT cx, INT cy )
 }
 
 // argument selects a set of window styles
-void test_create_window( ULONG style )
+void test_create_window( ULONG style, BOOL unicode )
 {
 	USER32_UNICODE_STRING cls, title;
 	WCHAR title_str[] = L"test window";
+	CHAR title_strA[] = "test window";
 	HANDLE window;
 	ULONG n = 0;
 	WND *wndptr, *kernel_wndptr, *ptr;
@@ -697,9 +698,19 @@ void test_create_window( ULONG style )
 	cls.Length = sizeof test_class_name - 2;
 	cls.MaximumLength = sizeof test_class_name;
 
-	title.Buffer = title_str;
-	title.Length = sizeof title_str - 2;
-	title.MaximumLength = sizeof title_str;
+	if (unicode)
+	{
+		title.Buffer = title_str;
+		title.Length = sizeof title_str - 2;
+		title.MaximumLength = 0;
+	}
+	else
+	{
+		title.Buffer = (WCHAR*) title_strA;
+		title.Length = sizeof title_strA - 1;
+		title.MaximumLength = 0;
+		ok( title.Length & 1, "not odd\n");
+	}
 
 	test_cs.lpCreateParams = 0;
 	test_cs.hInstance = get_exe_base();
@@ -922,9 +933,13 @@ void test_window()
 {
 	register_class();
 	//dprintf("non-visible\n");
-	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP );
+	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP, FALSE );
 	//dprintf("visible\n");
-	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP | WS_VISIBLE );
+	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP | WS_VISIBLE, FALSE );
+	//dprintf("non-visible\n");
+	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP, TRUE );
+	//dprintf("visible\n");
+	test_create_window( WS_CAPTION | WS_SYSMENU | WS_GROUP | WS_VISIBLE, TRUE );
 }
 
 void NtProcessStartup( void )

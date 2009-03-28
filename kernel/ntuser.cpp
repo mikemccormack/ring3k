@@ -1128,10 +1128,11 @@ HANDLE NTAPI NtUserCreateWindowEx(
 	NTSTATUS r;
 
 	user32_unicode_string_t window_name;
+#if 0
 	r = window_name.copy_from_user( WindowName );
 	if (r < STATUS_SUCCESS)
 		return 0;
-
+#endif
 
 	user32_unicode_string_t wndcls_name;
 	r = wndcls_name.copy_from_user( ClassName );
