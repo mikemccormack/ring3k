@@ -119,6 +119,7 @@ AC_CONFIG_FILES(
 	programs/Makefile
 	programs/minitris/Makefile
 	programs/winemine/Makefile
+	programs/winlogon/Makefile
 	unpack/Makefile
 )
 

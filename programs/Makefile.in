@@ -29,7 +29,8 @@ RM = rm -f
 
 SUBDIRS = \
 	minitris \
-	winemine
+	winemine \
+	winlogon
 
 all: $(SUBDIRS)
 
