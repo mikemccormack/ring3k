@@ -1,0 +1,46 @@
+#
+# Makefile for minimal shell
+# Copyright 2008-2009 Mike McCormack
+#
+
+srcdir = @srcdir@
+VPATH  = @srcdir@
+
+DEPFLAG = -Wp,-MD,.$@.d
+CC = @MINGW32CC@
+STRIP = @MINGW32STRIP@
+CFLAGS = -Wall -O2 $(DEPFLAG)
+AS = @MINGW32AS@
+AR = @MINGW32AR@
+RANLIB = @MINGW32RANLIB@
+WINDRES = @MINGW32WINDRES@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+prefix = @prefix@
+bindir = ${prefix}/bin
+datadir = ${prefix}/data
+
+SOURCE = \
+	minshell.c
+
+TARGET = minshell.exe
+
+OBJECTS = $(SOURCE:.c=.o)
+
+.PHONY: all clean
+
+all: $(SOURCE:.c=.exe)
+
+-include $(OBJECTS:%=$(dir %).$(notdir %).d)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $< -lgdi32 -luser32 -Wl,--subsystem=windows
+
+clean:
+	rm -f *.o *.dll *.exe .*.d
+
+install: $(TARGET)
+	mkdir -p $(DESTDIR)$(datadir)
+	$(INSTALL_DATA) $(INSTALL_FLAGS) $< $(DESTDIR)$(datadir)

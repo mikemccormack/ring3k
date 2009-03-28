@@ -29,6 +29,7 @@ RM = rm -f
 
 SUBDIRS = \
 	minitris \
+	minshell \
 	winemine \
 	winlogon
 
