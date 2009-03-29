@@ -79,6 +79,7 @@ public:
 	void unlink_window();
 	BOOLEAN move_window( int x, int y, int width, int height, BOOLEAN repaint );
 	HWND from_point( POINT& pt );
+	bool on_access( BYTE* address, ULONG ip );
 };
 
 window_tt *window_from_handle( HANDLE handle );

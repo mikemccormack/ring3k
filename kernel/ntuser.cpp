@@ -109,6 +109,8 @@ static user_shared_mem_t *user_shared;
 // bitmap of free memory
 allocation_bitmap_t user_shared_bitmap;
 
+MESSAGE_MAP_SHARED_MEMORY message_maps[NUMBER_OF_MESSAGE_MAPS];
+
 static USHORT next_user_handle = 1;
 
 #define MAX_USER_HANDLES 0x200
@@ -275,6 +277,46 @@ bool ntusershm_tracer::enabled() const
 void ntusershm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
 	ULONG ofs = address - mb->get_base_address();
+	if (ofs < user_shared_mem_reserve)
+	{
+		const char *name = "";
+		switch (ofs)
+		{
+		case 8:
+			name = " (max_window_handle)";
+			break;
+		}
+		fprintf(stderr, "%04lx: accessed ushm[%04lx]%s from %08lx\n", current->trace_id(), ofs, name, eip);
+		return;
+	}
+	for (ULONG i=0; i<NUMBER_OF_MESSAGE_MAPS; i++)
+	{
+		if (!message_maps[i].Bitmap)
+			continue;
+		if (address < message_maps[i].Bitmap)
+			continue;
+		ofs = address - message_maps[i].Bitmap;
+		if (ofs > message_maps[i].MaxMessage/8)
+			continue;
+		fprintf(stderr, "%04lx: accessed message map[%ld][%04lx] from %08lx\n", current->trace_id(), i, ofs, eip);
+		return;
+	}
+	for (ULONG i=0; i<user_shared->max_window_handle; i++)
+	{
+		if (address < (BYTE*) user_handle_table[i].object)
+			continue;
+		switch (user_handle_table[i].type)
+		{
+		case USER_HANDLE_WINDOW:
+			{
+			// window shared memory structures are variable size
+			// have the window check itself
+			window_tt* wnd = reinterpret_cast<window_tt*>( user_handle_table[i].object);
+			if (wnd->on_access( address, eip ))
+				return;
+			}
+		}
+	}
 	fprintf(stderr, "%04lx: accessed ushm[%04lx] from %08lx\n", current->trace_id(), ofs, eip);
 }
 
@@ -463,7 +505,9 @@ NTSTATUS NTAPI NtUserProcessConnect(HANDLE Process, PVOID Buffer, ULONG BufferSi
 	}
 
 	alloc_message_bitmap( proc, info.win2k.MessageMap[0x1b], 0x400 );
+	message_maps[0x1b] = info.win2k.MessageMap[0x1b];
 	alloc_message_bitmap( proc, info.win2k.MessageMap[0x1c], 0x400 );
+	message_maps[0x1c] = info.win2k.MessageMap[0x1c];
 
 	r = copy_to_user( Buffer, &info, BufferSize );
 	if (r < STATUS_SUCCESS)
@@ -1045,6 +1089,18 @@ void* window_tt::operator new(size_t sz)
 void window_tt::operator delete(void *p)
 {
 	user_shared_bitmap.free( (unsigned char*) p, sizeof (window_tt) );
+}
+
+// return true if address is in this window's shared memory
+bool window_tt::on_access( BYTE *address, ULONG eip )
+{
+	ULONG ofs = address - (BYTE*) get_wininfo();
+	ULONG sz = sizeof (WND) /*+ cbWndClsExtra + cbWndExtra */;
+	if (ofs > sz)
+		return false;
+	ofs -= sz;
+	fprintf(stderr, "%04lx: accessed window[%p][%04lx] from %08lx\n", current->trace_id(), handle, ofs, eip);
+	return true;
 }
 
 window_tt::~window_tt()
