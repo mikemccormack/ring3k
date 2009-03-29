@@ -292,6 +292,25 @@ bool message_map_on_access( BYTE *address, ULONG eip )
 	return false;
 }
 
+bool window_on_access( BYTE *address, ULONG eip )
+{
+	for (ULONG i=0; i<user_shared->max_window_handle; i++)
+	{
+		switch (user_handle_table[i].type)
+		{
+		case USER_HANDLE_WINDOW:
+			{
+			// window shared memory structures are variable size
+			// have the window check itself
+			window_tt* wnd = reinterpret_cast<window_tt*>( user_handle_table[i].object);
+			if (wnd->on_access( address, eip ))
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void ntusershm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
 	ULONG ofs = address - mb->get_base_address();
@@ -312,22 +331,9 @@ void ntusershm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 	if (message_map_on_access( address, eip ))
 		return;
 
-	for (ULONG i=0; i<user_shared->max_window_handle; i++)
-	{
-		if (address < (BYTE*) user_handle_table[i].object)
-			continue;
-		switch (user_handle_table[i].type)
-		{
-		case USER_HANDLE_WINDOW:
-			{
-			// window shared memory structures are variable size
-			// have the window check itself
-			window_tt* wnd = reinterpret_cast<window_tt*>( user_handle_table[i].object);
-			if (wnd->on_access( address, eip ))
-				return;
-			}
-		}
-	}
+	if (window_on_access( address, eip ))
+		return;
+
 	fprintf(stderr, "%04lx: accessed ushm[%04lx] from %08lx\n",
 		current->trace_id(), ofs, eip);
 }
@@ -1106,11 +1112,14 @@ void window_tt::operator delete(void *p)
 // return true if address is in this window's shared memory
 bool window_tt::on_access( BYTE *address, ULONG eip )
 {
-	ULONG ofs = address - (BYTE*) get_wininfo();
+	BYTE *user_ptr = (BYTE*) get_wininfo();
+	if (user_ptr > address)
+		return false;
+
+	ULONG ofs = address - user_ptr;
 	ULONG sz = sizeof (WND) /*+ cbWndClsExtra + cbWndExtra */;
 	if (ofs > sz)
 		return false;
-	ofs -= sz;
 	fprintf(stderr, "%04lx: accessed window[%p][%04lx] from %08lx\n", current->trace_id(), handle, ofs, eip);
 	return true;
 }
