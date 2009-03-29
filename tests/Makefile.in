@@ -26,6 +26,7 @@ TESTS = \
 	gdi.c \
 	heap.c \
 	job.c \
+	key.c \
 	mailslot.c \
 	mutant.c \
 	object.c \
@@ -102,6 +103,9 @@ gdi.exe: gdi.o log.o $(NTWIN32LIB)
 	$(CC) -o $@ $^ $(NATIVEEXEFLAGS)
 
 user.exe: user.o log.o $(NTWIN32LIB)
+	$(CC) -o $@ $^ $(NATIVEEXEFLAGS)
+
+key.exe: key.o log.o $(NTWIN32LIB)
 	$(CC) -o $@ $^ $(NATIVEEXEFLAGS)
 
 font.exe: font.o log.o $(NTWIN32LIB)
