@@ -1120,7 +1120,26 @@ bool window_tt::on_access( BYTE *address, ULONG eip )
 	ULONG sz = sizeof (WND) /*+ cbWndClsExtra + cbWndExtra */;
 	if (ofs > sz)
 		return false;
-	fprintf(stderr, "%04lx: accessed window[%p][%04lx] from %08lx\n", current->trace_id(), handle, ofs, eip);
+	const char* field = "";
+	switch (ofs)
+	{
+#define f(n, x) case n: field = #x; break;
+	f( 0, handle )
+	f( 0x10, self )
+	f( 0x14, dwFlags )
+	f( 0x16, dwFlags )
+	f( 0x18, exstyle )
+	f( 0x1c, style )
+	f( 0x20, hInstance )
+	f( 0x28, next )
+	f( 0x2c, parent )
+	f( 0x30, first_child )
+	f( 0x34, owner )
+	f( 0x5c, wndproc )
+	f( 0x60, wndcls )
+#undef f
+	}
+	fprintf(stderr, "%04lx: accessed window[%p][%04lx] %s from %08lx\n", current->trace_id(), handle, ofs, field, eip);
 	return true;
 }
 
