@@ -274,6 +274,24 @@ bool ntusershm_tracer::enabled() const
 	return trace_is_enabled( "usershm" );
 }
 
+bool message_map_on_access( BYTE *address, ULONG eip )
+{
+	for (ULONG i=0; i<NUMBER_OF_MESSAGE_MAPS; i++)
+	{
+		if (!message_maps[i].Bitmap)
+			continue;
+		if (address < message_maps[i].Bitmap)
+			continue;
+		ULONG ofs = address - message_maps[i].Bitmap;
+		if (ofs > message_maps[i].MaxMessage/8)
+			continue;
+		fprintf(stderr, "%04lx: accessed message map[%ld][%04lx] from %08lx\n",
+			current->trace_id(), i, ofs, eip);
+		return true;
+	}
+	return false;
+}
+
 void ntusershm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 {
 	ULONG ofs = address - mb->get_base_address();
@@ -286,21 +304,14 @@ void ntusershm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 			name = " (max_window_handle)";
 			break;
 		}
-		fprintf(stderr, "%04lx: accessed ushm[%04lx]%s from %08lx\n", current->trace_id(), ofs, name, eip);
+		fprintf(stderr, "%04lx: accessed ushm[%04lx]%s from %08lx\n",
+			current->trace_id(), ofs, name, eip);
 		return;
 	}
-	for (ULONG i=0; i<NUMBER_OF_MESSAGE_MAPS; i++)
-	{
-		if (!message_maps[i].Bitmap)
-			continue;
-		if (address < message_maps[i].Bitmap)
-			continue;
-		ofs = address - message_maps[i].Bitmap;
-		if (ofs > message_maps[i].MaxMessage/8)
-			continue;
-		fprintf(stderr, "%04lx: accessed message map[%ld][%04lx] from %08lx\n", current->trace_id(), i, ofs, eip);
+
+	if (message_map_on_access( address, eip ))
 		return;
-	}
+
 	for (ULONG i=0; i<user_shared->max_window_handle; i++)
 	{
 		if (address < (BYTE*) user_handle_table[i].object)
@@ -317,7 +328,8 @@ void ntusershm_tracer::on_access( mblock *mb, BYTE *address, ULONG eip )
 			}
 		}
 	}
-	fprintf(stderr, "%04lx: accessed ushm[%04lx] from %08lx\n", current->trace_id(), ofs, eip);
+	fprintf(stderr, "%04lx: accessed ushm[%04lx] from %08lx\n",
+		current->trace_id(), ofs, eip);
 }
 
 static ntusershm_tracer ntusershm_trace;
