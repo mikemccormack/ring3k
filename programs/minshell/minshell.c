@@ -118,7 +118,7 @@ int window_winmain( HINSTANCE Instance )
 
 	while (GetMessage( &msg, 0, 0, 0 ))
 	{
-		//TranslateMessage( &msg );
+		TranslateMessage( &msg );
 		DispatchMessage( &msg );
 	}
 
