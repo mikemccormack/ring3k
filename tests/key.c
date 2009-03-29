@@ -3,6 +3,9 @@
  *
  * Copyright 2008-2009 Mike McCormack
  *
+ * This test is an interactive demonstration of the KernelCallbackTable
+ *  and its relation to messages passed from the Windows 2000 Kernel.
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
