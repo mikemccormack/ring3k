@@ -68,27 +68,6 @@ const char *val_types[REG_MAX+1] = {
   "REG_QWORD",                                                            /* 11     */
 };
 
-int fmyinput(char *prmpt, char *ibuf, int maxlen)
-{
-   printf("%s",prmpt);
-   fgets(ibuf,maxlen+1,stdin);
-   ibuf[strlen(ibuf)-1] = 0;
-   return(strlen(ibuf));
-}
-
-/* Print len number of hexbytes */
-
-void hexprnt(char *s, unsigned char *bytes, int len)
-{
-int i;
-
-   printf("%s",s);
-   for (i = 0; i < len; i++) {
-      printf("%02x ",bytes[i]);
-   }
-   printf("\n");
-}
-
 /* HexDump all or a part of some buffer */
 
 void hexdump(char *hbuf, int start, int stop, int ascii)
