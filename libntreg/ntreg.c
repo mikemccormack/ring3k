@@ -55,24 +55,6 @@
 
 /***************************************************/
 
-/* Various nice macros */
-
-#define CREATE(result, type, number)\
-    { \
-        if (!((result) = (type *) calloc ((number), sizeof(type)))) { \
-            perror("malloc failure"); \
-            abort() ; \
-       } \
-    }
-#define ALLOC(result, size, number)\
-    { \
-        if (!((result) = (void *) calloc ((number), (size)))) { \
-            perror("malloc failure"); \
-            abort() ; \
-       } \
-    }
-#define FREE(p) { if (p) { free(p); (p) = 0; } }
-
 /* Debug / verbosity message macro */
 
 #define VERB(h, string) \
@@ -894,7 +876,7 @@ int ex_next_v(struct hive *hdesc, int nkofs, int *count, struct vex_data *sptr)
   sptr->size = (vkkey->len_data & 0x7fffffff);
 
   if (vkkey->len_name >0) {
-    CREATE(sptr->name,char,vkkey->len_name+1);
+    sptr->name = malloc(sizeof(char) *(vkkey->len_name+1));
     memcpy(sptr->name,vkkey->keyname,vkkey->len_name);
     sptr->name[vkkey->len_name] = 0;
   } else {
@@ -1164,7 +1146,7 @@ void nk_ls(struct hive *hdesc, char *path, int vofs, int type)
     while ((ex_next_n(hdesc, nkofs, &count, &countri, &ex) > 0)) {
       if (!(hdesc->state & HMODE_VERBOSE)) printf("%c <%s>\n", (ex.nk->len_classnam)?'*':' ',ex.name);
       else printf("[%6x] %c <%s>\n", ex.nkoffs, (ex.nk->len_classnam)?'*':' ',ex.name);
-      FREE(ex.name);
+      free(ex.name);
     }
   }
   count = 0;
@@ -1179,7 +1161,7 @@ void nk_ls(struct hive *hdesc, char *path, int vofs, int type)
 
       if (vex.type == REG_DWORD) printf(" %*d [0x%x]",25-(int)strlen(vex.name),vex.val , vex.val);
       printf("\n");
-      FREE(vex.name);
+      free(vex.name);
     }
   }
 }
@@ -1289,7 +1271,7 @@ struct keyval *get_val2buf(struct hive *hdesc, struct keyval *kv,
   if (kv) {
     kr = kv;
   } else {
-    ALLOC(kr,1,l+sizeof(int)+4);
+    kr = malloc(l+sizeof(int)+4);
   }
 
   kr->len = l;
@@ -1310,7 +1292,7 @@ int get_dword(struct hive *hdesc, int vofs, char *path, int exact)
 
   dword = (int)v->data;
 
-  FREE(v);
+  free(v);
 
   return(dword);
 
@@ -1598,7 +1580,7 @@ int del_value(struct hive *hdesc, int nkofs, char *name, int exact)
   del_vk(hdesc, vkofs);
 
   /* Copy out old index list */
-  CREATE(tmplist,int32_t,nk->no_values);
+  tmplist = malloc(sizeof(int32_t)*nk->no_values);
   memcpy(tmplist, vlistkey, nk->no_values * sizeof(int32_t));
 
   free_block(hdesc,vlistofs-4);  /* Get rid of old list */
@@ -1709,8 +1691,8 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
 	printf("add_key: li slot allocate\n");
 #endif
 
-	FREE(newli);
-	ALLOC(newli, 8 + 4*oldli->no_keys + 4, 1);
+	free(newli);
+	newli = malloc(8 + 4*oldli->no_keys + 4);
 	newli->no_keys = oldli->no_keys;
 	newli->id = oldli->id;
 
@@ -1726,7 +1708,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
 	    cmp = strncasecmp(name, onk->keyname, (namlen > onk->len_name) ? namlen : onk->len_name);
 	    if (!cmp) {
 	      printf("add_key: key %s already exists!\n",name);
-	      FREE(newli);
+	      free(newli);
 	      return(NULL);
 	    }
 	    if ( cmp < 0) {
@@ -1746,8 +1728,8 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
 
 	oldlf = (struct lf_key *)(hdesc->buffer + oldlfofs + 0x1004);
 
-	FREE(newlf);
-	ALLOC(newlf, 8 + 8*oldlf->no_keys + 8, 1);
+	free(newlf);
+	newlf = malloc(8 + 8*oldlf->no_keys + 8);
 	newlf->no_keys = oldlf->no_keys;
 	newlf->id = oldlf->id;
 #ifdef AKDEBUG
@@ -1766,7 +1748,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
 	    cmp = strncasecmp(name, onk->keyname, (namlen > onk->len_name) ? namlen : onk->len_name);
 	    if (!cmp) {
 	      printf("add_key: key %s already exists!\n",name);
-	      FREE(newlf);
+	      free(newlf);
 	      return(NULL);
 	    }
 	    if ( cmp < 0 ) {
@@ -1794,7 +1776,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
 #ifdef AKDEBUG
     printf("add_key: new index!\n");
 #endif
-    ALLOC(newlf, 8 + 8, 1);
+    newlf = malloc(8 + 8);
     newlf->no_keys = 1;
     /* Use ID (lf, lh or li) we fetched from root node, so we use same as rest of hive */
     newlf->id = hdesc->nkindextype;
@@ -1806,8 +1788,8 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
   newnkofs = alloc_block(hdesc, nkofs, sizeof(struct nk_key) + strlen(name));
   if (!newnkofs) {
     printf("add_key: unable to allocate space for new key descriptor for %s!\n",name);
-    FREE(newlf);
-    FREE(newli);
+    free(newlf);
+    free(newli);
     return(NULL);
   }
   newnk = (struct nk_key *)(hdesc->buffer + newnkofs + 4);
@@ -1839,7 +1821,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
     newliofs = alloc_block(hdesc, nkofs, 8 + 4*newli->no_keys);
     if (!newliofs) {
       printf("add_key: unable to allocate space for new index table for %s!\n",name);
-      FREE(newli);
+      free(newli);
       free_block(hdesc,newnkofs);
       return(NULL);
     }
@@ -1873,7 +1855,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
     newlfofs = alloc_block(hdesc, nkofs, 8 + 8*newlf->no_keys);
     if (!newlfofs) {
       printf("add_key: unable to allocate space for new index table for %s!\n",name);
-      FREE(newlf);
+      free(newlf);
       free_block(hdesc,newnkofs);
       return(NULL);
     }
@@ -1894,8 +1876,8 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
   if (newlf && oldlfofs) free_block(hdesc,oldlfofs + 0x1000);
   if (newli && oldliofs) free_block(hdesc,oldliofs + 0x1000);
 
-  FREE(newlf);
-  FREE(newli);
+  free(newlf);
+  free(newli);
   return(newnk);
 
 
@@ -1985,8 +1967,8 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
       printf("del_key: li handler\n");
 #endif
 
-      FREE(newli);
-      ALLOC(newli, 8 + 4*oldli->no_keys - 4, 1);
+      free(newli);
+      newli = malloc(8 + 4*oldli->no_keys - 4);
       newli->no_keys = oldli->no_keys - 1; no_keys = newli->no_keys;
       newli->id = oldli->id;
 
@@ -2009,8 +1991,8 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
 #ifdef DKDEBUG
       printf("del_key: lf or lh handler\n");
 #endif
-      FREE(newlf);
-      ALLOC(newlf, 8 + 8*oldlf->no_keys - 8, 1);
+      free(newlf);
+      newlf = malloc(8 + 8*oldlf->no_keys - 8);
       newlf->no_keys = oldlf->no_keys - 1; no_keys = newlf->no_keys;
       newlf->id = oldlf->id;
 
@@ -2036,8 +2018,8 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
 
   if (slot == -1) {
     printf("del_key: subkey %s not found!\n",name);
-    FREE(newlf);
-    FREE(newli);
+    free(newlf);
+    free(newli);
     return(1);
   }
 
@@ -2047,8 +2029,8 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
 
   if (delnk->no_values || delnk->no_subkeys) {
     printf("del_key: subkey %s has subkeys or values. Not deleted.\n",name);
-    FREE(newlf);
-    FREE(newli);
+    free(newlf);
+    free(newli);
     return(1);
   }
 
@@ -2060,7 +2042,7 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
 #endif
     if (!newlfofs) {
       printf("del_key: WARNING: unable to allocate space for new key descriptor for %s! Not deleted\n",name);
-      FREE(newlf);
+      free(newlf);
       return(1);
     }
 
@@ -2099,7 +2081,7 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
 
       if (ri->no_lis > 1) {  /* We have subindiceblocks left? */
 	/* Delete from array */
-	ALLOC(newri, 8 + 4*ri->no_lis - 4, 1);
+	newri = malloc(8 + 4*ri->no_lis - 4);
 	newri->no_lis = ri->no_lis - 1;
 	newri->id = ri->id;
 	for (o = 0, n = 0; o < ri->no_lis; o++,n++) {
@@ -2109,14 +2091,14 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
 	newriofs = alloc_block(hdesc, nkofs, 8 + newri->no_lis*4 );
 	if (!newriofs) {
 	  printf("del_key: WARNING: unable to allocate space for ri-index for %s! Not deleted\n",name);
-	  FREE(newlf);
-	  FREE(newri);
+	  free(newlf);
+	  free(newri);
 	  return(1);
 	}
 	fill_block(hdesc, newriofs, newri, 8 + newri->no_lis * 4);
 	free_block(hdesc, riofs + 0x1000);
 	key->ofs_lf = newriofs - 0x1000;
-	FREE(newri);
+	free(newri);
       } else { /* Last entry in ri was deleted, get rid of it, key is empty */
 	VERB(hdesc,"del_key: .. and that was the last one. key now empty!\n");
 	free_block(hdesc, riofs + 0x1000);
@@ -2129,7 +2111,7 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
     key->ofs_lf = newlfofs - 0x1000;
   }
 
-  FREE(newlf);
+  free(newlf);
   return(0);
 
 }
@@ -2177,7 +2159,7 @@ void rdel_keys(struct hive *hdesc, char *path, int vofs)
       rdel_keys(hdesc, ex.name, nkofs);
       count = 0;
       countri = 0;
-      FREE(ex.name);
+      free(ex.name);
     }
   }
 
@@ -2224,7 +2206,7 @@ struct keyval *get_class(struct hive *hdesc,
   printf("get_class: ofs_classnam = 0x%x\n",dofs);
 #endif
 
-  ALLOC(data, sizeof(struct keyval) + clen,1);
+  data = malloc(sizeof(struct keyval) + clen);
   data->len = clen;
   memcpy(&data->data, classdata, clen);
   return(data);
@@ -2272,14 +2254,14 @@ int put_dword(struct hive *hdesc, int vofs, char *path, int exact, int dword)
   struct keyval *kr;
   int r;
 
-  ALLOC(kr,1,sizeof(int)+sizeof(int));
+  kr = malloc(sizeof(int)+sizeof(int));
 
   kr->len = sizeof(int);
   kr->data = dword;
 
   r = put_buf2val(hdesc, kr, vofs, path, REG_DWORD, exact);
 
-  FREE(kr);
+  free(kr);
 
   return(r);
 }
@@ -2409,7 +2391,7 @@ void export_subkey(struct hive *hdesc, int nkofs, char *name, char *prefix, FILE
 	      fprintf(file, "%02x\r\n", (unsigned char)value[byte]);
             }
 
-            FREE(vex.name);
+            free(vex.name);
         }
     }
 
@@ -2421,7 +2403,7 @@ void export_subkey(struct hive *hdesc, int nkofs, char *name, char *prefix, FILE
         while ((ex_next_n(hdesc, nkofs, &count, &countri, &ex) > 0))
         {
             export_subkey(hdesc, nkofs, ex.name, prefix, file);
-            FREE(ex.name);
+            free(ex.name);
         }
     }
 }
@@ -2471,9 +2453,9 @@ void closeHive(struct hive *hdesc)
   if (hdesc->state & HMODE_OPEN) {
     close(hdesc->filedesc);
   }
-  FREE(hdesc->filename);
-  FREE(hdesc->buffer);
-  FREE(hdesc);
+  free(hdesc->filename);
+  free(hdesc->buffer);
+  free(hdesc);
 
 }
 
@@ -2521,7 +2503,7 @@ struct hive *openHive(char *filename, int mode)
   int verbose = (mode & HMODE_VERBOSE);
   int trace   = (mode & HMODE_TRACE);
 
-  CREATE(hdesc,struct hive,1);
+  hdesc = malloc(sizeof (struct hive));
 
   hdesc->filename = strdup(filename);
   hdesc->state = 0;
@@ -2558,7 +2540,7 @@ struct hive *openHive(char *filename, int mode)
 
   /* Read the whole file */
 
-  ALLOC(hdesc->buffer,1,hdesc->size);
+  hdesc->buffer = malloc(hdesc->size);
 
   r = read(hdesc->filedesc,hdesc->buffer,hdesc->size);
   if (r < hdesc->size) {
