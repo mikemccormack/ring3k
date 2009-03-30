@@ -53,21 +53,6 @@
 
 #include "ntreg.h"
 
-/***************************************************/
-
-/* Debug / verbosity message macro */
-
-#define VERB(h, string) \
-     { \
-       if ((h)->state & HMODE_VERBOSE) printf((string)); \
-     }
-
-#define VERBF(h, ...) \
-     { \
-       if ((h)->state & HMODE_VERBOSE) printf(__VA_ARGS__); \
-     }
-
-
 /* Set to abort() and debug on more critical errors */
 #define DOCORE 1
 
@@ -1133,7 +1118,7 @@ void nk_ls(struct hive *hdesc, char *path, int vofs, int type)
   nkofs += 4;
 
   key = (struct nk_key *)(hdesc->buffer + nkofs);
-  VERBF(hdesc,"ls of node at offset 0x%0x\n",nkofs);
+  printf("ls of node at offset 0x%0x\n",nkofs);
 
   assert (key->id == 0x6b6e);
 
@@ -2077,7 +2062,7 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
       *fullpath = 0;
       get_abs_path(hdesc, nkofs, fullpath, 480);
 
-      VERBF(hdesc,"del_key: need to delete ri-slot %d for %x - %s\n", rislot,nkofs,fullpath );
+      printf("del_key: need to delete ri-slot %d for %x - %s\n", rislot,nkofs,fullpath );
 
       if (ri->no_lis > 1) {  /* We have subindiceblocks left? */
 	/* Delete from array */
@@ -2100,7 +2085,7 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
 	key->ofs_lf = newriofs - 0x1000;
 	free(newri);
       } else { /* Last entry in ri was deleted, get rid of it, key is empty */
-	VERB(hdesc,"del_key: .. and that was the last one. key now empty!\n");
+	printf("del_key: .. and that was the last one. key now empty!\n");
 	free_block(hdesc, riofs + 0x1000);
 	key->ofs_lf = -1;
       }
@@ -2143,7 +2128,7 @@ void rdel_keys(struct hive *hdesc, char *path, int vofs)
   key = (struct nk_key *)(hdesc->buffer + nkofs);
 
   /*
-  VERBF(hdesc,"rdel of node at offset 0x%0x\n",nkofs);
+  printf("rdel of node at offset 0x%0x\n",nkofs);
   */
 
   assert (key->id == 0x6b6e);
