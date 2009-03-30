@@ -918,6 +918,7 @@ int free_block(struct hive *hdesc, int blk)
   vofs = pofs + 0x20;
 
   prevsz = -32;
+  prev = 0;
 
   if (vofs != blk) {  /* Block is not at start of page? */
     while (vofs-pofs < (p->ofs_next - HBIN_ENDFILL) ) {
@@ -1266,7 +1267,7 @@ int trav_path(struct hive *hdesc, int vofs, char *path, int type)
   struct nk_key *key, *newnkkey;
   struct lf_key *lfkey;
   struct li_key *likey;
-  struct ri_key *rikey;
+  struct ri_key *rikey = NULL;
 
   int32_t *vlistkey;
   int newnkofs, plen, i, lfofs, vlistofs, adjust, r, ricnt, subs;
@@ -1924,6 +1925,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
 
   namlen = strlen(name);
 
+  rislot = 0;
   slot = -1;
   if (key->no_subkeys) {   /* It already has subkeys */
     
@@ -2179,7 +2181,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
 int del_key(struct hive *hdesc, int nkofs, char *name)
 {
 
-  int slot = 0, newlfofs = 0, oldlfofs = 0, o, n, onkofs,  delnkofs;
+  int slot = 0, newlfofs = 0, oldlfofs = 0, o, n, onkofs, delnkofs = 0;
   int oldliofs = 0, no_keys = 0, newriofs = 0;
   int namlen;
   int rimax, riofs, rislot;
@@ -2189,6 +2191,7 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
   struct nk_key *key, *onk, *delnk;
   char fullpath[501];
 
+  delnk = NULL;
   key = (struct nk_key *)(hdesc->buffer + nkofs);
 
   namlen = strlen(name);
