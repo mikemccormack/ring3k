@@ -68,6 +68,13 @@ const char *val_types[REG_MAX+1] = {
   "REG_QWORD",                                                            /* 11     */
 };
 
+static inline void do_bzero( void *s, size_t n )
+{
+#if ZEROFILL
+	bzero( s, n );
+#endif
+}
+
 /* HexDump all or a part of some buffer */
 
 void hexdump(char *hbuf, int start, int stop, int ascii)
@@ -422,7 +429,7 @@ int parse_block(struct hive *hdesc, int vofs,int verbose)
     hdesc->unuseblk++;
     /* Useful to zero blocks we think are empty when debugging.. */
 #if ZEROFILLONLOAD
-    bzero(hdesc->buffer+vofs+4,seglen-4);
+    do_bzero(hdesc->buffer+vofs+4,seglen-4);
 #endif
 
     if (verbose) {
@@ -674,9 +681,7 @@ int alloc_block(struct hive *hdesc, int ofs, int size)
 
     }
     /* Clear the block data, makes it easier to debug */
-#if ZEROFILL
-    bzero( (void *)(hdesc->buffer+blk+4), size-4);
-#endif
+    do_bzero( (void *)(hdesc->buffer+blk+4), size-4);
 
     hdesc->state |= HMODE_DIRTY;
 
@@ -766,9 +771,7 @@ int free_block(struct hive *hdesc, int blk)
   }
 
   /* Now free the block (possibly with ajusted size as above) */
-#if ZEROFILL
-   bzero( (void *)(hdesc->buffer+blk), size);
-#endif
+  do_bzero( (void *)(hdesc->buffer+blk), size);
 
   *(int *)((hdesc->buffer)+blk) = (int)size;
   hdesc->usetot -= size;
@@ -786,9 +789,7 @@ int free_block(struct hive *hdesc, int blk)
     hdesc->unusetot += prevsz;
     prevsz += size;
     /* And swallow current.. */
-#if ZEROFILL
-      bzero( (void *)(hdesc->buffer+prev), prevsz);
-#endif
+    do_bzero( (void *)(hdesc->buffer+prev), prevsz);
     *(int *)((hdesc->buffer)+prev) = (int)prevsz;
     hdesc->useblk--;
     return(prevsz);
