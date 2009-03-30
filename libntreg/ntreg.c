@@ -56,8 +56,11 @@
 /* Set to abort() and debug on more critical errors */
 #define DOCORE 1
 
-#define ZEROFILL      1  /* Fill blocks with zeroes when allocating and deallocating */
-#define ZEROFILLONLOAD  0  /* Fill blocks marked as unused/deallocated with zeroes on load. FOR DEBUG */
+/* Fill blocks with zeroes when allocating and deallocating */
+#define ZEROFILL      1
+
+/* Fill blocks marked as unused/deallocated with zeroes on load. FOR DEBUG */
+#define ZEROFILLONLOAD  0
 
 const char ntreg_version[] = "ntreg lib routines, v0.94 080526, (c) Petter N Hagen";
 
@@ -102,20 +105,6 @@ void hexdump(char *hbuf, int start, int stop, int ascii)
       printf("\n");
       start += 16;
    }
-}
-
-/* General search routine, find something in something else */
-int find_in_buf(char *buf, char *what, int sz, int len, int start)
-{
-   int i;
-
-   for (; start < sz; start++) {
-      for (i = 0; i < len; i++) {
-	if (*(buf+start+i) != *(what+i)) break;
-      }
-      if (i == len) return(start);
-   }
-   return(0);
 }
 
 /* Get INTEGER from memory. This is probably low-endian specific? */
