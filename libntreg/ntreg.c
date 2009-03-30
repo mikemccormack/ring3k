@@ -68,19 +68,6 @@ const char *val_types[REG_MAX+1] = {
   "REG_QWORD",                                                            /* 11     */
 };
 
-/* Utility routines */
-char *str_dup( const char *str )
-{
-    char *str_new;
-
-    if (!str)
-        return 0 ;
-
-    CREATE( str_new, char, strlen(str) + 1 );
-    strcpy( str_new, str );
-    return str_new;
-}
-
 int fmyinput(char *prmpt, char *ibuf, int maxlen)
 {
    printf("%s",prmpt);
@@ -980,7 +967,7 @@ int ex_next_v(struct hive *hdesc, int nkofs, int *count, struct vex_data *sptr)
     memcpy(sptr->name,vkkey->keyname,vkkey->len_name);
     sptr->name[vkkey->len_name] = 0;
   } else {
-    sptr->name = str_dup("@");
+    sptr->name = strdup("@");
   }
 
   sptr->type = vkkey->val_type;
@@ -2605,7 +2592,7 @@ struct hive *openHive(char *filename, int mode)
 
   CREATE(hdesc,struct hive,1);
 
-  hdesc->filename = str_dup(filename);
+  hdesc->filename = strdup(filename);
   hdesc->state = 0;
   hdesc->size = 0;
   hdesc->buffer = NULL;
