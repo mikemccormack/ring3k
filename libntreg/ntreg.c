@@ -49,6 +49,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <assert.h>
 
 #include "ntreg.h"
 
@@ -221,148 +222,6 @@ int gethexorstr(char **c, char *wb)
       } while ( **c );
    }
    return(l);
-}
-
-/* Simple buffer debugger, returns 1 if buffer dirty/edited */
-
-int debugit(char *buf, int sz)
-{
-
-
-   char inbuf[100],whatbuf[100],*bp;
-
-   int dirty=0,to,from,l,i,j,wlen,cofs = 0;
-
-   printf("Buffer debugger. '?' for help.\n");
-
-   while (1) {
-      l = fmyinput(".",inbuf,90);
-      bp = inbuf;
-
-      skipspace(&bp);
-
-      if (l > 0 && *bp) {
-	 switch(*bp) {
-	  case 'd' :
-	    bp++;
-	    if (*bp) {
-	       from = gethex(&bp);
-	       to   = gethex(&bp);
-	    } else {
-	       from = cofs; to = 0;
-	    }
-	    if (to == 0) to = from + 0x100;
-	    if (to > sz) to = sz;
-	    hexdump(buf,from,to,1);
-	    cofs = to;
-	    break;
-	  case 'a' :
-	    bp++;
-	    if (*bp) {
-	       from = gethex(&bp);
-	       to   = gethex(&bp);
-	    } else {
-	       from = cofs; to = 0;
-	    }
-	    if (to == 0) to = from + 0x100;
-	    if (to > sz) to = sz;
-	    hexdump(buf,from,to,0);
-	    cofs = to;
-	    break;
-#if 0
-	  case 'k' :
-	    bp++;
-	    if (*bp) {
-	       from = gethex(&bp);
-	    } else {
-	       from = cofs;
-	    }
-	    if (to > sz) to = sz;
-	    parse_block(from,1);
-	    cofs = to;
-	    break;
-#endif
-#if 0
-	  case 'l' :
-	    bp++;
-	    if (*bp) {
-	       from = gethex(&bp);
-	    } else {
-	       from = cofs;
-	    }
-	    if (to > sz) to = sz;
-	    nk_ls(from+4,0);
-	    cofs = to;
-	    break;
-#endif
-	  case 'q':
-	    return(0);
-	    break;
-	  case 's':
-	    if (!dirty) printf("Buffer has not changed, no need to write..\n");
-	    return(dirty);
-	    break;
-	  case 'h':
-	    bp++;
-	    if (*bp == 'a') {
-	       from = 0;
-	       to = sz;
-	       bp++;
-	    } else {
-	       from = gethex(&bp);
-	       to   = gethex(&bp);
-	    }
-	    wlen = gethexorstr(&bp,whatbuf);
-	    if (to > sz) to = sz;
-	    printf("from: %x, to: %x, wlen: %d\n",from,to,wlen);
-	    for (i = from; i < to; i++) {
-	       for (j = 0; j < wlen; j++) {
-		  if ( *(buf+i+j) != *(whatbuf+j)) break;
-	       }
-	       if (j == wlen) printf("%06x ",i);
-	    }
-	    printf("\n");
-	    break;
-	  case ':':
-	    bp++;
-	    if (!*bp) break;
-	    from = gethex(&bp);
-	    wlen = gethexorstr(&bp,whatbuf);
-
-	    printf("from: %x, wlen: %d\n",from,wlen);
-
-	    memcpy(buf+from,whatbuf,wlen);
-	    dirty = 1;
-	    break;
-#if 0
-	  case 'p':
-	    j = 0;
-	    if (*(++bp) != 0) {
-	       from = gethex(&bp);
-	    }
-	    if (*(++bp) != 0) {
-	       j = gethex(&bp);
-	    }
-	    printf("from: %x, rid: %x\n",from,j);
-	    seek_n_destroy(from,j,500,0);
-	    break;
-#endif
-	  case '?':
-	    printf("d [<from>] [<to>] - dump buffer within range\n");
-	    printf("a [<from>] [<to>] - same as d, but without ascii-part (for cut'n'paste)\n");
-	    printf(": <offset> <hexbyte> [<hexbyte> ...] - change bytes\n");
-	    printf("h <from> <to> <hexbyte> [<hexbyte> ...] - hunt (search) for bytes\n");
-	    printf("ha <hexbyte> [<hexbyte] - Hunt all (whole buffer)\n");
-	    printf("s - save & quit\n");
-	    printf("q - quit (no save)\n");
-	    printf("  instead of <hexbyte> etc. you may give 'string to enter/search a string\n");
-	    break;
-	  default:
-	    printf("?\n");
-	    break;
-	 }
-      }
-   }
 }
 
 
@@ -582,11 +441,7 @@ int parse_block(struct hive *hdesc, int vofs,int verbose)
     printf("** Block at offset %0x\n",vofs);
     printf("seglen: %d, %u, 0x%0x\n",seglen,seglen,seglen);
   }
-  if (seglen == 0) {
-    printf("Whoops! FATAL! Zero data block size! (not registry or corrupt file?)\n");
-    debugit(hdesc->buffer,hdesc->size);
-    return(0);
-  }
+  assert (seglen != 0);
 
   if (seglen < 0) {
     seglen = -seglen;
@@ -703,11 +558,7 @@ int find_free_blk(struct hive *hdesc, int pofs, int size)
     printf("seglen: %d, %u, 0x%0x\n",seglen,seglen,seglen);
 #endif
 
-    if (seglen == 0) {
-      printf("find_free_blk: FATAL! Zero data block size! (not registry or corrupt file?)\n");
-      debugit(hdesc->buffer,hdesc->size);
-      return(0);
-    }
+    assert (seglen != 0);
 
     if (seglen < 0) {
       seglen = -seglen;
@@ -725,11 +576,7 @@ int find_free_blk(struct hive *hdesc, int pofs, int size)
 	  printf("find_free_blk: found size %d block at 0x%x\n",seglen,vofs);
 #endif
 #if 0
-	  if (vofs == 0x19fb8) {
-	    printf("find_free_blk: vofs = %x, seglen = %x\n",vofs,seglen);
-	    debugit(hdesc->buffer,hdesc->size);
-	    abort();
-	  }
+	  assert (vofs != 0x19fb8);
 #endif
 	  return(vofs);
 	}
@@ -895,15 +742,7 @@ int free_block(struct hive *hdesc, int blk)
   }
 
   size = get_int(hdesc->buffer+blk);
-  if (size >= 0) {
-    printf("free_block: trying to free already free block!\n");
-#ifdef DOCORE
-      printf("blk = %x\n",blk);
-      debugit(hdesc->buffer,hdesc->size);
-      abort();
-#endif
-    return(0);
-  }
+  assert (size < 0);
   size = -size;
 
   /* So, we must find start of the block BEFORE us */
@@ -921,11 +760,7 @@ int free_block(struct hive *hdesc, int blk)
 
       seglen = get_int(hdesc->buffer+vofs);
 
-      if (seglen == 0) {
-	printf("free_block: EEEK! Zero data block size! (not registry or corrupt file?)\n");
-	debugit(hdesc->buffer,hdesc->size);
-	return(0);
-      }
+      assert (seglen != 0);
 
       if (seglen < 0) {
 	seglen = -seglen;
@@ -936,15 +771,7 @@ int free_block(struct hive *hdesc, int blk)
       if (vofs == blk) break;
     }
 
-    if (vofs != blk) {
-      printf("free_block: ran off end of page!?!? Error in chains?\n");
-#ifdef DOCORE
-      printf("vofs = %x, pofs = %x, blk = %x\n",vofs,pofs,blk);
-      debugit(hdesc->buffer,hdesc->size);
-      abort();
-#endif
-      return(0);
-    }
+    assert (vofs == blk);
 
     prevsz = get_int(hdesc->buffer+prev);
 
@@ -1408,12 +1235,7 @@ void nk_ls(struct hive *hdesc, char *path, int vofs, int type)
   key = (struct nk_key *)(hdesc->buffer + nkofs);
   VERBF(hdesc,"ls of node at offset 0x%0x\n",nkofs);
 
-  if (key->id != 0x6b6e) {
-    printf("Error: Not a 'nk' node!\n");
-
-    debugit(hdesc->buffer,hdesc->size);
-
-  }
+  assert (key->id == 0x6b6e);
 
   printf("Node has %d subkeys and %d values",key->no_subkeys,key->no_values);
   if (key->len_classnam) printf(", and class-data of %d bytes",key->len_classnam);
@@ -1593,11 +1415,7 @@ int fill_block(struct hive *hdesc, int ofs, void *data, int size)
   printf("fill_block: ofs = %x - %x, size = %x, blksize = %x\n",ofs,ofs+size,size,blksize);
 #endif
   /*  if (blksize < size || ( (ofs & 0xfffff000) != ((ofs+size) & 0xfffff000) )) { */
-  if (blksize < size) {
-    printf("fill_block: ERROR: block to small for data: ofs = %x, size = %x, blksize = %x\n",ofs,size,blksize);
-    debugit(hdesc->buffer,hdesc->size);
-    abort();
-  }
+  assert (blksize >= size);
 
   memcpy(hdesc->buffer + ofs + 4, data, size);
   return(0);
@@ -2339,13 +2157,7 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
     newlfofs = 0xfff;  /* We subtract 0x1000 later */
   }
 
-  if (newlfofs < 0xfff) {
-    printf("del_key: ERROR: newlfofs = %x\n",newlfofs);
-#if DOCORE
-    debugit(hdesc->buffer,hdesc->size);
-    abort();
-#endif
-  }
+  assert (newlfofs >= 0xfff);
 
   /* Check for CLASS data, if so, deallocate it too */
   if (delnk->len_classnam) {
@@ -2434,12 +2246,7 @@ void rdel_keys(struct hive *hdesc, char *path, int vofs)
   VERBF(hdesc,"rdel of node at offset 0x%0x\n",nkofs);
   */
 
-  if (key->id != 0x6b6e) {
-    printf("Error: Not a 'nk' node!\n");
-
-    debugit(hdesc->buffer,hdesc->size);
-
-  }
+  assert (key->id == 0x6b6e);
 
 #if 0
   printf("Node has %d subkeys and %d values\n",key->no_subkeys,key->no_values);
