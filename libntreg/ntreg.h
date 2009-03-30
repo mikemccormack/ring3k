@@ -341,8 +341,5 @@ int del_key(struct hive *hdesc, int nkofs, char *name);
 void rdel_keys(struct hive *hdesc, char *path, int nkofs);
 struct keyval *get_class(struct hive *hdesc, int curnk, char *path);
 
-/* From edlib,c */
-void regedit_interactive(struct hive *hive[], int no_hives);
-
 #endif
 
