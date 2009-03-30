@@ -35,6 +35,7 @@ RM = rm -f
 SUBDIRS = \
 	libudis86 \
 	libmspack \
+	libntreg \
 	kernel \
 	programs \
 	tests \

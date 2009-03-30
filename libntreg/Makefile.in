@@ -1,0 +1,24 @@
+srcdir  = @srcdir@
+VPATH   = @srcdir@
+
+DEPFLAG = -Wp,-MD,.$@.d
+CFLAGS  = -O2 -Wall -I$(srcdir) $(DEPFLAG)
+CC      = @HOSTCC@
+
+SOURCE = \
+	ntreg.c
+
+OBJECTS = $(SOURCE:%.c=%.o)
+
+TARGET = libntreg.a
+
+all: $(TARGET)
+
+-include $(OBJECTS:%=.%.d)
+
+$(TARGET): $(OBJECTS)
+	$(AR) -r $@ $^
+
+clean:
+	rm -rf $(TARGET) .*.d *.o
+
