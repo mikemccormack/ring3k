@@ -310,53 +310,8 @@ struct hive {
   char *buffer;          /* Files raw contents */
 };
 
-/***************************************************/
-
-/* Various nice macros */
-
-#define CREATE(result, type, number)\
-    { \
-        if (!((result) = (type *) calloc ((number), sizeof(type)))) { \
-            perror("malloc failure"); \
-            abort() ; \
-       } \
-    }
-#define ALLOC(result, size, number)\
-    { \
-        if (!((result) = (void *) calloc ((number), (size)))) { \
-            perror("malloc failure"); \
-            abort() ; \
-       } \
-    }
-#define FREE(p) { if (p) { free(p); (p) = 0; } }
-
-/* Debug / verbosity message macro */
-
-#define VERB(h, string) \
-     { \
-       if ((h)->state & HMODE_VERBOSE) printf((string)); \
-     }
-
-#define VERBF(h, ...) \
-     { \
-       if ((h)->state & HMODE_VERBOSE) printf(__VA_ARGS__); \
-     }
-
-
 /******* Function prototypes **********/
 
-char *str_dup( const char *str );
-int fmyinput(char *prmpt, char *ibuf, int maxlen);
-void hexprnt(char *s, unsigned char *bytes, int len);
-void hexdump(char *hbuf, int start, int stop, int ascii);
-int find_in_buf(char *buf, char *what, int sz, int len, int start);
-int get_int( char *array );
-void cheap_uni2ascii(char *src, char *dest, int l);
-void cheap_ascii2uni(char *src, char *dest, int l);
-void skipspace(char **c);
-int gethex(char **c);
-int gethexorstr(char **c, char *wb);
-int debugit(char *buf, int sz);
 int parse_block(struct hive *hdesc, int vofs,int verbose);
 int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex_data *sptr);
 int ex_next_v(struct hive *hdesc, int nkofs, int *count, struct vex_data *sptr);

@@ -53,6 +53,39 @@
 
 #include "ntreg.h"
 
+/***************************************************/
+
+/* Various nice macros */
+
+#define CREATE(result, type, number)\
+    { \
+        if (!((result) = (type *) calloc ((number), sizeof(type)))) { \
+            perror("malloc failure"); \
+            abort() ; \
+       } \
+    }
+#define ALLOC(result, size, number)\
+    { \
+        if (!((result) = (void *) calloc ((number), (size)))) { \
+            perror("malloc failure"); \
+            abort() ; \
+       } \
+    }
+#define FREE(p) { if (p) { free(p); (p) = 0; } }
+
+/* Debug / verbosity message macro */
+
+#define VERB(h, string) \
+     { \
+       if ((h)->state & HMODE_VERBOSE) printf((string)); \
+     }
+
+#define VERBF(h, ...) \
+     { \
+       if ((h)->state & HMODE_VERBOSE) printf(__VA_ARGS__); \
+     }
+
+
 /* Set to abort() and debug on more critical errors */
 #define DOCORE 1
 
