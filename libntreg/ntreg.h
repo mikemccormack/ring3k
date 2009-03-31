@@ -50,6 +50,7 @@
 
 #define REG_MAX 12
 
+#include <sys/types.h>
 
 /* The first page of the registry file is some kind of header, lot of
  * it's contents is unknown, and seems to be mostly NULLs anyway.
@@ -126,26 +127,30 @@ struct sk_key {
  * (saves lookups in 'nk's that have the first 4 name chars different)
  */
 
+struct lf_hash {
+	int32_t ofs_nk;    /* 0x0000	D-Word	Offset of corresponding "nk"-Record  */
+	char name[4];   /* 0x0004	D-Word	ASCII: the first 4 characters of the key-name,  */
+};
+
+struct lh_hash {
+	int32_t ofs_nk;    /* 0x0000	D-Word	Offset of corresponding "nk"-Record  */
+	int32_t hash;      /* 0x0004	D-Word	ASCII: the first 4 characters of the key-name,  */
+} lh_hash[1];
+
 struct lf_key {
 
   short id;         /* 0x0000	Word	ID: ASCII-"lf" = 0x666C or "lh" = 0x686c */
   short no_keys;    /* 0x0002	Word	number of keys          */
                     /* 0x0004	????	Hash-Records            */
-  
- union {
 
-    struct lf_hash {
-      int32_t ofs_nk;    /* 0x0000	D-Word	Offset of corresponding "nk"-Record  */
-      char name[4];   /* 0x0004	D-Word	ASCII: the first 4 characters of the key-name,  */
-    } hash[1];
+  union {
+
+    struct lf_hash hash[1];
 
       /* WinXP uses a more real hash instead (base 37 of uppercase name chars)  */
-      /* 		padded with 0's. Case sensitiv!                         */
+      /*		padded with 0's. Case sensitive!                        */
 
-    struct lh_hash {
-      int32_t ofs_nk;    /* 0x0000	D-Word	Offset of corresponding "nk"-Record  */
-      int32_t hash;      /* 0x0004	D-Word	ASCII: the first 4 characters of the key-name,  */
-    } lh_hash[1];
+    struct lh_hash lh_hash[1];
   };
 
 };
@@ -312,6 +317,10 @@ struct hive {
 
 /******* Function prototypes **********/
 
+#ifdef __cplusplus__
+extern "C" {
+#endif
+
 int parse_block(struct hive *hdesc, int vofs,int verbose);
 int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex_data *sptr);
 int ex_next_v(struct hive *hdesc, int nkofs, int *count, struct vex_data *sptr);
@@ -340,6 +349,10 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name);
 int del_key(struct hive *hdesc, int nkofs, char *name);
 void rdel_keys(struct hive *hdesc, char *path, int nkofs);
 struct keyval *get_class(struct hive *hdesc, int curnk, char *path);
+
+#ifdef __cplusplus__
+};
+#endif
 
 #endif
 
