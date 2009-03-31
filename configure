@@ -677,6 +677,10 @@ FREETYPEINCL
 PKG_CONFIG
 CAIROLIBS
 CAIROINCL
+QTCOREINCL
+QTGUIINCL
+QTCORELIBS
+QTGUILIBS
 MINGW32CC
 MINGW32STRIP
 MINGW32AS
@@ -5056,6 +5060,26 @@ _ACEOF
 
 fi
 
+
+if test "$PKG_CONFIG" != "false"
+then
+	ac_qtcore_libs="`$PKG_CONFIG --libs QtCore 2>/dev/null`"
+	ac_qtcore_incl="`$PKG_CONFIG --cflags QtCore 2>/dev/null`"
+	ac_qtgui_libs="`$PKG_CONFIG --libs QtGui 2>/dev/null`"
+	ac_qtgui_incl="`$PKG_CONFIG --cflags QtGui 2>/dev/null`"
+
+
+	QTCOREINCL="$ac_qtcore_incl"
+
+	QTGUIINCL="$ac_qtgui_incl"
+
+	QTCORELIBS="$ac_qtcore_libs"
+
+	QTGUILIBS="$ac_qtgui_libs"
+
+fi
+
+
 for ac_prog in i686-pc-mingw32-gcc i586-mingw32msvc-cc no
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
@@ -5638,7 +5662,7 @@ done
 
 MAKE_RULES=Make.rules
 
-ac_config_files="$ac_config_files Make.rules Makefile kernel/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile libntreg/Makefile programs/Makefile programs/minitris/Makefile programs/minshell/Makefile programs/pixels/Makefile programs/winemine/Makefile programs/winlogon/Makefile unpack/Makefile"
+ac_config_files="$ac_config_files Make.rules Makefile kernel/Makefile tests/Makefile tools/Makefile libudis86/Makefile libmspack/Makefile libntreg/Makefile programs/Makefile programs/minitris/Makefile programs/minshell/Makefile programs/pixels/Makefile programs/winemine/Makefile programs/winlogon/Makefile regedit/Makefile unpack/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -6209,6 +6233,7 @@ do
     "programs/pixels/Makefile") CONFIG_FILES="$CONFIG_FILES programs/pixels/Makefile" ;;
     "programs/winemine/Makefile") CONFIG_FILES="$CONFIG_FILES programs/winemine/Makefile" ;;
     "programs/winlogon/Makefile") CONFIG_FILES="$CONFIG_FILES programs/winlogon/Makefile" ;;
+    "regedit/Makefile") CONFIG_FILES="$CONFIG_FILES regedit/Makefile" ;;
     "unpack/Makefile") CONFIG_FILES="$CONFIG_FILES unpack/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
@@ -6340,6 +6365,10 @@ FREETYPEINCL!$FREETYPEINCL$ac_delim
 PKG_CONFIG!$PKG_CONFIG$ac_delim
 CAIROLIBS!$CAIROLIBS$ac_delim
 CAIROINCL!$CAIROINCL$ac_delim
+QTCOREINCL!$QTCOREINCL$ac_delim
+QTGUIINCL!$QTGUIINCL$ac_delim
+QTCORELIBS!$QTCORELIBS$ac_delim
+QTGUILIBS!$QTGUILIBS$ac_delim
 MINGW32CC!$MINGW32CC$ac_delim
 MINGW32STRIP!$MINGW32STRIP$ac_delim
 MINGW32AS!$MINGW32AS$ac_delim
@@ -6351,7 +6380,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 73; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 77; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -6816,4 +6845,10 @@ if test x"$ISOINFO" = "x"
 then
 	{ echo "$as_me:$LINENO: WARNING: isoinfo not present. (Debian package is genisoimage)" >&5
 echo "$as_me: WARNING: isoinfo not present. (Debian package is genisoimage)" >&2;}
+fi
+
+if test x"$ac_qtcore_incl" = "x"
+then
+	{ echo "$as_me:$LINENO: WARNING: Qt is not present (Debian package is libqt4-dev)" >&5
+echo "$as_me: WARNING: Qt is not present (Debian package is libqt4-dev)" >&2;}
 fi

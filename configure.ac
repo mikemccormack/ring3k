@@ -91,6 +91,24 @@ then
 	AC_SUBST(CAIROINCL,"$ac_cairo_incl")
 fi
 
+dnl Check for QtGui and QtCore
+
+if test "$PKG_CONFIG" != "false"
+then
+	ac_qtcore_libs="`$PKG_CONFIG --libs QtCore 2>/dev/null`"
+	ac_qtcore_incl="`$PKG_CONFIG --cflags QtCore 2>/dev/null`"
+	ac_qtgui_libs="`$PKG_CONFIG --libs QtGui 2>/dev/null`"
+	ac_qtgui_incl="`$PKG_CONFIG --cflags QtGui 2>/dev/null`"
+
+	dnl FIXME: check that linking works here
+
+	AC_SUBST(QTCOREINCL,"$ac_qtcore_incl")
+	AC_SUBST(QTGUIINCL,"$ac_qtgui_incl")
+	AC_SUBST(QTCORELIBS,"$ac_qtcore_libs")
+	AC_SUBST(QTGUILIBS,"$ac_qtgui_libs")
+fi
+
+
 dnl Check for mingw32 cross compilation environment
 AC_CHECK_PROGS(MINGW32CC,i686-pc-mingw32-gcc i586-mingw32msvc-cc no)
 AC_CHECK_PROGS(MINGW32STRIP,i686-pc-mingw32-strip i586-mingw32msvc-strip no)
@@ -123,6 +141,7 @@ AC_CONFIG_FILES(
 	programs/pixels/Makefile
 	programs/winemine/Makefile
 	programs/winlogon/Makefile
+	regedit/Makefile
 	unpack/Makefile
 )
 
@@ -155,4 +174,9 @@ fi
 if test x"$ISOINFO" = "x"
 then
 	AC_MSG_WARN([isoinfo not present. (Debian package is genisoimage)])
+fi
+
+if test x"$ac_qtcore_incl" = "x"
+then
+	AC_MSG_WARN([Qt is not present (Debian package is libqt4-dev)])
 fi

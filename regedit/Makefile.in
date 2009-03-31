@@ -1,0 +1,20 @@
+
+QTCOREINCL = @QTCOREINCL@
+QTGUIINCL = @QTGUIINCL@
+QTCORELIBS = @QTCORELIBS@
+QTGUILIBS = @QTGUILIBS@
+
+CXXFLAGS = -Wall -O2 $(QTCOREINCL) $(QTGUIINCL) -I../libntreg
+
+SOURCE = \
+	regedit.cpp
+
+OBJECTS = $(SOURCE:%.cpp=%.o)
+
+TARGET = regedit
+
+$(TARGET): $(OBJECTS)
+	$(CXX) -o $@ $^ ../libntreg/libntreg.a $(QTCORELIBS) $(QTGUILIBS)
+
+clean:
+	rm -f $(TARGET) $(OBJECTS)
