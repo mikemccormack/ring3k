@@ -2472,7 +2472,7 @@ int writeHive(struct hive *hdesc)
   return(0);
 }
 
-struct hive *openHive(char *filename, int mode)
+struct hive *open_hive(const char *filename, int mode)
 {
 
   struct hive *hdesc;
@@ -2502,12 +2502,12 @@ struct hive *openHive(char *filename, int mode)
   }
   hdesc->filedesc = open(hdesc->filename,fmode);
   if (hdesc->filedesc < 0) {
-    fprintf(stderr,"openHive(%s) failed: %s, trying read-only\n",hdesc->filename,strerror(errno));
+    fprintf(stderr,"open_hive(%s) failed: %s, trying read-only\n",hdesc->filename,strerror(errno));
     fmode = O_RDONLY;
     mode |= HMODE_RO;
     hdesc->filedesc = open(hdesc->filename,fmode);
     if (hdesc->filedesc < 0) {
-      fprintf(stderr,"openHive(%s) in fallback RO-mode failed: %s\n",hdesc->filename,strerror(errno));
+      fprintf(stderr,"open_hive(%s) in fallback RO-mode failed: %s\n",hdesc->filename,strerror(errno));
       closeHive(hdesc);
       return(NULL);
     }
@@ -2542,7 +2542,7 @@ struct hive *openHive(char *filename, int mode)
 
    hdr = (struct regf_header *)hdesc->buffer;
    if (hdr->id != 0x66676572) {
-     printf("openHive(%s): File does not seem to be a registry hive!\n",filename);
+     printf("open_hive(%s): File does not seem to be a registry hive!\n",filename);
      return(hdesc);
    }
    printf("Hive <%s> name (from header): <",filename);

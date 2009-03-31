@@ -295,7 +295,7 @@ struct keyvala {
 #define HTYPE_SECURITY  3
 #define HTYPE_SOFTWARE  4
 
-/* Hive definition, allocated by openHive(), dealloc by closeHive()
+/* Hive definition, allocated by open_hive(), dealloc by closeHive()
  * contains state data, must be passed in all functions
  */
 struct hive {
@@ -317,7 +317,7 @@ struct hive {
 
 /******* Function prototypes **********/
 
-#ifdef __cplusplus__
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -338,7 +338,7 @@ int put_dword(struct hive *hdesc, int vofs, char *path, int exact, int dword);
 void export_key(struct hive *hdesc, int nkofs, char *name, char *filename, char *prefix);
 void closeHive(struct hive *hdesc);
 int writeHive(struct hive *hdesc);
-struct hive *openHive(char *filename, int mode);
+struct hive *open_hive(const char *filename, int mode);
 
 void nk_ls(struct hive *hdesc, char *path, int vofs, int type);
 
@@ -350,8 +350,8 @@ int del_key(struct hive *hdesc, int nkofs, char *name);
 void rdel_keys(struct hive *hdesc, char *path, int nkofs);
 struct keyval *get_class(struct hive *hdesc, int curnk, char *path);
 
-#ifdef __cplusplus__
-};
+#ifdef __cplusplus
+}
 #endif
 
 #endif
