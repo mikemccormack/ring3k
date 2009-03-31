@@ -970,7 +970,7 @@ int vlist_find(struct hive *hdesc, int vlistofs, int numval, char *name, int typ
  * return: offset to nk or vk (or NULL if not found)
  */
 
-int trav_path(struct hive *hdesc, int vofs, char *path, int type)
+int trav_path(struct hive *hdesc, int vofs, const char *path, int type)
 {
   struct nk_key *key, *newnkkey;
   struct lf_key *lfkey;
@@ -1095,12 +1095,41 @@ int trav_path(struct hive *hdesc, int vofs, char *path, int type)
   return(0);
 }
 
+typedef int (*nt_enum_subkey_func)( struct nk_key *key, void *arg );
+
+int nk_enumerate_subkeys(struct hive *hdesc, const char *path, int vofs, nt_enum_subkey_func fn, void *fn_arg)
+{
+  struct nk_key *key;
+  int nkofs;
+
+  nkofs = trav_path(hdesc, vofs, path, 0);
+  if (!nkofs)
+    return -1;
+
+  nkofs += 4;
+  key = (struct nk_key *)(hdesc->buffer + nkofs);
+  assert (key->id == 0x6b6e);
+
+  if (key->no_subkeys && fn) {
+    int count = 0, countri = 0;
+    struct ex_data ex;
+
+    while ((ex_next_n(hdesc, nkofs, &count, &countri, &ex) > 0)) {
+      int r = fn( ex.nk, fn_arg );
+      free(ex.name);
+      if (0 > r)
+        break;
+    }
+  }
+
+  return key->no_subkeys;
+}
 
 /* ls - list a 'nk' nodes subkeys and values
  * vofs - offset to start of data (skipping block linkage)
  * type - 0 = full, 1 = keys only. 2 = values only
  */
-void nk_ls(struct hive *hdesc, char *path, int vofs, int type)
+void nk_ls(struct hive *hdesc, const char *path, int vofs, int type)
 {
   struct nk_key *key;
   int nkofs;

@@ -321,11 +321,13 @@ struct hive {
 extern "C" {
 #endif
 
+typedef int (*nk_enum_subkey_func)( struct nk_key *key, void *arg );
+
 int parse_block(struct hive *hdesc, int vofs,int verbose);
 int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex_data *sptr);
 int ex_next_v(struct hive *hdesc, int nkofs, int *count, struct vex_data *sptr);
 int get_abs_path(struct hive *hdesc, int nkofs, char *path, int maxlen);
-int trav_path(struct hive *hdesc, int vofs, char *path, int type);
+int trav_path(struct hive *hdesc, int vofs, const char *path, int type);
 int get_val_type(struct hive *hdesc, int vofs, char *path, int exact);
 int get_val_len(struct hive *hdesc, int vofs, char *path, int exact);
 void *get_val_data(struct hive *hdesc, int vofs, char *path, int val_type, int exact);
@@ -340,8 +342,8 @@ void close_hive(struct hive *hdesc);
 int write_hive(struct hive *hdesc);
 struct hive *open_hive(const char *filename, int mode);
 
-void nk_ls(struct hive *hdesc, char *path, int vofs, int type);
-
+void nk_ls(struct hive *hdesc, const char *path, int vofs, int type);
+int nk_enumerate_subkeys(struct hive *hdesc, const char *path, int vofs, nk_enum_subkey_func fn, void *fn_arg);
 struct vk_key *add_value(struct hive *hdesc, int nkofs, char *name, int type);
 void del_allvalues(struct hive *hdesc, int nkofs);
 int del_value(struct hive *hdesc, int nkofs, char *name, int exact);
