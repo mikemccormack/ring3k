@@ -2431,7 +2431,7 @@ void export_key(struct hive *hdesc, int nkofs, char *name, char *filename, char 
 
 /* Hive control (load/save/close) etc */
 
-void closeHive(struct hive *hdesc)
+void close_hive(struct hive *hdesc)
 {
 
   printf("closing hive %s\n",hdesc->filename);
@@ -2445,7 +2445,7 @@ void closeHive(struct hive *hdesc)
 }
 
 /* Write the hive back to disk (only if dirty & not readonly */
-int writeHive(struct hive *hdesc)
+int write_hive(struct hive *hdesc)
 {
   int len;
 
@@ -2454,7 +2454,7 @@ int writeHive(struct hive *hdesc)
 
   if ( !(hdesc->state & HMODE_OPEN)) { /* File has been closed */
     if (!(hdesc->filedesc = open(hdesc->filename,O_RDWR))) {
-      fprintf(stderr,"writeHive: open(%s) failed: %s, FILE NOT WRITTEN!\n",hdesc->filename,strerror(errno));
+      fprintf(stderr,"write_hive: open(%s) failed: %s, FILE NOT WRITTEN!\n",hdesc->filename,strerror(errno));
       return(1);
     }
     hdesc->state |= HMODE_OPEN;
@@ -2464,7 +2464,7 @@ int writeHive(struct hive *hdesc)
 
   len = write(hdesc->filedesc, hdesc->buffer, hdesc->size);
   if (len != hdesc->size) {
-    fprintf(stderr,"writeHive: write of %s failed: %s.\n",hdesc->filename,strerror(errno));
+    fprintf(stderr,"write_hive: write of %s failed: %s.\n",hdesc->filename,strerror(errno));
     return(1);
   }
 
@@ -2508,7 +2508,7 @@ struct hive *open_hive(const char *filename, int mode)
     hdesc->filedesc = open(hdesc->filename,fmode);
     if (hdesc->filedesc < 0) {
       fprintf(stderr,"open_hive(%s) in fallback RO-mode failed: %s\n",hdesc->filename,strerror(errno));
-      closeHive(hdesc);
+      close_hive(hdesc);
       return(NULL);
     }
   }
@@ -2531,7 +2531,7 @@ struct hive *open_hive(const char *filename, int mode)
   if (r < hdesc->size) {
     fprintf(stderr,"Could not read file, got %d bytes while expecting %d\n",
 	    r, hdesc->size);
-    closeHive(hdesc);
+    close_hive(hdesc);
     return(NULL);
   }
 
