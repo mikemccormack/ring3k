@@ -1095,8 +1095,6 @@ int trav_path(struct hive *hdesc, int vofs, const char *path, int type)
   return(0);
 }
 
-typedef int (*nt_enum_subkey_func)( struct nk_key *key, void *arg );
-
 int nk_enumerate_subkeys(struct hive *hdesc, const char *path, int vofs, nt_enum_subkey_func fn, void *fn_arg)
 {
   struct nk_key *key;
@@ -1123,6 +1121,41 @@ int nk_enumerate_subkeys(struct hive *hdesc, const char *path, int vofs, nt_enum
   }
 
   return key->no_subkeys;
+}
+
+int nk_get_subkey(struct hive *hdesc, const char *path, int vofs, int keyno, struct ex_data *out )
+{
+  struct nk_key *key;
+  int nkofs;
+  int r = -1;
+
+  nkofs = trav_path(hdesc, vofs, path, 0);
+  if (!nkofs)
+    return r;
+
+  if (keyno < 0)
+    return -1;
+
+  nkofs += 4;
+  key = (struct nk_key *)(hdesc->buffer + nkofs);
+  assert (key->id == 0x6b6e);
+
+  if (key->no_subkeys)
+  {
+    int count = 0, countri = 0;
+    struct ex_data ex;
+
+    while ((ex_next_n(hdesc, nkofs, &count, &countri, &ex) > 0)) {
+      if (keyno == 0) {
+        memcpy( out, &ex, sizeof ex );
+        r = 0;
+        break;
+      }
+      free(ex.name);
+      keyno--;
+    }
+  }
+  return r;
 }
 
 /* ls - list a 'nk' nodes subkeys and values

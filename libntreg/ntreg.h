@@ -321,7 +321,7 @@ struct hive {
 extern "C" {
 #endif
 
-typedef int (*nk_enum_subkey_func)( struct nk_key *key, void *arg );
+typedef int (*nt_enum_subkey_func)( struct nk_key *key, void *arg );
 
 int parse_block(struct hive *hdesc, int vofs,int verbose);
 int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex_data *sptr);
@@ -343,7 +343,8 @@ int write_hive(struct hive *hdesc);
 struct hive *open_hive(const char *filename, int mode);
 
 void nk_ls(struct hive *hdesc, const char *path, int vofs, int type);
-int nk_enumerate_subkeys(struct hive *hdesc, const char *path, int vofs, nk_enum_subkey_func fn, void *fn_arg);
+int nk_enumerate_subkeys(struct hive *hdesc, const char *path, int vofs, nt_enum_subkey_func fn, void *fn_arg);
+int nk_get_subkey(struct hive *hdesc, const char *path, int vofs, int keyno, struct ex_data *out);
 struct vk_key *add_value(struct hive *hdesc, int nkofs, char *name, int type);
 void del_allvalues(struct hive *hdesc, int nkofs);
 int del_value(struct hive *hdesc, int nkofs, char *name, int exact);
