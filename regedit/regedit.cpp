@@ -1,16 +1,101 @@
 #include <QApplication>
 #include <QTreeView>
 #include <QAbstractItemModel>
+#include <QList>
 #include <assert.h>
 #include "ntreg.h"
 
-class QRegistryItemModel : public QAbstractListModel
+class RegistryItem
 {
 	struct hive *hive;
-	const char* path;
+	RegistryItem* parent;
+	QString name;
+	bool enumerated;
+	QList<RegistryItem*> subkeys;
+public:
+	RegistryItem( struct hive *h, RegistryItem* p, const char *n );
+	QString* getPath();
+	RegistryItem* getParent();
+	RegistryItem* getChild( int n );
+	int getSubkeyCount();
+	const QString& getName() const;
+protected:
+	void enumerateChildren();
+};
+
+RegistryItem::RegistryItem( struct hive *h, RegistryItem* p, const char *n ) :
+	hive( h ),
+	parent( p ),
+	name( n ),
+	enumerated( false )
+{
+}
+
+QString* RegistryItem::getPath()
+{
+	QString* path;
+	if (parent)
+	{
+		path = parent->getPath();
+		path->append( name );
+		path->append( "\\" );
+	}
+	else
+		path = new QString( name );
+	return path;
+}
+
+RegistryItem* RegistryItem::getParent()
+{
+	return parent;
+}
+
+void RegistryItem::enumerateChildren()
+{
+	if (enumerated)
+		return;
+
+	struct ex_data key;
+	char *path = getPath()->toUtf8().data();
+	int i = 0;
+	while (1)
+	{
+		int r = nk_get_subkey( hive, path, 0, i, &key );
+		if (r < 0)
+			break;
+		fprintf(stderr, "enumerateChildren: %s\n", key.name);
+		RegistryItem* item = new RegistryItem( hive, this, key.name );
+		subkeys.append( item );
+		i++;
+	}
+	enumerated = true;
+}
+
+
+RegistryItem* RegistryItem::getChild( int n )
+{
+	enumerateChildren();
+	return subkeys.at( n );
+}
+
+int RegistryItem::getSubkeyCount()
+{
+	enumerateChildren();
+	return subkeys.count();
+}
+
+const QString& RegistryItem::getName() const
+{
+	return name;
+}
+
+class RegistryItemModel : public QAbstractListModel
+{
+	struct hive *hive;
+	RegistryItem *root;
 
 public:
-	QRegistryItemModel(const char* path, struct hive *h);
+	RegistryItemModel(RegistryItem* root, struct hive *h);
 	virtual QModelIndex index(int,int,const QModelIndex&) const;
 	virtual int rowCount(const QModelIndex& index) const;
 	virtual QVariant data(const QModelIndex&, int) const;
@@ -18,55 +103,58 @@ public:
 	int enum_func( struct nk_key *key );
 };
 
-QRegistryItemModel::QRegistryItemModel(const char* p, struct hive *h) :
+RegistryItemModel::RegistryItemModel(RegistryItem* r, struct hive *h) :
 	hive( h ),
-	path( p )
+	root( r )
 {
-	fprintf(stderr, "QRegistryItemModel::QRegistryItemModel\n");
+	fprintf(stderr, "RegistryItemModel::RegistryItemModel\n");
 }
 
-QModelIndex QRegistryItemModel::index(int row, int column, const QModelIndex& parent) const
+QModelIndex RegistryItemModel::index(int row, int column, const QModelIndex& parent) const
 {
-	fprintf(stderr, "QRegistryItemModel::index "
+	fprintf(stderr, "RegistryItemModel::index "
 		"%d, %d\n", row, column);
-	if (row >= 0 && column == 0)
-		return createIndex( row, column );
-	return QModelIndex();
+
+	RegistryItem* parentItem;
+	if (!parent.isValid())
+		parentItem = root;
+	else
+		parentItem = static_cast<RegistryItem*>( parent.internalPointer() );
+
+	RegistryItem *child = parentItem->getChild( row );
+	if (!child)
+		return QModelIndex();
+
+	return createIndex( row, column, child );
 }
 
-int QRegistryItemModel::rowCount(const QModelIndex& index) const
+int RegistryItemModel::rowCount(const QModelIndex& parent) const
 {
-	if (index.column()>0)
+	if (parent.column()>0)
 		return 0;
-	fprintf(stderr, "QRegistryItemModel::rowCount "
-		"%d, %d\n", index.row(), index.column());
-	if (!index.isValid())
-	{
-		// the root item
-		int count = nk_enumerate_subkeys(hive, path, 0, 0, 0);
-		fprintf(stderr, "count = %d\n", count);
-		assert( count >= 0 );
-		return count;
-	}
-	return 0;
+	fprintf(stderr, "RegistryItemModel::rowCount "
+		"%d, %d\n", parent.row(), parent.column());
+
+	RegistryItem* parentItem;
+	if (!parent.isValid())
+		parentItem = root;
+	else
+		parentItem = static_cast<RegistryItem*>( parent.internalPointer() );
+
+	return parentItem->getSubkeyCount();
 }
 
-QVariant QRegistryItemModel::data(const QModelIndex& index, int role) const
+QVariant RegistryItemModel::data(const QModelIndex& index, int role) const
 {
 	if (!index.isValid())
 		return QVariant();
 	if (role != Qt::DisplayRole)
 		return QVariant();
-	fprintf(stderr, "QRegistryItemModel::data "
+	fprintf(stderr, "RegistryItemModel::data "
 		"%d, %d\n", index.row(), index.column());
 
-	struct ex_data key;
-	int r = nk_get_subkey(hive, path, 0, index.row(), &key);
-	if (r >= 0)
-		//return QVariant( key.nk->keyname );
-		return QVariant( key.name );
-
-	return QVariant();
+	RegistryItem* item = static_cast<RegistryItem*>( index.internalPointer() );
+	return item->getName();
 }
 
 int main( int argc, char **argv )
@@ -89,9 +177,10 @@ int main( int argc, char **argv )
 		return 1;
 	}
 
-	nk_ls( hive, "\\", 0, 0);
+	//nk_ls( hive, "\\", 0, 0);
+	RegistryItem* rootItem = new RegistryItem( hive, NULL, "" );
 
-	QRegistryItemModel model("\\", hive);
+	RegistryItemModel model(rootItem, hive);
 	QTreeView keylist;
 	keylist.resize(320, 200);
 	keylist.setHeader( 0 );
