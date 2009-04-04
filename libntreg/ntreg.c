@@ -937,7 +937,7 @@ int get_abs_path(struct hive *hdesc, int nkofs, char *path, int maxlen)
  * returns index into table or -1 if err
  */
 
-int vlist_find(struct hive *hdesc, int vlistofs, int numval, char *name, int type)
+int vlist_find(struct hive *hdesc, int vlistofs, int numval, const char *name, int type)
 {
   struct vk_key *vkkey;
   int i,vkofs,len;
@@ -1214,7 +1214,7 @@ void nk_ls(struct hive *hdesc, const char *path, int vofs, int type)
 }
 
 /* Get the type of a value */
-int get_val_type(struct hive *hdesc, int vofs, char *path, int exact)
+int get_val_type(struct hive *hdesc, int vofs, const char *path, int exact)
 {
   struct vk_key *vkkey;
   int vkofs;
@@ -1233,7 +1233,7 @@ int get_val_type(struct hive *hdesc, int vofs, char *path, int exact)
 
 
 /* Get len of a value, given current key + path */
-int get_val_len(struct hive *hdesc, int vofs, char *path, int exact)
+int get_val_len(struct hive *hdesc, int vofs, const char *path, int exact)
 {
   struct vk_key *vkkey;
   int vkofs;
@@ -1259,7 +1259,7 @@ int get_val_len(struct hive *hdesc, int vofs, char *path, int exact)
  * If val_type != 0 a check for correct value type is done
  * Caller must keep track of value's length (call function above to get it)
  */
-void *get_val_data(struct hive *hdesc, int vofs, char *path, int val_type, int exact)
+void *get_val_data(struct hive *hdesc, int vofs, const char *path, int val_type, int exact)
 {
   struct vk_key *vkkey;
   int vkofs;
@@ -1301,7 +1301,7 @@ void *get_val_data(struct hive *hdesc, int vofs, char *path, int val_type, int e
  * NOTE: caller must deallocate buffer! a simple free(keyval) will suffice.
  */
 struct keyval *get_val2buf(struct hive *hdesc, struct keyval *kv,
-			   int vofs, char *path, int type, int exact )
+			   int vofs, const char *path, int type, int exact )
 {
   int l;
   struct keyval *kr;
@@ -1329,7 +1329,7 @@ struct keyval *get_val2buf(struct hive *hdesc, struct keyval *kv,
 
 /* DWORDs are so common that I make a small function to get it easily */
 
-int get_dword(struct hive *hdesc, int vofs, char *path, int exact)
+int get_dword(struct hive *hdesc, int vofs, const char *path, int exact)
 {
   struct keyval *v;
   int dword;
@@ -1376,7 +1376,7 @@ int fill_block(struct hive *hdesc, int ofs, void *data, int size)
  * we return offset of vk
  */
 
-int free_val_data(struct hive *hdesc, int vofs, char *path, int exact)
+int free_val_data(struct hive *hdesc, int vofs, const char *path, int exact)
 {
   struct vk_key *vkkey;
   int vkofs, inl;
@@ -1408,7 +1408,7 @@ int free_val_data(struct hive *hdesc, int vofs, char *path, int exact)
  * Returns: 0 - error, >0 pointer to actual dataspace
  */
 
-int alloc_val_data(struct hive *hdesc, int vofs, char *path, int size,int exact)
+int alloc_val_data(struct hive *hdesc, int vofs, const char *path, int size,int exact)
 {
   struct vk_key *vkkey;
   int vkofs, len;
@@ -1590,12 +1590,12 @@ void del_allvalues(struct hive *hdesc, int nkofs)
  * returns: 0 - ok, 1 - failed
  */
 
-int del_value(struct hive *hdesc, int nkofs, char *name, int exact)
+int del_value(struct hive *hdesc, int nkofs, const char *name, int exact)
 {
   int vlistofs, slot, o, n, vkofs, newlistofs;
   int32_t *vlistkey, *tmplist, *newlistkey;
   struct nk_key *nk;
-  char *blank="";
+  const char *blank="";
 
   if (!name || !*name) return(1);
 
@@ -1664,7 +1664,7 @@ int del_value(struct hive *hdesc, int nkofs, char *name, int exact)
  */
 
 #define AKDEBUG 1
-struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
+struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
 {
 
   int slot, newlfofs = 0, oldlfofs = 0, newliofs = 0;
@@ -1939,7 +1939,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name)
 
 #undef DKDEBUG
 
-int del_key(struct hive *hdesc, int nkofs, char *name)
+int del_key(struct hive *hdesc, int nkofs, const char *name)
 {
 
   int slot = 0, newlfofs = 0, oldlfofs = 0, o, n, onkofs, delnkofs = 0;
@@ -2169,7 +2169,7 @@ int del_key(struct hive *hdesc, int nkofs, char *name)
  * name  - name of key to delete
  * return: 0 - ok, 1 fail
  */
-void rdel_keys(struct hive *hdesc, char *path, int vofs)
+void rdel_keys(struct hive *hdesc, const char *path, int vofs)
 {
   struct nk_key *key;
   int nkofs;
@@ -2221,7 +2221,7 @@ void rdel_keys(struct hive *hdesc, char *path, int vofs)
  * NOTE: caller must deallocate buffer! a simple free(keyval) will suffice.
  */
 struct keyval *get_class(struct hive *hdesc,
-			    int curnk, char *path)
+			    int curnk, const char *path)
 {
   int clen = 0, dofs = 0, nkofs;
   struct nk_key *key;
@@ -2269,7 +2269,7 @@ struct keyval *get_class(struct hive *hdesc,
  */
 
 int put_buf2val(struct hive *hdesc, struct keyval *kv,
-		int vofs, char *path, int type, int exact )
+		int vofs, const char *path, int type, int exact )
 {
   int l;
   void *keydataptr;
@@ -2296,7 +2296,7 @@ int put_buf2val(struct hive *hdesc, struct keyval *kv,
 
 /* And, yer basic DWORD write */
 
-int put_dword(struct hive *hdesc, int vofs, char *path, int exact, int dword)
+int put_dword(struct hive *hdesc, int vofs, const char *path, int exact, int dword)
 {
   struct keyval *kr;
   int r;
@@ -2354,7 +2354,7 @@ char * convert_string(void *string, int len)
  * prefix:  prefix for each key. This prefix is prepended to the keyname
  * file:    file descriptor of destination file
  */
-void export_subkey(struct hive *hdesc, int nkofs, char *name, char *prefix, FILE *file)
+void export_subkey(struct hive *hdesc, int nkofs, const char *name, char *prefix, FILE *file)
 {
     int newofs;
     int count = 0;
@@ -2468,7 +2468,7 @@ void export_subkey(struct hive *hdesc, int nkofs, char *name, char *prefix, FILE
  * filename:    name of destination .reg file (will be overridden)
  * prefix:      prefix for each exported key
  */
-void export_key(struct hive *hdesc, int nkofs, char *name, char *filename, char *prefix)
+void export_key(struct hive *hdesc, int nkofs, const char *name, char *filename, char *prefix)
 {
     FILE *file;
 

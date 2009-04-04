@@ -328,16 +328,16 @@ int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex
 int ex_next_v(struct hive *hdesc, int nkofs, int *count, struct vex_data *sptr);
 int get_abs_path(struct hive *hdesc, int nkofs, char *path, int maxlen);
 int trav_path(struct hive *hdesc, int vofs, const char *path, int type);
-int get_val_type(struct hive *hdesc, int vofs, char *path, int exact);
-int get_val_len(struct hive *hdesc, int vofs, char *path, int exact);
-void *get_val_data(struct hive *hdesc, int vofs, char *path, int val_type, int exact);
+int get_val_type(struct hive *hdesc, int vofs, const char *path, int exact);
+int get_val_len(struct hive *hdesc, int vofs, const char *path, int exact);
+void *get_val_data(struct hive *hdesc, int vofs, const char *path, int val_type, int exact);
 struct keyval *get_val2buf(struct hive *hdesc, struct keyval *kv,
-			   int vofs, char *path, int type, int exact );
-int get_dword(struct hive *hdesc, int vofs, char *path, int exact);
+			   int vofs, const char *path, int type, int exact );
+int get_dword(struct hive *hdesc, int vofs, const char *path, int exact);
 int put_buf2val(struct hive *hdesc, struct keyval *kv,
-		int vofs, char *path, int type, int exact );
-int put_dword(struct hive *hdesc, int vofs, char *path, int exact, int dword);
-void export_key(struct hive *hdesc, int nkofs, char *name, char *filename, char *prefix);
+		int vofs, const char *path, int type, int exact );
+int put_dword(struct hive *hdesc, int vofs, const char *path, int exact, int dword);
+void export_key(struct hive *hdesc, int nkofs, const char *name, char *filename, char *prefix);
 void close_hive(struct hive *hdesc);
 int write_hive(struct hive *hdesc);
 struct hive *open_hive(const char *filename, int mode);
@@ -347,11 +347,11 @@ int nk_enumerate_subkeys(struct hive *hdesc, const char *path, int vofs, nt_enum
 int nk_get_subkey(struct hive *hdesc, const char *path, int vofs, int keyno, struct ex_data *out);
 struct vk_key *add_value(struct hive *hdesc, int nkofs, char *name, int type);
 void del_allvalues(struct hive *hdesc, int nkofs);
-int del_value(struct hive *hdesc, int nkofs, char *name, int exact);
-struct nk_key *add_key(struct hive *hdesc, int nkofs, char *name);
-int del_key(struct hive *hdesc, int nkofs, char *name);
-void rdel_keys(struct hive *hdesc, char *path, int nkofs);
-struct keyval *get_class(struct hive *hdesc, int curnk, char *path);
+int del_value(struct hive *hdesc, int nkofs, const char *name, int exact);
+struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *path);
+int del_key(struct hive *hdesc, int nkofs, const char *path);
+void rdel_keys(struct hive *hdesc, const char *path, int nkofs);
+struct keyval *get_class(struct hive *hdesc, int curnk, const char *path);
 
 #ifdef __cplusplus
 }
