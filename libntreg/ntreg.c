@@ -421,8 +421,6 @@ int find_page_start(struct hive *hdesc, int vofs)
  * returns: offset to free block, or 0 for error
  */
 
-#define FB_DEBUG 0
-
 int find_free_blk(struct hive *hdesc, int pofs, int size)
 {
   int vofs = pofs + 0x20;
@@ -435,28 +433,20 @@ int find_free_blk(struct hive *hdesc, int pofs, int size)
 
     seglen = get_int(hdesc->buffer+vofs);
 
-#if FB_DEBUG
     dprintf("** Block at offset %0x\n",vofs);
     dprintf("seglen: %d, %u, 0x%0x\n",seglen,seglen,seglen);
-#endif
 
     assert (seglen != 0);
 
     if (seglen < 0) {
       seglen = -seglen;
-#if FB_DEBUG
 	dprintf("USED BLOCK: %d, 0x%0x\n",seglen,seglen);
-#endif
 	/*      hexdump(hdesc->buffer,vofs,vofs+seglen+4,1); */
     } else {
-#if FB_DEBUG
 	dprintf("FREE BLOCK!\n");
-#endif
 	/*      hexdump(hdesc->buffer,vofs,vofs+seglen+4,1); */
 	if (seglen >= size) {
-#if FB_DEBUG
 	  dprintf("find_free_blk: found size %d block at 0x%x\n",seglen,vofs);
-#endif
 #if 0
 	  assert (vofs != 0x19fb8);
 #endif
@@ -468,8 +458,6 @@ int find_free_blk(struct hive *hdesc, int pofs, int size)
   return(0);
 
 }
-
-#undef FB_DEBUG
 
 /* Search pages from start to find free block
  * hdesc - hive
@@ -539,11 +527,9 @@ int alloc_block(struct hive *hdesc, int ofs, int size)
 
   if (blk) {  /* Got the space */
     oldsz = get_int(hdesc->buffer+blk);
-#if 0
     dprintf("Block at         : %x\n",blk);
     dprintf("Old block size is: %x\n",oldsz);
     dprintf("New block size is: %x\n",size);
-#endif
     trailsize = oldsz - size;
 
     if (trailsize == 4) {
@@ -562,10 +548,8 @@ int alloc_block(struct hive *hdesc, int ofs, int size)
     }
 #endif
 
-#if 0
     dprintf("trail after comp: %x\n",trailsize);
     dprintf("size  after comp: %x\n",size);
-#endif
 
     /* Now change pointers on this to reflect new size */
     *(int *)((hdesc->buffer)+blk) = -(size);
@@ -607,8 +591,6 @@ int alloc_block(struct hive *hdesc, int ofs, int size)
  * returns bytes freed (incl linkage bytes) or 0 if fail
  * Will CHANGE HIVE IF SUCCESSFUL (changes linkage)
  */
-
-#define FB_DEBUG 0
 
 int free_block(struct hive *hdesc, int blk)
 {
