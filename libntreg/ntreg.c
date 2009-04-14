@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -62,6 +63,9 @@
 /* Fill blocks marked as unused/deallocated with zeroes on load. FOR DEBUG */
 #define ZEROFILLONLOAD  0
 
+/* turn on printing of debug messages */
+#undef DEBUG
+
 const char ntreg_version[] = "ntreg lib routines, v0.94 080526, (c) Petter N Hagen";
 
 const char *val_types[REG_MAX+1] = {
@@ -77,6 +81,8 @@ static inline void do_bzero( void *s, size_t n )
 	bzero( s, n );
 #endif
 }
+
+void dprintf(const char *fmt, ...) __attribute__((format (printf,1,2)));
 
 #ifdef DEBUG
 void dprintf(const char *fmt, ...)
@@ -1675,7 +1681,6 @@ int del_value(struct hive *hdesc, int nkofs, const char *name, int exact)
  * return: ptr to new keystruct, or NULL
  */
 
-#define AKDEBUG 1
 struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
 {
 
@@ -1717,9 +1722,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
       ri = (struct ri_key *)(hdesc->buffer + riofs + 0x1004);
       rimax = ri->no_lis-1;
 
-#ifdef AKDEBUG
       dprintf("add_key: entering 'ri' traverse, rimax = %d\n",rimax);
-#endif
 
       oldliofs = ri->hash[rislot+1].ofs_li;
       oldlfofs = ri->hash[rislot+1].ofs_li;
@@ -1739,16 +1742,12 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
       oldli = (struct li_key *)(hdesc->buffer + oldliofs + 0x1004);
       oldlf = (struct lf_key *)(hdesc->buffer + oldlfofs + 0x1004);
 
-#ifdef AKDEBUG
       dprintf("add_key: top of ri-loop: rislot = %d, rimax = %d\n",rislot,rimax);
-#endif
       slot = -1;
 
       if (oldli->id == 0x696c) {  /* li */
 
-#ifdef AKDEBUG
 	dprintf("add_key: li slot allocate\n");
-#endif
 
 	free(newli);
 	newli = malloc(8 + 4*oldli->no_keys + 4);
@@ -1760,9 +1759,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
 	  onkofs = oldli->hash[o].ofs_nk;
 	  onk = (struct nk_key *)(onkofs + hdesc->buffer + 0x1004);
 	  if (slot == -1) {
-#if 1
 	    dprintf("add_key: cmp <%s> with <%s>\n",name,onk->keyname);
-#endif
 
 	    cmp = strncasecmp(name, onk->keyname, (namlen > onk->len_name) ? namlen : onk->len_name);
 	    if (!cmp) {
@@ -1774,9 +1771,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
 	      slot = o;
 	      rimax = rislot; /* Cause end of 'ri' search, too */
 	      n++;
-#ifdef AKDEBUG
 	      dprintf("add_key: li-match: slot = %d\n",o);
-#endif
 	    }
 	  }
 	  newli->hash[n].ofs_nk = oldli->hash[o].ofs_nk;
@@ -1791,9 +1786,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
 	newlf = malloc(8 + 8*oldlf->no_keys + 8);
 	newlf->no_keys = oldlf->no_keys;
 	newlf->id = oldlf->id;
-#ifdef AKDEBUG
 	dprintf("add_key: new lf/lh no_keys: %d\n",newlf->no_keys);
-#endif
 
 	/* Now copy old, checking where to insert (alphabetically) */
 	for (o = 0, n = 0; o < oldlf->no_keys; o++,n++) {
@@ -1814,9 +1807,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
 	      slot = o;
 	      rimax = rislot;  /* Cause end of 'ri' search, too */
 	      n++;
-#ifdef AKDEBUG
 	      dprintf("add_key: lf-match: slot = %d\n",o);
-#endif
 	    }
 	  }
 	  newlf->hash[n].ofs_nk = oldlf->hash[o].ofs_nk;
@@ -1832,9 +1823,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
     } while ( (rislot < rimax) && (rimax > 0));  /* 'ri' wrapper loop */
 
   } else { /* Parent was empty, make new index block */
-#ifdef AKDEBUG
     dprintf("add_key: new index!\n");
-#endif
     newlf = malloc(8 + 8);
     newlf->no_keys = 1;
     /* Use ID (lf, lh or li) we fetched from root node, so we use same as rest of hive */
@@ -1868,9 +1857,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
 
   if (newli) {  /* Handle li */
 
-#if AKDEBUG
     dprintf("add_key: li fill at slot: %d\n",slot);
-#endif
 
     /* And put its offset into parents index list */
     newli->hash[slot].ofs_nk = newnkofs - 0x1000;
@@ -1890,9 +1877,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
 
   } else {  /* lh or lf */
 
-#ifdef AKDEBUG
     dprintf("add_key: lf/lh fill at slot: %d, rislot: %d\n",slot,rislot);
-#endif
     /* And put its offset into parents index list */
     newlf->hash[slot].ofs_nk = newnkofs - 0x1000;
     newlf->no_keys++;
@@ -1949,8 +1934,6 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
  * return: 1 - err, 0 - ok
  */
 
-#undef DKDEBUG
-
 int del_key(struct hive *hdesc, int nkofs, const char *name)
 {
 
@@ -1997,9 +1980,7 @@ int del_key(struct hive *hdesc, int nkofs, const char *name)
     ri = (struct ri_key *)(hdesc->buffer + riofs + 0x1004);
     rimax = ri->no_lis-1;
 
-#ifdef DKDEBUG
     dprintf("del_key: entering 'ri' traverse, rimax = %d\n",rimax);
-#endif
 
     rislot = -1; /* Starts at slot 0 below */
 
@@ -2016,15 +1997,11 @@ int del_key(struct hive *hdesc, int nkofs, const char *name)
     oldli = (struct li_key *)(hdesc->buffer + oldliofs + 0x1004);
     oldlf = (struct lf_key *)(hdesc->buffer + oldlfofs + 0x1004);
 
-#ifdef DKDEBUG
     dprintf("del_key: top of ri-loop: rislot = %d\n",rislot);
-#endif
     slot = -1;
 
     if (oldlf->id == 0x696c) {   /* 'li' handler */
-#ifdef DKDEBUG
       dprintf("del_key: li handler\n");
-#endif
 
       free(newli);
       newli = malloc(8 + 4*oldli->no_keys - 4);
@@ -2047,9 +2024,7 @@ int del_key(struct hive *hdesc, int nkofs, const char *name)
 
     } else { /* 'lf' or 'lh' are similar */
 
-#ifdef DKDEBUG
       dprintf("del_key: lf or lh handler\n");
-#endif
       free(newlf);
       newlf = malloc(8 + 8*oldlf->no_keys - 8);
       newlf->no_keys = oldlf->no_keys - 1; no_keys = newlf->no_keys;
@@ -2082,9 +2057,7 @@ int del_key(struct hive *hdesc, int nkofs, const char *name)
     return(1);
   }
 
-#ifdef DKDEBUG
   dprintf("del_key: key found at slot %d\n",slot);
-#endif
 
   if (delnk->no_values || delnk->no_subkeys) {
     dprintf("del_key: subkey %s has subkeys or values. Not deleted.\n",name);
@@ -2096,9 +2069,7 @@ int del_key(struct hive *hdesc, int nkofs, const char *name)
   /* Allocate space for our new lf list and copy it into reg */
   if ( no_keys && (newlf || newli) ) {
     newlfofs = alloc_block(hdesc, nkofs, 8 + (newlf ? 8 : 4) * no_keys);
-#ifdef DKDEBUG
     dprintf("del_key: alloc_block for index returns: %x\n",newlfofs);
-#endif
     if (!newlfofs) {
       dprintf("del_key: WARNING: unable to allocate space for new key descriptor for %s! Not deleted\n",name);
       free(newlf);
