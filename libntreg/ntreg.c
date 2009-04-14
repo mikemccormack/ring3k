@@ -93,39 +93,10 @@ void dprintf(const char *fmt, ...)
 	va_end(va);
 }
 #else
-static inline void dprintf(const char *fmt, ...)
+void dprintf(const char *fmt, ...)
 {
 }
 #endif
-
-/* HexDump all or a part of some buffer */
-
-void hexdump(char *hbuf, int start, int stop, int ascii)
-{
-   char c;
-   int diff,i;
-
-   while (start < stop ) {
-
-      diff = stop - start;
-      if (diff > 16) diff = 16;
-
-      printf(":%05X  ",start);
-
-      for (i = 0; i < diff; i++) {
-	 printf("%02X ",(unsigned char)*(hbuf+start+i));
-      }
-      if (ascii) {
-	for (i = diff; i < 16; i++) printf("   ");
-	for (i = 0; i < diff; i++) {
-	  c = *(hbuf+start+i);
-	  printf("%c", isprint(c) ? c : '.');
-	}
-      }
-      printf("\n");
-      start += 16;
-   }
-}
 
 /* Get INTEGER from memory. This is probably low-endian specific? */
 int get_int( char *array )
