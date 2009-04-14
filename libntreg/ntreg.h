@@ -1,6 +1,6 @@
 /*
  * ntreg.h - NT Registry Hive access library, constants & structures
- * 
+ *
  * NOTE: defines are not frozen. It can and will change every release.
  *
  *****
@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  * See file LGPL.txt for the full license.
- * 
- */ 
+ *
+ */
 
 
 #ifndef _INCLUDE_NTREG_H
@@ -341,8 +341,6 @@ void close_hive(struct hive *hdesc);
 int write_hive(struct hive *hdesc);
 struct hive *open_hive(const char *filename, int mode);
 
-void nk_ls(struct hive *hdesc, const char *path, int vofs, int type);
-int nk_enumerate_subkeys(struct hive *hdesc, const char *path, int vofs, nt_enum_subkey_func fn, void *fn_arg);
 int nk_get_subkey(struct hive *hdesc, const char *path, int vofs, int keyno, struct ex_data *out);
 struct vk_key *add_value(struct hive *hdesc, int nkofs, const char *name, int type);
 void del_allvalues(struct hive *hdesc, int nkofs);

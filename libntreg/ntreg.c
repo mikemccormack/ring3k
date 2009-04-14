@@ -1059,34 +1059,6 @@ int trav_path(struct hive *hdesc, int vofs, const char *path, int type)
   return(0);
 }
 
-int nk_enumerate_subkeys(struct hive *hdesc, const char *path, int vofs, nt_enum_subkey_func fn, void *fn_arg)
-{
-  struct nk_key *key;
-  int nkofs;
-
-  nkofs = trav_path(hdesc, vofs, path, 0);
-  if (!nkofs)
-    return -1;
-
-  nkofs += 4;
-  key = (struct nk_key *)(hdesc->buffer + nkofs);
-  assert (key->id == 0x6b6e);
-
-  if (key->no_subkeys && fn) {
-    int count = 0, countri = 0;
-    struct ex_data ex;
-
-    while ((ex_next_n(hdesc, nkofs, &count, &countri, &ex) > 0)) {
-      int r = fn( ex.nk, fn_arg );
-      free(ex.name);
-      if (0 > r)
-        break;
-    }
-  }
-
-  return key->no_subkeys;
-}
-
 int nk_get_subkey(struct hive *hdesc, const char *path, int vofs, int keyno, struct ex_data *out )
 {
   struct nk_key *key;
@@ -1118,61 +1090,6 @@ int nk_get_subkey(struct hive *hdesc, const char *path, int vofs, int keyno, str
     }
   }
   return r;
-}
-
-/* ls - list a 'nk' nodes subkeys and values
- * vofs - offset to start of data (skipping block linkage)
- * type - 0 = full, 1 = keys only. 2 = values only
- */
-void nk_ls(struct hive *hdesc, const char *path, int vofs, int type)
-{
-  struct nk_key *key;
-  int nkofs;
-  struct ex_data ex;
-  struct vex_data vex;
-  int count = 0, countri = 0;
-
-
-  nkofs = trav_path(hdesc, vofs, path, 0);
-
-  if(!nkofs) {
-    dprintf("nk_ls: Key <%s> not found\n",path);
-    return;
-  }
-  nkofs += 4;
-
-  key = (struct nk_key *)(hdesc->buffer + nkofs);
-  printf("ls of node at offset 0x%0x\n",nkofs);
-
-  assert (key->id == 0x6b6e);
-
-  printf("Node has %d subkeys and %d values",key->no_subkeys,key->no_values);
-  if (key->len_classnam) printf(", and class-data of %d bytes",key->len_classnam);
-  printf("\n");
-
-  if (key->no_subkeys) {
-    printf("  key name\n");
-    while ((ex_next_n(hdesc, nkofs, &count, &countri, &ex) > 0)) {
-      if (!(hdesc->state & HMODE_VERBOSE)) printf("%c <%s>\n", (ex.nk->len_classnam)?'*':' ',ex.name);
-      else printf("[%6x] %c <%s>\n", ex.nkoffs, (ex.nk->len_classnam)?'*':' ',ex.name);
-      free(ex.name);
-    }
-  }
-  count = 0;
-  if (key->no_values) {
-    printf("  size     type            value name             [value if type DWORD]\n");
-    while ((ex_next_v(hdesc, nkofs, &count, &vex) > 0)) {
-      if (hdesc->state & HMODE_VERBOSE) printf("[%6x] %6d  %-16s  <%s>", vex.vkoffs, vex.size,
-					       (vex.type < REG_MAX ? val_types[vex.type] : "(unknown)"), vex.name);
-      else
-      printf("%6d  %-16s  <%s>", vex.size,
-	     (vex.type < REG_MAX ? val_types[vex.type] : "(unknown)"), vex.name);
-
-      if (vex.type == REG_DWORD) printf(" %*d [0x%x]",25-(int)strlen(vex.name),vex.val , vex.val);
-      printf("\n");
-      free(vex.name);
-    }
-  }
 }
 
 /* Get the type of a value */
