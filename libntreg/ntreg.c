@@ -128,7 +128,7 @@ int get_int( char *array )
 /* Parse the nk datablock
  * vofs = offset into struct (after size linkage)
  */
-void parse_nk(struct hive *hdesc, int vofs, int blen)
+static void parse_nk(struct hive *hdesc, int vofs, int blen)
 {
 
   struct nk_key *key;
@@ -163,7 +163,7 @@ void parse_nk(struct hive *hdesc, int vofs, int blen)
 /* Parse the vk datablock
  * vofs = offset into struct (after size linkage)
  */
-void parse_vk(struct hive *hdesc, int vofs, int blen)
+static void parse_vk(struct hive *hdesc, int vofs, int blen)
 {
   struct vk_key *key;
   int i;
@@ -193,7 +193,7 @@ void parse_vk(struct hive *hdesc, int vofs, int blen)
  * Gee, this is the security info. Who cares? *evil grin*
  * vofs = offset into struct (after size linkage)
  */
-void parse_sk(struct hive *hdesc, int vofs, int blen)
+static void parse_sk(struct hive *hdesc, int vofs, int blen)
 {
   struct sk_key *key;
   /* int i; */
@@ -217,7 +217,7 @@ void parse_sk(struct hive *hdesc, int vofs, int blen)
 /* Parse the lf datablock (>4.0 'nk' offsets lookuptable)
  * vofs = offset into struct (after size linkage)
  */
-void parse_lf(struct hive *hdesc, int vofs, int blen)
+static void parse_lf(struct hive *hdesc, int vofs, int blen)
 {
   struct lf_key *key;
   int i;
@@ -245,7 +245,7 @@ void parse_lf(struct hive *hdesc, int vofs, int blen)
  * vofs = offset into struct (after size linkage)
  * The hash is most likely a base 37 conversion of the name string
  */
-void parse_lh(struct hive *hdesc, int vofs, int blen)
+static void parse_lh(struct hive *hdesc, int vofs, int blen)
 {
   struct lf_key *key;
   int i;
@@ -270,7 +270,7 @@ void parse_lh(struct hive *hdesc, int vofs, int blen)
 /* Parse the li datablock (3.x 'nk' offsets list)
  * vofs = offset into struct (after size linkage)
  */
-void parse_li(struct hive *hdesc, int vofs, int blen)
+static void parse_li(struct hive *hdesc, int vofs, int blen)
 {
   struct li_key *key;
   int i;
@@ -295,7 +295,7 @@ void parse_li(struct hive *hdesc, int vofs, int blen)
  * (Used to list li/lf/lh's when ~>500keys)
  * vofs = offset into struct (after size linkage)
  */
-void parse_ri(struct hive *hdesc, int vofs, int blen)
+static void parse_ri(struct hive *hdesc, int vofs, int blen)
 {
   struct ri_key *key;
   int i;
@@ -321,7 +321,7 @@ void parse_ri(struct hive *hdesc, int vofs, int blen)
  * vofs = offset into struct (after size linkage)
  */
 
-int parse_block(struct hive *hdesc, int vofs,int verbose)
+static int parse_block(struct hive *hdesc, int vofs,int verbose)
 {
   unsigned short id;
   int seglen;

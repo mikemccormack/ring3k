@@ -323,7 +323,6 @@ extern "C" {
 
 typedef int (*nt_enum_subkey_func)( struct nk_key *key, void *arg );
 
-int parse_block(struct hive *hdesc, int vofs,int verbose);
 int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex_data *sptr);
 int ex_next_v(struct hive *hdesc, int nkofs, int *count, struct vex_data *sptr);
 int get_abs_path(struct hive *hdesc, int nkofs, char *path, int maxlen);
