@@ -740,15 +740,11 @@ int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex
     return(-1);
   }
 
-#define EXNDEBUG 0
-
   lfkey = (struct lf_key *)(hdesc->buffer + key->ofs_lf + 0x1004);
   rikey = (struct ri_key *)(hdesc->buffer + key->ofs_lf + 0x1004);
 
   if (rikey->id == 0x6972) {   /* Is it extended 'ri'-block? */
-#if EXNDEBUG
     dprintf("%d , %d\n",*countri,*count);
-#endif
     if (*countri < 0 || *countri >= rikey->no_lis) { /* End of ri's? */
       return(0);
     }
@@ -762,9 +758,7 @@ int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex
     }
 
     /* Check if current li/lf is exhausted */
-#if EXNDEBUG
     dprintf("likey->no_keys = %d\n",likey->no_keys);
-#endif
     if (*count >= likey->no_keys-1) { /* Last legal entry in li list? */
       (*countri)++;  /* Bump up ri count so we take next ri entry next time */
       (*count) = -1;  /* Reset li traverse counter for next round, not used later here */
