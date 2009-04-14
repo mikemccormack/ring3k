@@ -2,6 +2,7 @@
 #include <QTreeView>
 #include <QAbstractItemModel>
 #include <QList>
+#include <qstring.h>
 #include <assert.h>
 #include "ntreg.h"
 
@@ -13,17 +14,19 @@ class RegistryItem
 	bool enumerated;
 	QList<RegistryItem*> subkeys;
 public:
-	RegistryItem( struct hive *h, RegistryItem* p, const char *n );
-	QString* getPath();
+	RegistryItem( struct hive *h, RegistryItem* p, const QString& n );
+	~RegistryItem();
+	QString getPath() const;
 	RegistryItem* getParent();
 	RegistryItem* getChild( int n );
 	int getSubkeyCount();
 	const QString& getName() const;
+	int getNumber() const;
 protected:
 	void enumerateChildren();
 };
 
-RegistryItem::RegistryItem( struct hive *h, RegistryItem* p, const char *n ) :
+RegistryItem::RegistryItem( struct hive *h, RegistryItem* p, const QString& n ) :
 	hive( h ),
 	parent( p ),
 	name( n ),
@@ -31,17 +34,23 @@ RegistryItem::RegistryItem( struct hive *h, RegistryItem* p, const char *n ) :
 {
 }
 
-QString* RegistryItem::getPath()
+RegistryItem::~RegistryItem()
 {
-	QString* path;
+}
+
+QString RegistryItem::getPath() const
+{
+	QString path;
 	if (parent)
 	{
 		path = parent->getPath();
-		path->append( name );
-		path->append( "\\" );
+		path.append( name );
+		path.append( "\\" );
 	}
 	else
-		path = new QString( name );
+	{
+		path = name;
+	}
 	return path;
 }
 
@@ -56,18 +65,22 @@ void RegistryItem::enumerateChildren()
 		return;
 
 	struct ex_data key;
-	char *path = getPath()->toUtf8().data();
+	memset( &key, 0, sizeof key );
+	QString path = getPath();
+	char *utf8_path = strdup(path.toUtf8().data());
 	int i = 0;
 	while (1)
 	{
-		int r = nk_get_subkey( hive, path, 0, i, &key );
+		int r = nk_get_subkey( hive, utf8_path, 0, i, &key );
 		if (r < 0)
 			break;
-		fprintf(stderr, "enumerateChildren: %s\n", key.name);
-		RegistryItem* item = new RegistryItem( hive, this, key.name );
+		QString kn( key.name );
+		RegistryItem* item = new RegistryItem( hive, this, kn );
+		//free( key.name );
 		subkeys.append( item );
 		i++;
 	}
+	free( utf8_path );
 	enumerated = true;
 }
 
@@ -89,51 +102,98 @@ const QString& RegistryItem::getName() const
 	return name;
 }
 
-class RegistryItemModel : public QAbstractListModel
+int RegistryItem::getNumber() const
+{
+	if (!parent)
+		return 0;
+	return parent->subkeys.lastIndexOf( const_cast<RegistryItem*>(this) );
+}
+
+class RegistryItemModel : public QAbstractItemModel
 {
 	struct hive *hive;
 	RegistryItem *root;
 
 public:
 	RegistryItemModel(RegistryItem* root, struct hive *h);
+	virtual Qt::ItemFlags flags(const QModelIndex &index) const;
 	virtual QModelIndex index(int,int,const QModelIndex&) const;
 	virtual int rowCount(const QModelIndex& index) const;
+	virtual int columnCount(const QModelIndex& index) const;
 	virtual QVariant data(const QModelIndex&, int) const;
-public:
-	int enum_func( struct nk_key *key );
+	virtual QModelIndex parent(const QModelIndex & index) const;
+	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const;
 };
 
 RegistryItemModel::RegistryItemModel(RegistryItem* r, struct hive *h) :
 	hive( h ),
 	root( r )
 {
-	fprintf(stderr, "RegistryItemModel::RegistryItemModel\n");
+}
+
+Qt::ItemFlags RegistryItemModel::flags(const QModelIndex &index) const
+{
+	if (!index.isValid())
+		return 0;
+
+	return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}
+
+QVariant RegistryItemModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+	if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+		return "registry";
+	return QVariant();
 }
 
 QModelIndex RegistryItemModel::index(int row, int column, const QModelIndex& parent) const
 {
-	fprintf(stderr, "RegistryItemModel::index "
-		"%d, %d\n", row, column);
+	if (!hasIndex(row, column, parent))
+		return QModelIndex();
 
-	RegistryItem* parentItem;
+	RegistryItem *parentItem, *item;
 	if (!parent.isValid())
 		parentItem = root;
 	else
 		parentItem = static_cast<RegistryItem*>( parent.internalPointer() );
 
-	RegistryItem *child = parentItem->getChild( row );
-	if (!child)
+	item = parentItem->getChild( row );
+
+	if (!item) return QModelIndex();
+
+	assert( row == item->getNumber());
+
+	return createIndex( row, column, item );
+}
+
+QModelIndex RegistryItemModel::parent(const QModelIndex &index) const
+{
+	if (!index.isValid())
+		return QModelIndex();
+	RegistryItem* item = static_cast<RegistryItem*>( index.internalPointer() );
+	RegistryItem* parent = item->getParent();
+	if (parent == root)
 		return QModelIndex();
 
-	return createIndex( row, column, child );
+	return createIndex( parent->getNumber(), 0, parent );
+}
+
+int RegistryItemModel::columnCount(const QModelIndex& parent) const
+{
+	if (!parent.isValid())
+		return 1;
+
+	RegistryItem* parentItem = static_cast<RegistryItem*>( parent.internalPointer() );
+	if (parentItem->getSubkeyCount())
+		return 1;
+	else
+		return 0;
 }
 
 int RegistryItemModel::rowCount(const QModelIndex& parent) const
 {
 	if (parent.column()>0)
 		return 0;
-	fprintf(stderr, "RegistryItemModel::rowCount "
-		"%d, %d\n", parent.row(), parent.column());
 
 	RegistryItem* parentItem;
 	if (!parent.isValid())
@@ -150,8 +210,6 @@ QVariant RegistryItemModel::data(const QModelIndex& index, int role) const
 		return QVariant();
 	if (role != Qt::DisplayRole)
 		return QVariant();
-	fprintf(stderr, "RegistryItemModel::data "
-		"%d, %d\n", index.row(), index.column());
 
 	RegistryItem* item = static_cast<RegistryItem*>( index.internalPointer() );
 	return item->getName();
@@ -167,9 +225,9 @@ int main( int argc, char **argv )
 		return 1;
 	}
 
+	struct hive *hive = 0;
 	const char *filename = argv[1];
 
-	struct hive *hive;
 	hive = open_hive(filename, HMODE_RO);
 	if (!hive)
 	{
@@ -177,14 +235,14 @@ int main( int argc, char **argv )
 		return 1;
 	}
 
-	//nk_ls( hive, "\\", 0, 0);
-	RegistryItem* rootItem = new RegistryItem( hive, NULL, "" );
+	QString kn( "\\" );
+	RegistryItem *rootItem = new RegistryItem( hive, NULL, kn );
 
 	RegistryItemModel model(rootItem, hive);
+
 	QTreeView keylist;
-	keylist.resize(320, 200);
-	keylist.setHeader( 0 );
 	keylist.setModel( &model );
+	keylist.setWindowTitle(QObject::tr("Registry editor"));
 	keylist.show();
 
 	return app.exec();
