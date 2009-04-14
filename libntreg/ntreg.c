@@ -1134,7 +1134,7 @@ int nk_get_subkey(struct hive *hdesc, const char *path, int vofs, int keyno, str
     return r;
 
   if (keyno < 0)
-    return -1;
+    return r;
 
   nkofs += 4;
   key = (struct nk_key *)(hdesc->buffer + nkofs);
@@ -1143,15 +1143,13 @@ int nk_get_subkey(struct hive *hdesc, const char *path, int vofs, int keyno, str
   if (key->no_subkeys)
   {
     int count = 0, countri = 0;
-    struct ex_data ex;
 
-    while ((ex_next_n(hdesc, nkofs, &count, &countri, &ex) > 0)) {
+    while ((ex_next_n(hdesc, nkofs, &count, &countri, out) > 0)) {
       if (keyno == 0) {
-        memcpy( out, &ex, sizeof ex );
         r = 0;
         break;
       }
-      free(ex.name);
+      free(out->name);
       keyno--;
     }
   }
