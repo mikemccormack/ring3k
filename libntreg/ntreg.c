@@ -760,7 +760,7 @@ int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex
     if (newnkkey->len_name <= 0) {
       dprintf("ex_next: nk at 0x%0x has no name!\n",newnkofs);
     } else {
-      sptr->name = (char *)malloc(newnkkey->len_name+1);
+      sptr->name = malloc(newnkkey->len_name+1);
       if (!sptr->name) {
 	dprintf("FATAL! ex_next: malloc() failed! Out of memory?\n");
 	abort();
@@ -2149,7 +2149,7 @@ char * convert_string(void *string, int len)
 {
     int i, k;
     int reallen = len / 2;
-    char *cstring = (char *)malloc(reallen);
+    char *cstring = malloc(reallen);
 
     for(i = 0, k = 0; i < len; i += 2, k++)
     {
