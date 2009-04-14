@@ -642,16 +642,12 @@ int free_block(struct hive *hdesc, int blk)
   nextsz = 0;
   if (next-pofs < (p->ofs_next - HBIN_ENDFILL) ) nextsz = get_int(hdesc->buffer+next);
 
-#if 0
   dprintf("offset prev : %x , blk: %x , next: %x\n",prev,blk,next);
   dprintf("size   prev : %x , blk: %x , next: %x\n",prevsz,size,nextsz);
-#endif
 
   /* Now check if next block is free, if so merge it with the one to be freed */
   if ( nextsz > 0) {
-#if 0
     dprintf("Swallow next\n");
-#endif
     size += nextsz;   /* Swallow it in current block */
     hdesc->useblk--;
     hdesc->usetot -= 4;
@@ -670,9 +666,7 @@ int free_block(struct hive *hdesc, int blk)
 
   /* Check if previous block is also free, if so, merge.. */
   if (prevsz > 0) {
-#if 0
     dprintf("Swallow prev\n");
-#endif
     hdesc->usetot -= prevsz;
     hdesc->unusetot += prevsz;
     prevsz += size;
@@ -1234,9 +1228,7 @@ int fill_block(struct hive *hdesc, int ofs, void *data, int size)
   blksize = get_int(hdesc->buffer + ofs);
   blksize = -blksize;
 
-#if 0
   dprintf("fill_block: ofs = %x - %x, size = %x, blksize = %x\n",ofs,ofs+size,size,blksize);
-#endif
   /*  if (blksize < size || ( (ofs & 0xfffff000) != ((ofs+size) & 0xfffff000) )) { */
   assert (blksize >= size);
 
@@ -1652,9 +1644,7 @@ struct nk_key *add_key(struct hive *hdesc, int nkofs, const char *name)
 	  onk = (struct nk_key *)(onkofs + hdesc->buffer + 0x1004);
 	  if (slot == -1) {
 
-#if 0
 	    dprintf("add_key: cmp <%s> with <%s>\n",name,onk->keyname);
-#endif
 	    cmp = strncasecmp(name, onk->keyname, (namlen > onk->len_name) ? namlen : onk->len_name);
 	    if (!cmp) {
 	      dprintf("add_key: key %s already exists!\n",name);
@@ -2036,14 +2026,10 @@ void rdel_keys(struct hive *hdesc, const char *path, int vofs)
 
   assert (key->id == 0x6b6e);
 
-#if 0
   dprintf("Node has %d subkeys and %d values\n",key->no_subkeys,key->no_values);
-#endif
   if (key->no_subkeys) {
     while ((ex_next_n(hdesc, nkofs, &count, &countri, &ex) > 0)) {
-#if 0
       dprintf("%s\n",ex.name);
-#endif
       rdel_keys(hdesc, ex.name, nkofs);
       count = 0;
       countri = 0;
@@ -2089,10 +2075,8 @@ struct keyval *get_class(struct hive *hdesc,
   dofs = key->ofs_classnam;
   classdata = (void *)(hdesc->buffer + dofs + 0x1004);
 
-#if 0
   dprintf("get_class: len_classnam = %d\n",clen);
   dprintf("get_class: ofs_classnam = 0x%x\n",dofs);
-#endif
 
   data = malloc(sizeof(struct keyval) + clen);
   data->len = clen;
