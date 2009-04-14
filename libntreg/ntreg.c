@@ -818,13 +818,9 @@ int ex_next_v(struct hive *hdesc, int nkofs, int *count, struct vex_data *sptr)
   sptr->name = 0;
   sptr->size = (vkkey->len_data & 0x7fffffff);
 
-  if (vkkey->len_name >0) {
-    sptr->name = malloc(sizeof(char) *(vkkey->len_name+1));
-    memcpy(sptr->name,vkkey->keyname,vkkey->len_name);
-    sptr->name[vkkey->len_name] = 0;
-  } else {
-    sptr->name = strdup("@");
-  }
+  sptr->name = malloc(sizeof(char) *(vkkey->len_name+1));
+  memcpy(sptr->name,vkkey->keyname,vkkey->len_name);
+  sptr->name[vkkey->len_name] = 0;
 
   sptr->type = vkkey->val_type;
   if (sptr->size) {
@@ -907,7 +903,7 @@ int vlist_find(struct hive *hdesc, int vlistofs, int numval, const char *name, i
   for (i = 0; i < numval; i++) {
     vkofs = vlistkey[i] + 0x1004;
     vkkey = (struct vk_key *)(hdesc->buffer + vkofs);
-    if (vkkey->len_name == 0 && *name == '@') { /* @ is alias for nameless value */
+    if (vkkey->len_name == 0) {
       return(i);
     }
     if ( !(type & TPF_EXACT) || vkkey->len_name == len ) {
@@ -1322,7 +1318,6 @@ struct vk_key *add_value(struct hive *hdesc, int nkofs, const char *name, int ty
   struct nk_key *nk;
   int oldvlist = 0, newvlist, newvkofs;
   struct vk_key *newvkkey;
-  const char *blank="";
 
   if (!name || !*name) return(NULL);
 
@@ -1337,8 +1332,6 @@ struct vk_key *add_value(struct hive *hdesc, int nkofs, const char *name, int ty
     dprintf("add_value: value %s already exists\n",name);
     return(NULL);
   }
-
-  if (!strcmp(name,"@")) name = blank;
 
   if (nk->no_values) oldvlist = nk->ofs_vallist;
 
@@ -1463,11 +1456,8 @@ int del_value(struct hive *hdesc, int nkofs, const char *name, int exact)
   int vlistofs, slot, o, n, vkofs, newlistofs;
   int32_t *vlistkey, *tmplist, *newlistkey;
   struct nk_key *nk;
-  const char *blank="";
 
   if (!name || !*name) return(1);
-
-  if (!strcmp(name,"@")) name = blank;
 
   nk = (struct nk_key *)(hdesc->buffer + nkofs);
   if (nk->id != 0x6b6e) {
