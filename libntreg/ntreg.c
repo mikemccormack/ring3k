@@ -2546,7 +2546,6 @@ struct hive *open_hive(const char *filename, int mode)
   struct nk_key *nk;
   struct ri_key *rikey;
   int verbose = (mode & HMODE_VERBOSE);
-  int trace   = (mode & HMODE_TRACE);
 
   hdesc = malloc(sizeof (struct hive));
 
@@ -2640,46 +2639,29 @@ struct hive *open_hive(const char *filename, int mode)
 
 
    while (pofs < hdesc->size) {
-#ifdef LOAD_DEBUG
-          if (trace) hexdump(hdesc->buffer,pofs,pofs+0x20,1);
-#endif
      p = (struct hbin_page *)(hdesc->buffer + pofs);
      if (p->id != 0x6E696268) {
        printf("Page at 0x%x is not 'hbin', assuming file contains garbage at end\n",pofs);
        break;
      }
      hdesc->pages++;
-#ifdef LOAD_DEBUG
-     if (trace) printf("\n###### Page at 0x%0lx has size 0x%0lx, next at 0x%0lx ######\n",pofs,p->len_page,p->ofs_next);
-#endif
      if (p->ofs_next == 0) {
-#ifdef LOAD_DEBUG
-       if (trace) printf("openhive debug: bailing out.. pagesize zero!\n");
-#endif
        return(hdesc);
      }
-#if 0
-     if (p->len_page != p->ofs_next) {
-#ifdef LOAD_DEBUG
-       if (trace) printf("openhive debug: len & ofs not same. HASTA!\n");
-#endif
-       exit(0);
+
+     if (0) {
+       vofs = pofs + 0x20; /* Skip page header */
+       while (vofs-pofs < p->ofs_next && vofs < hdesc->size) {
+         vofs += parse_block(hdesc,vofs,1);
+       }
      }
-#endif
-
-
-     vofs = pofs + 0x20; /* Skip page header */
-#if 1
-     while (vofs-pofs < p->ofs_next && vofs < hdesc->size) {
-       vofs += parse_block(hdesc,vofs,trace);
-
-     }
-#endif
      pofs += p->ofs_next;
    }
+   /*
    printf("File size %d [%x] bytes, containing %d pages (+ 1 headerpage)\n",hdesc->size,hdesc->size, hdesc->pages);
    printf("Used for data: %d/%d blocks/bytes, unused: %d/%d blocks/bytes.\n\n",
 	  hdesc->useblk,hdesc->usetot,hdesc->unuseblk,hdesc->unusetot);
+   */
 
 
    /* So, let's guess what kind of hive this is, based on keys in its root */
@@ -2692,6 +2674,5 @@ struct hive *open_hive(const char *filename, int mode)
    if (verbose) printf("Type of hive guessed to be: %d\n",hdesc->type);
 
   return(hdesc);
-
 }
 
