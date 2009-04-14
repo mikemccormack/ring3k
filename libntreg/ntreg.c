@@ -54,9 +54,6 @@
 
 #include "ntreg.h"
 
-/* Set to abort() and debug on more critical errors */
-#define DOCORE 1
-
 /* Fill blocks with zeroes when allocating and deallocating */
 #define ZEROFILL      1
 
@@ -1244,9 +1241,6 @@ void *get_val_data(struct hive *hdesc, int vofs, const char *path, int val_type,
 
   if (val_type && vkkey->val_type && (vkkey->val_type) != val_type) {
     dprintf("Value <%s> is not of correct type!\n",path);
-#if DOCORE
-    abort();
-#endif
     return NULL;
   }
 
