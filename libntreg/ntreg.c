@@ -103,6 +103,16 @@ int get_int( char *array )
 		   ((array[3]<<24)&0xff000000));
 }
 
+char *alloc_string( const char *data, int len )
+{
+	char *ret = malloc( len + 1 );
+	if (ret)
+	{
+		memcpy( ret, data, len );
+		ret[len] = 0;
+	}
+	return ret;
+}
 
 /* ========================================================================= */
 
@@ -760,13 +770,11 @@ int ex_next_n(struct hive *hdesc, int nkofs, int *count, int *countri, struct ex
     if (newnkkey->len_name <= 0) {
       dprintf("ex_next: nk at 0x%0x has no name!\n",newnkofs);
     } else {
-      sptr->name = malloc(newnkkey->len_name+1);
+      sptr->name = alloc_string( newnkkey->keyname,newnkkey->len_name );
       if (!sptr->name) {
-	dprintf("FATAL! ex_next: malloc() failed! Out of memory?\n");
+	dprintf("FATAL! ex_next: alloc_string() failed! Out of memory?\n");
 	abort();
       }
-      strncpy(sptr->name,newnkkey->keyname,newnkkey->len_name);
-      sptr->name[newnkkey->len_name] = 0;
     }
   } /* if */
   (*count)++;
@@ -815,13 +823,9 @@ int ex_next_v(struct hive *hdesc, int nkofs, int *count, struct vex_data *sptr)
 
   sptr->vk = vkkey;
   sptr->vkoffs = vkofs;
-  sptr->name = 0;
   sptr->size = (vkkey->len_data & 0x7fffffff);
 
-  sptr->name = malloc(sizeof(char) *(vkkey->len_name+1));
-  memcpy(sptr->name,vkkey->keyname,vkkey->len_name);
-  sptr->name[vkkey->len_name] = 0;
-
+  sptr->name = alloc_string( vkkey->keyname, vkkey->len_name );
   sptr->type = vkkey->val_type;
   if (sptr->size) {
     if (vkkey->val_type == REG_DWORD) {
