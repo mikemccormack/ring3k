@@ -13,8 +13,10 @@ OBJECTS = $(SOURCE:%.cpp=%.o)
 
 TARGET = regedit
 
-$(TARGET): $(OBJECTS)
-	$(CXX) -o $@ $^ ../libntreg/libntreg.a $(QTCORELIBS) $(QTGUILIBS)
+NTREGLIB = ../libntreg/libntreg.a
+
+$(TARGET): $(OBJECTS) $(NTREGLIB)
+	$(CXX) -o $@ $^ $(QTCORELIBS) $(QTGUILIBS)
 
 clean:
 	rm -f $(TARGET) $(OBJECTS)
