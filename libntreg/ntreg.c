@@ -1408,12 +1408,12 @@ int alloc_val_data(struct hive *hdesc, int vofs, const char *path, int size,int 
  * returns: 0 err, >0 offset to value metadata
  */
 
-struct vk_key *add_value(struct hive *hdesc, int nkofs, char *name, int type)
+struct vk_key *add_value(struct hive *hdesc, int nkofs, const char *name, int type)
 {
   struct nk_key *nk;
   int oldvlist = 0, newvlist, newvkofs;
   struct vk_key *newvkkey;
-  char *blank="";
+  const char *blank="";
 
   if (!name || !*name) return(NULL);
 
