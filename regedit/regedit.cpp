@@ -2,6 +2,8 @@
 #include <QTreeView>
 #include <QAbstractItemModel>
 #include <QList>
+#include <QPushButton>
+#include <QHBoxLayout>
 #include <qstring.h>
 #include <assert.h>
 #include "ntreg.h"
@@ -240,10 +242,20 @@ int main( int argc, char **argv )
 
 	RegistryItemModel model(rootItem, hive);
 
-	QTreeView keylist;
-	keylist.setModel( &model );
-	keylist.setWindowTitle(QObject::tr("Registry editor"));
-	keylist.show();
+	QTreeView *keylist = new QTreeView;
+	keylist->setModel( &model );
+	keylist->setWindowTitle(QObject::tr("Registry editor"));
+
+	QTreeView *valuelist = new QTreeView;
+
+	QWidget *window = new QWidget;
+	QHBoxLayout *layout = new QHBoxLayout;
+
+	layout->addWidget( keylist );
+	layout->addWidget( valuelist );
+
+	window->setLayout( layout );
+	window->show();
 
 	return app.exec();
 }
