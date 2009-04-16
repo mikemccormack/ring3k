@@ -20,14 +20,15 @@
 
 #include <QApplication>
 #include <QTreeView>
+#include <QListView>
 #include <QAbstractItemModel>
 #include <QList>
-#include <QPushButton>
 #include <QHBoxLayout>
 #include <qstring.h>
 #include <assert.h>
 #include "registryitem.h"
 #include "registrymodel.h"
+#include "registryvalue.h"
 #include "ntreg.h"
 
 int main( int argc, char **argv )
@@ -53,13 +54,16 @@ int main( int argc, char **argv )
 	QString kn( "\\" );
 	RegistryItem *rootItem = new RegistryItem( hive, NULL, kn );
 
-	RegistryItemModel model(rootItem, hive);
+	RegistryItemModel *keyModel = new RegistryItemModel( rootItem, hive );
 
 	QTreeView *keylist = new QTreeView;
-	keylist->setModel( &model );
+	keylist->setModel( keyModel );
 	keylist->setWindowTitle(QObject::tr("Registry editor"));
 
-	QTreeView *valuelist = new QTreeView;
+	RegistryValueModel *valueModel = new RegistryValueModel;
+
+	QListView *valuelist = new QListView;
+	valuelist->setModel( valueModel );
 
 	QWidget *window = new QWidget;
 	QHBoxLayout *layout = new QHBoxLayout;
