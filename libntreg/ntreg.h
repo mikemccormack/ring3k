@@ -135,7 +135,7 @@ struct lf_hash {
 struct lh_hash {
 	int32_t ofs_nk;    /* 0x0000	D-Word	Offset of corresponding "nk"-Record  */
 	int32_t hash;      /* 0x0004	D-Word	ASCII: the first 4 characters of the key-name,  */
-} lh_hash[1];
+};
 
 struct lf_key {
 
