@@ -1,9 +1,8 @@
-#include <QApplication>
-#include <QTreeView>
-#include <QAbstractItemModel>
+
+#ifndef __REGEDIT_REGISTRYITEM_H__
+#define __REGEDIT_REGISTRYITEM_H__
+
 #include <QList>
-#include <QPushButton>
-#include <QHBoxLayout>
 #include <qstring.h>
 #include <assert.h>
 #include "ntreg.h"
@@ -28,3 +27,4 @@ protected:
 	void enumerateChildren();
 };
 
+#endif // __REGEDIT_REGISTRYITEM_H__
