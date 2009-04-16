@@ -47,6 +47,10 @@ while(<IN>)
 		$type = "C";
 	} elsif ($file =~ /Makefile\.in$/ ) {
 		$type = "makefile";
+	} elsif ($file =~ /Make\.rules\.in$/ ) {
+		$type = "makefile";
+	} elsif ($file =~ /\.pro$/ ) {
+		$type = "makefile";
 	} elsif ($file =~ /^configure.ac$/ ) {
 		$type = "autoconf";
 	} elsif ($file =~ /\.xml\.in$/ ) {

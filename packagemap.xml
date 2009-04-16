@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fileset>
+ <path>Make.rules.in</path>
+ <type>makefile</type>
  <path>Makefile.in</path>
  <type>makefile</type>
  <path>configure.ac</path>
@@ -278,6 +280,12 @@
  <type>C</type>
  <path>libmspack/szddd.c</path>
  <type>C</type>
+ <path>libntreg/Makefile.in</path>
+ <type>makefile</type>
+ <path>libntreg/ntreg.c</path>
+ <type>C</type>
+ <path>libntreg/ntreg.h</path>
+ <type>C</type>
  <path>libudis86/Makefile.in</path>
  <type>makefile</type>
  <path>libudis86/decode.c</path>
@@ -308,6 +316,54 @@
  <type>C</type>
  <path>packagemap.xml</path>
  <type>xml</type>
+ <path>programs/Makefile.in</path>
+ <type>makefile</type>
+ <path>programs/minitris/Makefile.in</path>
+ <type>makefile</type>
+ <path>programs/minitris/minitris.c</path>
+ <type>C</type>
+ <path>programs/minshell/Makefile.in</path>
+ <type>makefile</type>
+ <path>programs/minshell/minshell.c</path>
+ <type>C</type>
+ <path>programs/pixels/Makefile.in</path>
+ <type>makefile</type>
+ <path>programs/pixels/pixels.c</path>
+ <type>C</type>
+ <path>programs/winemine/Makefile.in</path>
+ <type>makefile</type>
+ <path>programs/winemine/dialog.c</path>
+ <type>C</type>
+ <path>programs/winemine/main.c</path>
+ <type>C</type>
+ <path>programs/winemine/main.h</path>
+ <type>C</type>
+ <path>programs/winemine/resource.h</path>
+ <type>C</type>
+ <path>programs/winemine/winemine.svg</path>
+ <type>svg</type>
+ <path>programs/winlogon/Makefile.in</path>
+ <type>makefile</type>
+ <path>programs/winlogon/winlogon.c</path>
+ <type>C</type>
+ <path>regedit/Makefile.in</path>
+ <type>makefile</type>
+ <path>regedit/regedit.cpp</path>
+ <type>C++</type>
+ <path>regedit/regedit.pro</path>
+ <type>makefile</type>
+ <path>regedit/registryitem.cpp</path>
+ <type>C++</type>
+ <path>regedit/registryitem.h</path>
+ <type>C</type>
+ <path>regedit/registrymodel.cpp</path>
+ <type>C++</type>
+ <path>regedit/registrymodel.h</path>
+ <type>C</type>
+ <path>regedit/registryvalue.cpp</path>
+ <type>C++</type>
+ <path>regedit/registryvalue.h</path>
+ <type>C</type>
  <path>ring3k-setup.in</path>
  <type>shell</type>
  <path>ring3k.in</path>
@@ -339,6 +395,8 @@
  <path>tests/hostnt.c</path>
  <type>C</type>
  <path>tests/job.c</path>
+ <type>C</type>
+ <path>tests/key.c</path>
  <type>C</type>
  <path>tests/log.c</path>
  <type>C</type>
@@ -396,17 +454,11 @@
  <type>makefile</type>
  <path>tools/advapi32.c</path>
  <type>C</type>
- <path>tools/ccmd.c</path>
+ <path>tools/analogclock.c</path>
  <type>C</type>
  <path>tools/console.c</path>
  <type>C</type>
  <path>tools/dumphandles.c</path>
- <type>C</type>
- <path>tools/hello.c</path>
- <type>C</type>
- <path>tools/minitris.c</path>
- <type>C</type>
- <path>tools/pixels.c</path>
  <type>C</type>
  <path>tools/qdf.c</path>
  <type>C</type>
@@ -418,16 +470,4 @@
  <type>makefile</type>
  <path>unpack/unpack.c</path>
  <type>C</type>
- <path>winemine/Makefile.in</path>
- <type>makefile</type>
- <path>winemine/dialog.c</path>
- <type>C</type>
- <path>winemine/main.c</path>
- <type>C</type>
- <path>winemine/main.h</path>
- <type>C</type>
- <path>winemine/resource.h</path>
- <type>C</type>
- <path>winemine/winemine.svg</path>
- <type>svg</type>
 </fileset>
