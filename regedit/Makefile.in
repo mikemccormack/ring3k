@@ -1,14 +1,16 @@
 
-QT_QMAKE = qmake
+QT_QMAKE = @QT_QMAKE@
 MAKE = make
+RM = rm -f
 
 .PHONY: all clean install uninstall
 
 all: Makefile.qmake
-	$(MAKE) -f $<
+	if test -f $< ;then $(MAKE) -f $< ; fi
 
 clean: Makefile.qmake
-	$(MAKE) -f $< $@
+	if test -f $< ;then $(MAKE) -f $< $@; fi
+	$(RM) Makefile.qmake
 
 Makefile.qmake: regedit.pro
 	$(QT_QMAKE) -makefile -o $@ $<
