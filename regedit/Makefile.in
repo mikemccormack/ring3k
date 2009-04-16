@@ -1,23 +1,18 @@
 
-QTCOREINCL = @QTCOREINCL@
-QTGUIINCL = @QTGUIINCL@
-QTCORELIBS = @QTCORELIBS@
-QTGUILIBS = @QTGUILIBS@
+QT_QMAKE = qmake
+MAKE = make
 
-CXXFLAGS = -Wall -O2 $(QTCOREINCL) $(QTGUIINCL) -I../libntreg
+.PHONY: all clean install uninstall
 
-SOURCE = \
-	regedit.cpp \
-	registryitem.cpp
+all: Makefile.qmake
+	$(MAKE) -f $<
 
-OBJECTS = $(SOURCE:%.cpp=%.o)
+clean: Makefile.qmake
+	$(MAKE) -f $< $@
 
-TARGET = regedit
+Makefile.qmake: regedit.pro
+	$(QT_QMAKE) -makefile -o $@ $<
 
-NTREGLIB = ../libntreg/libntreg.a
+install:
+uninstall:
 
-$(TARGET): $(OBJECTS) $(NTREGLIB)
-	$(CXX) -o $@ $^ $(QTCORELIBS) $(QTGUILIBS)
-
-clean:
-	rm -f $(TARGET) $(OBJECTS)
