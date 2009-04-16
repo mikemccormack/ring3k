@@ -1,9 +1,12 @@
 
-HEADERS += registryitem.h
+HEADERS += \
+	registryitem.h \
+	registrymodel.h
 
 SOURCES += \
 	regedit.cpp \
-	registryitem.cpp
+	registryitem.cpp \
+	registrymodel.cpp
 
 INCLUDEPATH += ../libntreg
 
