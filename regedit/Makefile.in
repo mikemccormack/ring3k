@@ -7,7 +7,8 @@ QTGUILIBS = @QTGUILIBS@
 CXXFLAGS = -Wall -O2 $(QTCOREINCL) $(QTGUIINCL) -I../libntreg
 
 SOURCE = \
-	regedit.cpp
+	regedit.cpp \
+	registryitem.cpp
 
 OBJECTS = $(SOURCE:%.cpp=%.o)
 
