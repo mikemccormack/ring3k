@@ -1,3 +1,4 @@
 Makefile.qmake
 regedit
 *.o
+moc_*.cpp
