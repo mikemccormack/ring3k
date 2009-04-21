@@ -1,11 +1,14 @@
 
 HEADERS += \
+	registryeditor.h \
 	registryitem.h \
 	registrymodel.h \
+	registrytreeview.h \
 	registryvalue.h
 
 SOURCES += \
-	regedit.cpp \
+	main.cpp \
+	registryeditor.cpp \
 	registryitem.cpp \
 	registrymodel.cpp \
 	registryvalue.cpp

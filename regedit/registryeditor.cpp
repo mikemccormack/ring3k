@@ -29,34 +29,25 @@
 #include "registryitem.h"
 #include "registrymodel.h"
 #include "registryvalue.h"
+#include "registryeditor.h"
+#include "registrytreeview.h"
 #include "ntreg.h"
 
-int main( int argc, char **argv )
+void RegistryTreeView::currentChanged ( const QModelIndex & /*current*/, const QModelIndex & /*previous*/ )
 {
-	QApplication app(argc, argv);
+	fprintf(stderr, "currentChanged\n");
+	onSelectionChanged();
+}
 
-	if (argc < 2)
-	{
-		fprintf(stderr, "Need the name of registry hive\n");
-		return 1;
-	}
-
-	struct hive *hive = 0;
-	const char *filename = argv[1];
-
-	hive = open_hive(filename, HMODE_RO);
-	if (!hive)
-	{
-		fprintf(stderr, "Failed to open hive\n");
-		return 1;
-	}
-
+RegistryEditor::RegistryEditor( struct hive* h ) :
+	hive( h )
+{
 	QString kn( "\\" );
 	RegistryItem *rootItem = new RegistryItem( hive, NULL, kn );
 
 	RegistryItemModel *keyModel = new RegistryItemModel( rootItem, hive );
 
-	QTreeView *keylist = new QTreeView;
+	RegistryTreeView *keylist = new RegistryTreeView;
 	keylist->setModel( keyModel );
 	keylist->setWindowTitle(QObject::tr("Registry editor"));
 
@@ -65,14 +56,19 @@ int main( int argc, char **argv )
 	QListView *valuelist = new QListView;
 	valuelist->setModel( valueModel );
 
-	QWidget *window = new QWidget;
 	QHBoxLayout *layout = new QHBoxLayout;
+
+	bool r = connect( keylist, SIGNAL(onSelectionChanged()), this, SLOT(key_changed()));
+	if (!r)
+		fprintf(stderr, "connect failed\n");
 
 	layout->addWidget( keylist );
 	layout->addWidget( valuelist );
 
-	window->setLayout( layout );
-	window->show();
+	setLayout( layout );
+}
 
-	return app.exec();
+void RegistryEditor::key_changed()
+{
+	fprintf(stderr,"key_changed\n");
 }
