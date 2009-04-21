@@ -10,7 +10,6 @@ all: Makefile.qmake
 
 clean: Makefile.qmake
 	if test -f $< ;then $(MAKE) -f $< $@; fi
-	$(RM) Makefile.qmake
 
 Makefile.qmake: regedit.pro
 	$(QT_QMAKE) -makefile -o $@ $<
