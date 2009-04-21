@@ -28,11 +28,10 @@
 
 class RegistryItemModel : public QAbstractItemModel
 {
-	struct hive *hive;
-	RegistryItem *root;
-
+	Q_OBJECT
 public:
 	RegistryItemModel(RegistryItem* root, struct hive *h);
+	~RegistryItemModel() {}
 	virtual Qt::ItemFlags flags(const QModelIndex &index) const;
 	virtual QModelIndex index(int,int,const QModelIndex&) const;
 	virtual int rowCount(const QModelIndex& index) const;
@@ -40,6 +39,9 @@ public:
 	virtual QVariant data(const QModelIndex&, int) const;
 	virtual QModelIndex parent(const QModelIndex & index) const;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const;
+private:
+	struct hive *hive;
+	RegistryItem *root;
 };
 
 #endif // __REGEDIT_REGISTRYMODEL_H__

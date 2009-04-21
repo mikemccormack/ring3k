@@ -25,6 +25,7 @@
 
 class RegistryValueModel : public QAbstractItemModel
 {
+	Q_OBJECT
 public:
 	RegistryValueModel();
 	virtual Qt::ItemFlags flags(const QModelIndex &index) const;
