@@ -23,9 +23,13 @@
 
 #include <QApplication>
 #include <QWidget>
+#include <QList>
+#include <QListView>
+#include <QHBoxLayout>
 #include "registryitem.h"
 #include "registrymodel.h"
 #include "registryvalue.h"
+#include "registrytreeview.h"
 #include "ntreg.h"
 
 class RegistryEditor : public QWidget
@@ -33,6 +37,12 @@ class RegistryEditor : public QWidget
 	Q_OBJECT;
 private:
 	struct hive *hive;
+	RegistryItem *rootItem;
+	RegistryItemModel *keyModel;
+	RegistryTreeView *keylist;
+	RegistryValueModel *valueModel;
+	QListView *valuelist;
+	QHBoxLayout *layout;
 public:
 	RegistryEditor( struct hive * h );
 protected slots:

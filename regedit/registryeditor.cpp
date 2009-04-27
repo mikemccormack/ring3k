@@ -22,16 +22,9 @@
 #include <QTreeView>
 #include <QListView>
 #include <QAbstractItemModel>
-#include <QList>
-#include <QHBoxLayout>
 #include <qstring.h>
 #include <assert.h>
-#include "registryitem.h"
-#include "registrymodel.h"
-#include "registryvalue.h"
 #include "registryeditor.h"
-#include "registrytreeview.h"
-#include "ntreg.h"
 
 void RegistryTreeView::currentChanged ( const QModelIndex & /*current*/, const QModelIndex & /*previous*/ )
 {
@@ -43,24 +36,24 @@ RegistryEditor::RegistryEditor( struct hive* h ) :
 	hive( h )
 {
 	QString kn( "\\" );
-	RegistryItem *rootItem = new RegistryItem( hive, NULL, kn );
 
-	RegistryItemModel *keyModel = new RegistryItemModel( rootItem, hive );
+	rootItem = new RegistryItem( hive, NULL, kn );
+	keyModel = new RegistryItemModel( rootItem, hive );
+	keylist = new RegistryTreeView;
 
-	RegistryTreeView *keylist = new RegistryTreeView;
 	keylist->setModel( keyModel );
 	keylist->setWindowTitle(QObject::tr("Registry editor"));
 
-	RegistryValueModel *valueModel = new RegistryValueModel;
+	valueModel = new RegistryValueModel;
 
-	QListView *valuelist = new QListView;
+	valuelist = new QListView;
 	valuelist->setModel( valueModel );
 
-	QHBoxLayout *layout = new QHBoxLayout;
+	layout = new QHBoxLayout;
 
 	bool r = connect( keylist, SIGNAL(onSelectionChanged()), this, SLOT(key_changed()));
 	if (!r)
-		fprintf(stderr, "connect failed\n");
+		throw;
 
 	layout->addWidget( keylist );
 	layout->addWidget( valuelist );
