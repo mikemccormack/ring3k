@@ -11,6 +11,7 @@ SOURCES += \
 	registryeditor.cpp \
 	registryitem.cpp \
 	registrymodel.cpp \
+	registrytreeview.cpp \
 	registryvalue.cpp
 
 INCLUDEPATH += ../libntreg

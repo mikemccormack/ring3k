@@ -26,37 +26,9 @@
 #include <assert.h>
 #include "registryeditor.h"
 
-RegistryEditor::RegistryEditor( struct hive* h ) :
-	hive( h )
+void RegistryTreeView::currentChanged( const QModelIndex &current, const QModelIndex &previous )
 {
-	QString kn( "\\" );
-
-	rootItem = new RegistryItem( hive, NULL, kn );
-	keyModel = new RegistryItemModel( rootItem, hive );
-	keylist = new RegistryTreeView;
-
-	keylist->setModel( keyModel );
-	keylist->setWindowTitle(QObject::tr("Registry editor"));
-
-	valueModel = new RegistryValueModel;
-
-	valuelist = new QListView;
-	valuelist->setModel( valueModel );
-
-	layout = new QHBoxLayout;
-
-	bool r = connect( keylist, SIGNAL(onSelectionChanged(const QModelIndex&, const QModelIndex&)),
-			 this, SLOT(key_changed(const QModelIndex&, const QModelIndex&)));
-	if (!r)
-		throw;
-
-	layout->addWidget( keylist );
-	layout->addWidget( valuelist );
-
-	setLayout( layout );
+	fprintf(stderr, "currentChanged\n");
+	onSelectionChanged( current, previous );
 }
 
-void RegistryEditor::key_changed( const QModelIndex &current, const QModelIndex & /*previous*/ )
-{
-	fprintf(stderr,"key_changed %p\n", &current);
-}
