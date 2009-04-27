@@ -59,4 +59,8 @@ RegistryEditor::RegistryEditor( struct hive* h ) :
 void RegistryEditor::key_changed( const QModelIndex &current, const QModelIndex & /*previous*/ )
 {
 	fprintf(stderr,"key_changed %p\n", &current);
+	RegistryItem *item = static_cast<RegistryItem*>( current.internalPointer() );
+	QString path = item->getPath();
+	char *utf8_path = path.toUtf8().data();
+	fprintf(stderr, "path = %s\n", utf8_path);
 }
