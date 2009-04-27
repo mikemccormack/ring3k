@@ -29,7 +29,7 @@ class RegistryTreeView : public QTreeView
 public:
 	void currentChanged ( const QModelIndex & current, const QModelIndex & previous );
 signals:
-	virtual void onSelectionChanged();
+	virtual void onSelectionChanged(const QModelIndex& current, const QModelIndex& prev);
 };
 
 #endif // __REGEDIT_REGISTRYTREEVIEW_H__

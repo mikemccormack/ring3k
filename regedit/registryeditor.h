@@ -46,7 +46,7 @@ private:
 public:
 	RegistryEditor( struct hive * h );
 protected slots:
-	void key_changed();
+	void key_changed(const QModelIndex& current, const QModelIndex& prev);
 };
 
 #endif // __REGEDIT_REGISTRYEDITOR_H__

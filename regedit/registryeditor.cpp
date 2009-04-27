@@ -26,10 +26,10 @@
 #include <assert.h>
 #include "registryeditor.h"
 
-void RegistryTreeView::currentChanged ( const QModelIndex & /*current*/, const QModelIndex & /*previous*/ )
+void RegistryTreeView::currentChanged( const QModelIndex &current, const QModelIndex &previous )
 {
 	fprintf(stderr, "currentChanged\n");
-	onSelectionChanged();
+	onSelectionChanged( current, previous );
 }
 
 RegistryEditor::RegistryEditor( struct hive* h ) :
@@ -51,7 +51,7 @@ RegistryEditor::RegistryEditor( struct hive* h ) :
 
 	layout = new QHBoxLayout;
 
-	bool r = connect( keylist, SIGNAL(onSelectionChanged()), this, SLOT(key_changed()));
+	bool r = connect( keylist, SIGNAL(onSelectionChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(key_changed(const QModelIndex&, const QModelIndex&)));
 	if (!r)
 		throw;
 
@@ -61,7 +61,7 @@ RegistryEditor::RegistryEditor( struct hive* h ) :
 	setLayout( layout );
 }
 
-void RegistryEditor::key_changed()
+void RegistryEditor::key_changed( const QModelIndex &current, const QModelIndex & /*previous*/ )
 {
-	fprintf(stderr,"key_changed\n");
+	fprintf(stderr,"key_changed %p\n", &current);
 }
