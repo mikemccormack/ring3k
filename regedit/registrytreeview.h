@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#ifndef __REGEDIT_REGISTRYTREEVIEW_H__
+#define __REGEDIT_REGISTRYTREEVIEW_H__
+
 #include <QTreeView>
 
 class RegistryTreeView : public QTreeView
@@ -29,3 +32,4 @@ signals:
 	virtual void onSelectionChanged();
 };
 
+#endif // __REGEDIT_REGISTRYTREEVIEW_H__
