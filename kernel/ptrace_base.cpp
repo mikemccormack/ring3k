@@ -341,6 +341,12 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 			continue;
 		}
 
+		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGTRAP)
+		{
+			dprintf("got SIGTRAP\n");
+			continue;
+		}
+
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGALRM)
 			break;
 
@@ -355,6 +361,7 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 
 		if (WIFSTOPPED(status))
 		{
+			dprintf("stopped, signal %d\n", WEXITSTATUS(status));
 			exec->handle_breakpoint();
 			break;
 		}
