@@ -910,8 +910,25 @@ void thread_impl_t::handle_fault()
 
 void thread_impl_t::handle_breakpoint()
 {
-	fprintf(stderr,"stopped\n");
-	debugger();
+	if (option_debug)
+	{
+		debugger();
+		return;
+	}
+
+	// check there's really a breakpoint
+	unsigned char inst[1];
+	NTSTATUS r;
+	memset( inst, 0, sizeof inst );
+	r = copy_from_user( inst, (void*) ctx.Eip, 1 );
+	if (r == STATUS_SUCCESS && inst[0] == 0xcc)
+	{
+		debugger();
+	}
+	else
+	{
+		handle_user_segv();
+	}
 }
 
 thread_t::thread_t(process_t *p) :

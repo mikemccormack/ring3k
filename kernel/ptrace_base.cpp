@@ -223,9 +223,10 @@ int ptrace_address_space_impl::ptrace_run( PCONTEXT ctx, int single_step, LARGE_
 		die("set_thread_context failed\n");
 
 	/* run it */
-	r = ptrace( single_step ? PTRACE_SINGLESTEP : PTRACE_CONT, get_child_pid(), 0, 0 );
+	r = ptrace( (__ptrace_request) (single_step ? PTRACE_SYSEMU_SINGLESTEP : PTRACE_SYSEMU), get_child_pid(), 0, 0 );
+	dprintf("PTRACE_SYSCALL\n");
 	if (r<0)
-		die("PTRACE_CONT failed (%d)\n", errno);
+		die("PTRACE_CONT failed (%d) (PTRACE_SYSEMU not supported?)\n", errno);
 
 	/* wait until it needs our attention */
 	while (1)
@@ -344,6 +345,7 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGTRAP)
 		{
 			dprintf("got SIGTRAP\n");
+			exec->handle_fault();
 			continue;
 		}
 

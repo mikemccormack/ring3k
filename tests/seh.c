@@ -323,6 +323,41 @@ void test_outputdebugstring( void )
 		: : "a"( &rec), "b"(&ctx), "c"(&ctx.Eip) );
 }
 
+EXCEPTION_DISPOSITION NTAPI int80_handler(struct _EXCEPTION_RECORD *rec, void *frame, struct _CONTEXT *ctx, void* dispatch)
+{
+	// skip int80 below
+	ctx->Eip += 2;
+
+	// return the exception code
+	ctx->Ebx = rec->ExceptionCode;
+
+	return ExceptionContinueExecution;
+}
+
+void test_syscall( void )
+{
+	ULONG ret;
+
+	__asm__ __volatile__ (
+		"movl %%fs:0, %%eax\n\t"
+		"pushl %1\n\t"
+		"pushl %%eax\n\t"
+		"movl %%esp, %%fs:0\n\t"
+
+		// try make a linux system call
+		"movl $60, %%eax\n\t"
+		"movl $1, %%ebx\n\t"
+		"int $0x80\n\t"
+
+		"popl %%eax\n\t"
+		"movl %%eax, %%fs:0\n\t"
+		"popl %%eax\n\t"
+		 : "=b"(ret) : "r"(int80_handler) : "eax");
+
+	// check the exception code is correct
+	ok( ret == STATUS_ACCESS_VIOLATION, "wrong exception type %08lx\n", ret);
+}
+
 void NtProcessStartup( void )
 {
 	NTSTATUS r = 0;
@@ -334,6 +369,7 @@ void NtProcessStartup( void )
 	test_continue();
 	test_raise_exception();
 	test_apc();
+	test_syscall();
 
 	// doesn't match windows behaviour yet
 	//test_outputdebugstring();
