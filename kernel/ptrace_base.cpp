@@ -224,7 +224,6 @@ int ptrace_address_space_impl::ptrace_run( PCONTEXT ctx, int single_step, LARGE_
 
 	/* run it */
 	r = ptrace( (__ptrace_request) (single_step ? PTRACE_SYSEMU_SINGLESTEP : PTRACE_SYSEMU), get_child_pid(), 0, 0 );
-	dprintf("PTRACE_SYSCALL\n");
 	if (r<0)
 		die("PTRACE_CONT failed (%d) (PTRACE_SYSEMU not supported?)\n", errno);
 
@@ -317,7 +316,6 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 {
 	set_userspace_fs(TebBaseAddress, ctx->SegFs);
 
-
 	while (1)
 	{
 		int status = ptrace_run( ctx, single_step, timeout );
@@ -327,48 +325,66 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 		if (WIFEXITED(status))
 			break;
 
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGSEGV)
+		if (!WIFSTOPPED(status))
+			die("unknown wait4 status\n");
+
+		int sig = WEXITSTATUS(status);
+
+		if (sig == SIGSEGV)
 		{
 			exec->handle_fault();
 			break;
 		}
 
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGSTOP)
+		if (sig == SIGSTOP)
 			break;
 
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGCONT)
+		if (sig == SIGCONT)
 		{
 			dprintf("got SIGCONT\n");
 			continue;
 		}
 
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGTRAP)
+		if (sig == SIGTRAP)
 		{
-			dprintf("got SIGTRAP\n");
-			exec->handle_fault();
+			siginfo_t siginfo;
+			memset(&siginfo, 0, sizeof siginfo);
+			int r = ptrace_get_signal_info( get_child_pid(), &siginfo );
+			if (r < 0)
+				die("ptrace_get_signal_info failed\n");
+			if (siginfo.si_code == 0x80)
+			{
+				// assumes int $3 (0xcc, not 0xcd 0x03)
+				dprintf("breakpoint!\n");
+				ctx->Eip--;
+				exec->handle_breakpoint();
+			}
+			else
+			{
+				// assumes int $0x80 (0xcd 0x80)
+				ctx->Eip -= 2;
+				dprintf("syscall!\n");
+				exec->handle_fault();
+			}
 			continue;
 		}
 
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGALRM)
+		if (sig == SIGALRM)
 			break;
 
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGWINCH)
+		if (sig == SIGWINCH)
 			break;
 
-		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGINT)
+		if (sig == SIGINT)
 			exit( 1 );
 
-		if (WIFSTOPPED(status) && single_step)
+		if (single_step)
 			break;
 
-		if (WIFSTOPPED(status))
-		{
-			dprintf("stopped, signal %d\n", WEXITSTATUS(status));
-			exec->handle_breakpoint();
-			break;
-		}
+		dprintf("stopped, signal %d\n", WEXITSTATUS(status));
+		exec->handle_breakpoint();
+		break;
 	}
-
 }
 
 int ptrace_address_space_impl::get_fault_info( void *& addr )

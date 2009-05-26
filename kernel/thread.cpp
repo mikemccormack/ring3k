@@ -149,7 +149,7 @@ public:
 	NTSTATUS kernel_debugger_output_string( struct kernel_debug_string_output *hdr );
 	NTSTATUS kernel_debugger_call( ULONG func, void *arg1, void *arg2 );
 	BOOLEAN software_interrupt( BYTE number );
-	void handle_user_segv();
+	void handle_user_segv( ULONG code );
 	bool traced_access();
 	void start_exception_handler(exception_stack_frame& frame);
 	NTSTATUS raise_exception( exception_stack_frame& info, BOOLEAN SearchFrames );
@@ -411,7 +411,7 @@ bool thread_impl_t::traced_access()
 	return true;
 }
 
-void thread_impl_t::handle_user_segv()
+void thread_impl_t::handle_user_segv( ULONG code )
 {
 	dprintf("%04lx: exception at %08lx\n", trace_id(), ctx.Eip);
 	if (option_trace)
@@ -426,7 +426,7 @@ void thread_impl_t::handle_user_segv()
 	memcpy( &info.ctx, &ctx, sizeof ctx );
 
 	// FIXME: might not be an access violation
-	info.rec.ExceptionCode = STATUS_ACCESS_VIOLATION;
+	info.rec.ExceptionCode = code;
 	info.rec.ExceptionFlags = EXCEPTION_CONTINUABLE;
 	info.rec.ExceptionRecord = 0;
 	info.rec.ExceptionAddress = (void*) ctx.Eip;
@@ -900,11 +900,13 @@ void thread_impl_t::handle_fault()
 		inst[0] != 0xcd ||
 		!software_interrupt( inst[1] ))
 	{
+		if (inst[0] == 0xcc)
+			dprintf("breakpoint (cc)!\n");
 		if (traced_access())
 			return;
 		if (option_debug)
 			debugger();
-		handle_user_segv();
+		handle_user_segv( STATUS_ACCESS_VIOLATION );
 	}
 }
 
@@ -916,19 +918,7 @@ void thread_impl_t::handle_breakpoint()
 		return;
 	}
 
-	// check there's really a breakpoint
-	unsigned char inst[1];
-	NTSTATUS r;
-	memset( inst, 0, sizeof inst );
-	r = copy_from_user( inst, (void*) ctx.Eip, 1 );
-	if (r == STATUS_SUCCESS && inst[0] == 0xcc)
-	{
-		debugger();
-	}
-	else
-	{
-		handle_user_segv();
-	}
+	handle_user_segv( STATUS_BREAKPOINT );
 }
 
 thread_t::thread_t(process_t *p) :
