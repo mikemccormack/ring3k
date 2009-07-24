@@ -44,16 +44,26 @@
 #include "unicode.h"
 #include "win32mgr.h"
 
-void copy_ustring_to_block( void* addr, ULONG *ofs, UNICODE_STRING *ustr, LPCWSTR str )
+// constructs unicode strings suitable for the
+// PROCESS_PARAMS_FLAG_NORMALIZED flag in the PPB
+static void copy_ustring_to_block( RTL_USER_PROCESS_PARAMETERS* p,
+	UNICODE_STRING *ustr, LPWSTR buffer, LPCWSTR str, ULONG maxlen )
 {
-	UINT len = strlenW( str ) * sizeof (WCHAR);
-	memcpy( (BYTE*)addr + *ofs, str, len+2 );
-	//ustr->Buffer = addr + *ofs;  // PROCESS_PARAMS_FLAG_NORMALIZED
-	ustr->Buffer = (WCHAR*) *ofs;
-	ustr->Length = len;
-	ustr->MaximumLength = len;
-	*ofs += len + 2;
+	UINT len = strlenW( str );
+	assert( len < maxlen );
+	strcpyW( buffer, str );
+	ustr->Buffer = (WCHAR*)((BYTE*)buffer - (BYTE*) p);
+	ustr->Length = len*2;
+	ustr->MaximumLength = maxlen*2;
 }
+
+struct INITIAL_PPB {
+	RTL_USER_PROCESS_PARAMETERS ppb;
+	WCHAR CurrentDirectoryBuffer[MAX_PATH];
+	WCHAR DllPathBuffer[MAX_PATH];
+	WCHAR ImagePathNameBuffer[MAX_PATH];
+	WCHAR CommandLineBuffer[MAX_PATH];
+};
 
 NTSTATUS process_t::create_parameters(
 	RTL_USER_PROCESS_PARAMETERS **pparams, LPCWSTR ImageFile, LPCWSTR DllPath,
@@ -63,20 +73,17 @@ NTSTATUS process_t::create_parameters(
 		'=',':',':','=',':',':','\\','\0',
 		'S','y','s','t','e','m','R','o','o','t','=','C',':','\\','W','I','N','N','T','\0',
 		'S','y','s','t','e','m','D','r','i','v','e','=','C',':','\0', 0 };
-	RTL_USER_PROCESS_PARAMETERS *p, *ppb;
+	INITIAL_PPB init_ppb;
+	RTL_USER_PROCESS_PARAMETERS *ppb, *p = &init_ppb.ppb;;
 	LPWSTR penv;
-	UINT size = 0x1000;
 	NTSTATUS r;
-	char buffer[0x1000];
 
-	ppb = NULL;
-	r = vm->allocate_virtual_memory( (BYTE**) &ppb, 0, size, MEM_COMMIT, PAGE_READWRITE );
-	if (r < STATUS_SUCCESS)
-		die("address_space_mmap failed\n");
+	assert( PAGE_SIZE >= sizeof init_ppb );
 
-	p = (RTL_USER_PROCESS_PARAMETERS*) buffer;
-	p->AllocationSize = size;
-	p->Size = sizeof (*p);
+	memset( &init_ppb, 0, sizeof init_ppb );
+
+	p->AllocationSize = PAGE_SIZE;
+	p->Size = PAGE_SIZE;
 	p->Flags = 0;  //PROCESS_PARAMS_FLAG_NORMALIZED;
 
 	// PROCESS_PARAMS_FLAG_NORMALIZED indicates that pointer offsets
@@ -84,13 +91,20 @@ NTSTATUS process_t::create_parameters(
 	// to the base of the block.
 	// See RtlNormalizeProcessParams and RtlDeNormalizeProcessParams
 
-	copy_ustring_to_block( p, &p->Size, &p->ImagePathName, ImageFile );
-	copy_ustring_to_block( p, &p->Size, &p->DllPath, DllPath );
-	copy_ustring_to_block( p, &p->Size, &p->CurrentDirectory.DosPath, CurrentDirectory );
-	copy_ustring_to_block( p, &p->Size, &p->CommandLine, CommandLine );
-	copy_ustring_to_block( p, &p->Size, &p->WindowTitle, WindowTitle );
-	copy_ustring_to_block( p, &p->Size, &p->Desktop, Desktop );
-	copy_ustring_to_block( p, &p->Size, &p->RuntimeInfo, (WCHAR*) L"" );
+	copy_ustring_to_block( p, &p->ImagePathName,
+		 init_ppb.ImagePathNameBuffer, ImageFile, MAX_PATH );
+	copy_ustring_to_block( p, &p->DllPath,
+		 init_ppb.DllPathBuffer, DllPath, MAX_PATH );
+	copy_ustring_to_block( p, &p->CurrentDirectory.DosPath,
+		 init_ppb.CurrentDirectoryBuffer, CurrentDirectory, MAX_PATH );
+	copy_ustring_to_block( p, &p->CommandLine,
+		 init_ppb.CommandLineBuffer, CommandLine, MAX_PATH );
+
+	// process parameters block
+	ppb = NULL;
+	r = vm->allocate_virtual_memory( (BYTE**) &ppb, 0, PAGE_SIZE, MEM_COMMIT, PAGE_READWRITE );
+	if (r < STATUS_SUCCESS)
+		die("address_space_mmap failed\n");
 
 	// allocate the initial environment
 	penv = NULL;
@@ -100,10 +114,11 @@ NTSTATUS process_t::create_parameters(
 
 	// write the initial environment
 	vm->copy_to_user( penv, initial_env, sizeof initial_env );
-	p->Environment = penv;
 
 	// write the address of the environment string into the PPB
-	vm->copy_to_user( ppb, p, p->Size );
+	p->Environment = penv;
+
+	vm->copy_to_user( ppb, p, sizeof init_ppb );
 
 	// write the address of the process parameters into the PEB
 	*pparams = ppb;
