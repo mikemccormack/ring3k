@@ -51,7 +51,8 @@ SOURCE = \
 	hostnt.c \
 	native.c \
 	ps.c \
-	runnt.c
+	runnt.c \
+	smss.c
 
 ISO = nttests.iso
 
@@ -116,6 +117,9 @@ atom.exe: atom.o log.o $(NTWIN32LIB)
 
 wine-atom.exe: wine-atom.o log.o $(NTWIN32LIB)
 	$(CC) -o $@ $^ $(NATIVEEXEFLAGS)
+
+smss.exe: smss.o
+	$(CC) -o $@ $^ $(NATIVEEXEFLAGS) -Wl,--major-image-version,5,--major-os-version,5,--major-subsystem-version,5 -Wl,--image-base,0x48580000
 
 %.exe: %.c log.o
 	$(CC) $(CFLAGS) -o $@ log.o $< $(NATIVEEXEFLAGS)
