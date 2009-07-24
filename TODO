@@ -1,5 +1,6 @@
 Things to do:
 
+- create a gdb stub
 - remove dependency of tests on native ntdll.dll
 - catch exceptions thrown by new
 - figure out how to run cmd.exe
@@ -46,4 +47,5 @@ Semi Completed:
 - use file_t* instead of fds in blocks and sections
 - move binary to root directory
 - figure out ntsvcs (http://www.hsc.fr/ressources/articles/win_net_srv/msrpc_pnp.html)
+- figure out why smss.exe is hitting a breakpoint at startup
 
