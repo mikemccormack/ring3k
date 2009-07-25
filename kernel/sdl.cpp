@@ -215,6 +215,8 @@ void win32k_sdl_t::freetype_bitblt( int x, int y, FT_Bitmap* bitmap )
 
 }
 
+static char vgasys[] = "drive/winnt/system32/vgasys.fon";
+
 BOOL win32k_sdl_t::exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text )
 {
@@ -223,7 +225,7 @@ BOOL win32k_sdl_t::exttextout( INT x, INT y, UINT options,
 	FT_Open_Args args;
 	memset( &args, 0, sizeof args );
 	args.flags = FT_OPEN_PATHNAME;
-	args.pathname = "drive/winnt/system32/vgasys.fon";
+	args.pathname = vgasys;
 
 	FT_Error r = FT_Open_Face( ftlib, &args, 0, &face );
 	if (r)
