@@ -37,7 +37,6 @@
 #include "debug.h"
 #include "win32mgr.h"
 #include "sdl.h"
-#include "cairo_display.h"
 #include "null_display.h"
 #include "win.h"
 #include "queue.h"
@@ -56,7 +55,6 @@ struct graphics_driver_list {
 
 struct graphics_driver_list graphics_drivers[] = {
 	{ "sdl", &init_sdl_win32k_manager, },
-	{ "cairo", &init_cairo_win32k_manager, },
 	{ "null", &init_null_win32k_manager, },
 	{ NULL, NULL, },
 };

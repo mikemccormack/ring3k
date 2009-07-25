@@ -23,7 +23,6 @@ VPATH  = @srcdir@
 XML_INCLUDES = @XML2INCL@
 
 FREETYPEINCL = @FREETYPEINCL@
-CAIROINCL = @CAIROINCL@
 
 INCLUDE_DIRS += $(srcdir)
 INCLUDE_DIRS += $(srcdir)/../include
@@ -33,7 +32,6 @@ INCLUDE_DIRS += $(srcdir)/../include/common
 
 CFLAGS_COMMON += $(FREETYPEINCL)
 CFLAGS_COMMON += $(XML_INCLUDES)
-CFLAGS_COMMON += $(CAIROINCL)
 CFLAGS_COMMON += $(INCLUDE_DIRS:%=-I%)
 CFLAGS_COMMON += -g -Wall -O2 -D__i386__ -fshort-wchar -fno-strict-aliasing
 
@@ -44,7 +42,6 @@ CPPFLAGS = $(CFLAGS_COMMON) $(DEPFLAG)
 LIBS += @XML2LIBS@
 LIBS += @LIBSDL@
 LIBS += @FREETYPELIBS@
-LIBS += @CAIROLIBS@
 LIBS += ../libudis86/libudis86.a
 
 LDFLAGS = -rdynamic
@@ -67,7 +64,6 @@ CPP_SOURCES = \
 	atom.cpp \
 	bitmap.cpp \
 	block.cpp \
-	cairo_display.cpp \
 	completion.cpp \
 	debug.cpp \
 	driver.cpp \
