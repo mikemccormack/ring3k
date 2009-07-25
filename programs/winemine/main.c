@@ -789,9 +789,25 @@ void DrawFace( HDC hdc, HDC hMemDC, BOARD *p_board )
 }
 
 
+void DrawBoundary( HDC hdc, BOARD *p_board )
+{
+    HANDLE old_brush, hollow_brush;
+    HANDLE old_pen, white_pen;
+
+    hollow_brush = GetStockObject( HOLLOW_BRUSH );
+    white_pen = GetStockObject( WHITE_PEN );
+    old_brush = SelectObject( hdc, hollow_brush );
+    old_pen = SelectObject( hdc, white_pen );
+    Rectangle( hdc, 2, 2, p_board->width - 2, p_board->height - 2 );
+    SelectObject( hdc, old_brush );
+    SelectObject( hdc, old_pen );
+}
+
 void DrawBoard( HDC hdc, HDC hMemDC, PAINTSTRUCT *ps, BOARD *p_board )
 {
     RECT tmp_rect;
+
+    DrawBoundary( hdc, p_board );
 
     if( IntersectRect( &tmp_rect, &ps->rcPaint, &p_board->counter_rect ) )
         DrawLeds( hdc, hMemDC, p_board, p_board->mines - p_board->num_flags,
