@@ -731,7 +731,6 @@ void DrawMine( HDC hdc, HDC hMemDC, BOARD *p_board, unsigned col, unsigned row, 
 
 void DrawLeds( HDC hdc, HDC hMemDC, BOARD *p_board, int number, int x, int y )
 {
-#if 0
     HGDIOBJ hOldObj;
     unsigned led[3], i;
     int count;
@@ -770,11 +769,6 @@ void DrawLeds( HDC hdc, HDC hMemDC, BOARD *p_board, int number, int x, int y )
     }
 
     SelectObject( hMemDC, hOldObj );
-#else
-    char buffer[10];
-    sprintf(buffer,"%3d ", number);
-    TextOut(hdc, x, y, buffer, strlen(buffer));
-#endif
 }
 
 
