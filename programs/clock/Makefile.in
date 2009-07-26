@@ -1,0 +1,46 @@
+srcdir = @srcdir@
+VPATH  = @srcdir@
+
+DEPFLAG = -Wp,-MD,.$@.d
+CC=@MINGW32CC@
+STRIP=@MINGW32STRIP@
+CFLAGS=-Wall -O2 $(DEPFLAG)
+AS=@MINGW32AS@
+AR=@MINGW32AR@
+RANLIB=@MINGW32RANLIB@
+WINDRES=@MINGW32WINDRES@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+prefix = @prefix@
+bindir = ${prefix}/bin
+datadir = ${prefix}/data
+
+SOURCE = \
+	clock.c
+
+TARGET = clock.exe
+
+all: $(TARGET)
+
+.PHONY: all clean
+
+OBJECTS += $(SOURCE:.c=.o)
+OBJECTS += $(RESOURCES:.rc=.res)
+
+%.res: %.rc
+	$(WINDRES) -i $< -o $@ -O coff
+
+$(TARGET): $(OBJECTS)
+	$(CC) -o $@ $^ -lgdi32 -luser32 -Wl,--subsystem=windows
+
+include $(wildcard .*.d)
+
+clean:
+	rm -f $(OBJECTS) $(TARGET) .*.d
+
+install:
+
+uninstall:
+

@@ -28,6 +28,7 @@ MAKE = make
 RM = rm -f
 
 SUBDIRS = \
+	clock \
 	minitris \
 	minshell \
 	winemine \

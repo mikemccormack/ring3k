@@ -101,6 +101,7 @@ AC_CONFIG_FILES(
 	libmspack/Makefile
 	libntreg/Makefile
 	programs/Makefile
+	programs/clock/Makefile
 	programs/minitris/Makefile
 	programs/minshell/Makefile
 	programs/pixels/Makefile
