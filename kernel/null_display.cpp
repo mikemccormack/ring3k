@@ -47,7 +47,7 @@ public:
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
-	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
+	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index );
         virtual BOOL lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen );
@@ -78,7 +78,7 @@ BOOL win32k_null_t::exttextout( INT x, INT y, UINT options,
 	return TRUE;
 }
 
-BOOL win32k_null_t::bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop )
+BOOL win32k_null_t::bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop )
 {
 	return TRUE;
 }

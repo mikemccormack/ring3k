@@ -674,7 +674,7 @@ bitmap_t* device_context_t::get_bitmap()
 BOOL device_context_t::bitblt(
 	INT xDest, INT yDest,
 	INT cx, INT cy,
-	device_context_t *src,
+	bitmap_t *src,
 	INT xSrc, INT ySrc, ULONG rop )
 {
 	// FIXME translate coordinates
@@ -1158,15 +1158,15 @@ ULONG NTAPI NtGdiExtGetObjectW(HGDIOBJ Object, ULONG Size, PVOID Buffer)
 
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ hdcDest, INT xDest, INT yDest, INT cx, INT cy, HGDIOBJ hdcSrc, INT xSrc, INT ySrc, ULONG rop, ULONG, ULONG)
 {
-	device_context_t* src = dc_from_handle( hdcSrc );
-	if (!src)
-		return FALSE;
-
 	device_context_t* dest = dc_from_handle( hdcSrc );
 	if (!dest)
 		return FALSE;
 
-	return dest->bitblt( xDest, yDest, cx, cy, dest, xSrc, ySrc, rop );
+	device_context_t* src = dc_from_handle( hdcSrc );
+	if (!src)
+		return FALSE;
+
+	return dest->bitblt( xDest, yDest, cx, cy, src->get_bitmap(), xSrc, ySrc, rop );
 }
 
 HANDLE NTAPI NtGdiCreateDIBSection(

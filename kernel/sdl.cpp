@@ -105,7 +105,7 @@ public:
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
-	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
+	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
         virtual BOOL lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen );
 	virtual device_context_t* alloc_screen_dc_ptr();
@@ -115,7 +115,7 @@ protected:
 	virtual SDL_Surface* set_mode() = 0;
 	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
 	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush ) = 0;
-	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
+	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
 	virtual BOOL polypatblt_l( ULONG Rop, PRECT rect ) = 0;
 	virtual int getcaps( int index );
 	void freetype_bitblt( int x, int y, FT_Bitmap* bitmap );
@@ -272,9 +272,12 @@ BOOL win32k_sdl_t::exttextout( INT x, INT y, UINT options,
 BOOL win32k_sdl_t::bitblt(
 	INT xDest, INT yDest,
 	INT cx, INT cy,
-	device_context_t *src,
+	bitmap_t *src,
 	INT xSrc, INT ySrc, ULONG rop )
 {
+	if (!src)
+		return FALSE;
+
 	// keep everything on the screen
 	xDest = max( xDest, 0 );
 	yDest = max( yDest, 0 );
@@ -284,15 +287,12 @@ BOOL win32k_sdl_t::bitblt(
 		cy = screen->h - yDest;
 
 	// keep everything on the source bitmap
-	bitmap_t *bitmap = src->get_bitmap();
-	if (!bitmap)
-		return FALSE;
 	xSrc = max( xSrc, 0 );
 	ySrc = max( ySrc, 0 );
-	if ((xSrc + cx) > bitmap->get_width())
-		cx = bitmap->get_width() - xSrc;
-	if ((ySrc + cy) > bitmap->get_height())
-		cy = bitmap->get_height() - ySrc;
+	if ((xSrc + cx) > src->get_width())
+		cx = src->get_width() - xSrc;
+	if ((ySrc + cy) > src->get_height())
+		cy = src->get_height() - ySrc;
 
 	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
 		return FALSE;
@@ -566,7 +566,7 @@ public:
 	virtual SDL_Surface* set_mode();
 	virtual void set_pixel_l( INT x, INT y, COLORREF color );
 	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush );
-	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, device_context_t *src, INT xSrc, INT ySrc, ULONG rop );
+	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop );
 	virtual BOOL polypatblt_l( ULONG Rop, PRECT rect );
 	Uint16 map_colorref( COLORREF color );
 };
@@ -630,7 +630,7 @@ void win32k_sdl_16bpp_t::rectangle_l(INT left, INT top, INT right, INT bottom, b
 void win32k_sdl_16bpp_t::bitblt_l(
 	INT xDest, INT yDest,
 	INT cx, INT cy,
-	device_context_t *src,
+	bitmap_t *src,
 	INT xSrc, INT ySrc, ULONG rop )
 {
 	dprintf("%d,%d %dx%d <- %d,%d\n", xDest, yDest, cx, cy, xSrc, ySrc );
