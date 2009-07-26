@@ -57,7 +57,6 @@ public:
 	virtual HGDIOBJ alloc_screen_dc();
 	virtual device_context_t* alloc_screen_dc_ptr() = 0;
 	virtual BOOL release_dc( HGDIOBJ dc );
-	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
@@ -217,7 +216,7 @@ public:
 	RECT& get_bounds_rect() {return BoundsRect;}
 	int save_dc();
 	BOOL restore_dc( int level );
-	virtual BOOL set_pixel( INT x, INT y, COLORREF color ) = 0;
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text ) = 0;
@@ -234,7 +233,6 @@ class memory_device_context_t : public device_context_t
 {
 public:
 	memory_device_context_t();
-	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );

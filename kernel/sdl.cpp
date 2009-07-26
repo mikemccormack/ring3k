@@ -54,6 +54,7 @@ class sdl_16bpp_bitmap_t : public bitmap_impl_t<16>
 public:
 	sdl_16bpp_bitmap_t( SDL_Surface *s );
 	void lock();
+	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	void unlock();
 };
 
@@ -65,7 +66,6 @@ public:
 public:
 	sdl_device_context_t( bitmap_t *b );
 	virtual bitmap_t* get_bitmap();
-	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
@@ -101,7 +101,6 @@ public:
 	virtual BOOL init();
 	virtual void fini();
 	win32k_sdl_t();
-	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
@@ -113,7 +112,6 @@ public:
 protected:
 	Uint16 map_colorref( COLORREF );
 	virtual SDL_Surface* set_mode() = 0;
-	virtual void set_pixel_l( INT x, INT y, COLORREF color ) = 0;
 	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush ) = 0;
 	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
 	virtual BOOL polypatblt_l( ULONG Rop, PRECT rect ) = 0;
@@ -127,19 +125,14 @@ win32k_sdl_t::win32k_sdl_t() :
 {
 }
 
-BOOL win32k_sdl_t::set_pixel( INT x, INT y, COLORREF color )
+BOOL sdl_16bpp_bitmap_t::set_pixel( INT x, INT y, COLORREF color )
 {
-	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
-		return FALSE;
-
-	set_pixel_l( x, y, color );
-
-	if ( SDL_MUSTLOCK(screen) )
-		SDL_UnlockSurface(screen);
-
-	SDL_UpdateRect(screen, x, y, 1, 1);
-
-	return TRUE;
+	BOOL r;
+	lock();
+	r = bitmap_t::set_pixel( x, y, color );
+	SDL_UpdateRect(surface, x, y, 1, 1);
+	unlock();
+	return r;
 }
 
 template<typename T> void swap( T& A, T& B )
@@ -209,7 +202,7 @@ void win32k_sdl_t::freetype_bitblt( int x, int y, FT_Bitmap* bitmap )
 		{
 			// FIXME: assumes text color is black
 			COLORREF color = freetype_get_pixel( bmpX, bmpY, bitmap );
-			set_pixel( j, i, color );
+			sdl_bitmap->set_pixel( j, i, color );
 		}
 	}
 
@@ -564,7 +557,6 @@ class win32k_sdl_16bpp_t : public win32k_sdl_t
 {
 public:
 	virtual SDL_Surface* set_mode();
-	virtual void set_pixel_l( INT x, INT y, COLORREF color );
 	virtual void rectangle_l( INT left, INT top, INT right, INT bottom, brush_t* brush );
 	virtual void bitblt_l( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop );
 	virtual BOOL polypatblt_l( ULONG Rop, PRECT rect );
@@ -579,12 +571,6 @@ SDL_Surface* win32k_sdl_16bpp_t::set_mode()
 Uint16 win32k_sdl_16bpp_t::map_colorref( COLORREF color )
 {
 	return SDL_MapRGB(screen->format, GetRValue(color), GetGValue(color), GetBValue(color));
-}
-
-void win32k_sdl_16bpp_t::set_pixel_l( INT x, INT y, COLORREF color )
-{
-	Uint16 *bufp = (Uint16 *)screen->pixels + y*screen->pitch/2 + x;
-	*bufp = map_colorref( color );
 }
 
 void win32k_sdl_16bpp_t::rectangle_l(INT left, INT top, INT right, INT bottom, brush_t* brush )
@@ -644,7 +630,7 @@ void win32k_sdl_16bpp_t::bitblt_l(
 		for (int j=0; j<cx; j++)
 		{
 			pixel = src->get_pixel( xSrc+j, ySrc+i );
-			set_pixel_l( xDest+j, yDest+i, pixel );
+			sdl_bitmap->set_pixel( xDest+j, yDest+i, pixel );
 		}
 	}
 }
@@ -714,11 +700,6 @@ sdl_device_context_t::sdl_device_context_t( bitmap_t *b ) :
 bitmap_t* sdl_device_context_t::get_bitmap()
 {
 	return sdl_bitmap;
-}
-
-BOOL sdl_device_context_t::set_pixel( INT x, INT y, COLORREF color )
-{
-	return win32k_manager->set_pixel( x, y, color );
 }
 
 BOOL sdl_device_context_t::exttextout( INT x, INT y, UINT options,

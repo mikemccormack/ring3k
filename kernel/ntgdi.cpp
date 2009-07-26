@@ -699,7 +699,7 @@ BOOL memory_device_context_t::lineto(INT left, INT top)
     return TRUE;
 }
 
-BOOL memory_device_context_t::set_pixel( INT x, INT y, COLORREF color )
+BOOL device_context_t::set_pixel( INT x, INT y, COLORREF color )
 {
 	bitmap_t* bitmap = get_bitmap();
 	if (bitmap)
