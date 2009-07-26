@@ -222,7 +222,7 @@ public:
 		 LPRECT rect, UNICODE_STRING& text ) = 0;
 	virtual HANDLE select_bitmap( bitmap_t *bitmap );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t* src, INT xSrc, INT ySrc, ULONG rop );
-	virtual COLORREF get_pixel( INT x, INT y ) = 0;
+	virtual COLORREF get_pixel( INT x, INT y );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
 	virtual int getcaps( int index ) = 0;
 	virtual BOOL stretch_di_bits( stretch_di_bits_args& args );
@@ -236,7 +236,6 @@ public:
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
-	virtual COLORREF get_pixel( INT x, INT y );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index );
         virtual BOOL lineto( INT x, INT y);

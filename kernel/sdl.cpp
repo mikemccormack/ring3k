@@ -55,6 +55,7 @@ public:
 	sdl_16bpp_bitmap_t( SDL_Surface *s );
 	void lock();
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
+	virtual COLORREF get_pixel( INT x, INT y );
 	void unlock();
 };
 
@@ -69,7 +70,6 @@ public:
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
-	virtual COLORREF get_pixel( INT x, INT y );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index );
         virtual int lineto( INT x, INT y);
@@ -131,6 +131,15 @@ BOOL sdl_16bpp_bitmap_t::set_pixel( INT x, INT y, COLORREF color )
 	lock();
 	r = bitmap_t::set_pixel( x, y, color );
 	SDL_UpdateRect(surface, x, y, 1, 1);
+	unlock();
+	return r;
+}
+
+COLORREF sdl_16bpp_bitmap_t::get_pixel( INT x, INT y )
+{
+	BOOL r;
+	lock();
+	r = bitmap_t::get_pixel(x, y);
 	unlock();
 	return r;
 }
@@ -706,11 +715,6 @@ BOOL sdl_device_context_t::exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text )
 {
 	return win32k_manager->exttextout( x, y, options, rect, text );
-}
-
-COLORREF sdl_device_context_t::get_pixel( INT x, INT y )
-{
-	return 0;
 }
 
 int sdl_device_context_t::getcaps( int index )

@@ -707,7 +707,7 @@ BOOL device_context_t::set_pixel( INT x, INT y, COLORREF color )
 	return TRUE;
 }
 
-COLORREF memory_device_context_t::get_pixel( INT x, INT y )
+COLORREF device_context_t::get_pixel( INT x, INT y )
 {
 	bitmap_t* bitmap = get_bitmap();
 	if (bitmap)

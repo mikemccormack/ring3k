@@ -117,7 +117,6 @@ void bitmap_t::unlock()
 {
 }
 
-/*
 COLORREF bitmap_t::get_pixel( int x, int y )
 {
 	assert( magic == magic_val );
@@ -143,7 +142,6 @@ COLORREF bitmap_t::get_pixel( int x, int y )
 	}
 	return 0;
 }
-*/
 
 BOOL bitmap_t::set_pixel( int x, int y, COLORREF color )
 {
