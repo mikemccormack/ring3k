@@ -142,13 +142,6 @@ COLORREF sdl_16bpp_bitmap_t::get_pixel( INT x, INT y )
 	return r;
 }
 
-template<typename T> void swap( T& A, T& B )
-{
-	T x = A;
-	A = B;
-	B = x;
-}
-
 BOOL sdl_16bpp_bitmap_t::rectangle(INT left, INT top, INT right, INT bottom, brush_t* brush )
 {
 	dprintf("sdl_16bpp_bitmap_t::rectangle\n");

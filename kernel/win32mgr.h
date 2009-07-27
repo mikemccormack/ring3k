@@ -24,6 +24,13 @@
 #include "ntwin32.h"
 #include "alloc_bitmap.h"
 
+template<typename T> static inline void swap( T& a, T& b )
+{
+	T x = a;
+	a = b;
+	b = x;
+}
+
 class win32k_info_t
 {
 public:
