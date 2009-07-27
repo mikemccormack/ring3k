@@ -1201,6 +1201,7 @@ BOOLEAN window_tt::show( INT Show )
 	// send a WM_SHOWWINDOW message
 	showwindowmsg_tt sw( TRUE );
 	send( sw );
+	style |= WS_VISIBLE;
 
 	return TRUE;
 }
