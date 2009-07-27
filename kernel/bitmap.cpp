@@ -209,6 +209,45 @@ BOOL bitmap_t::bitblt(
 	return TRUE;
 }
 
+void bitmap_t::draw_hline(INT left, INT y, INT right, COLORREF color)
+{
+	for (INT x = left; x <= right; x++)
+		set_pixel_l( x, y, color );
+}
+
+BOOL bitmap_t::rectangle(INT left, INT top, INT right, INT bottom, brush_t* brush)
+{
+	COLORREF brush_val, pen_val;
+
+	// FIXME: use correct pen color
+	pen_val = RGB( 0, 0, 0 );
+	brush_val = brush->get_color();
+	dprintf("brush color = %08lx\n", brush->get_color());
+
+	// top line
+	draw_hline(left, top, right, pen_val);
+	top++;
+
+	while (top < (bottom -1))
+	{
+		// left border drawn by pen
+		set_pixel_l( left, top, pen_val );
+
+		// filled by brush
+		draw_hline(left+1, top, right-1, brush_val);
+
+		// right border drawn by pen
+		set_pixel_l( right - 1, top, pen_val );
+
+		//next line
+		top++;
+	}
+
+	// bottom line
+	draw_hline(left, bottom-1, right, pen_val);
+	return TRUE;
+}
+
 bitmap_t* bitmap_from_handle( HANDLE handle )
 {
 	gdi_handle_table_entry *entry = get_handle_table_entry( handle );

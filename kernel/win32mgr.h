@@ -57,7 +57,6 @@ public:
 	virtual HGDIOBJ alloc_screen_dc();
 	virtual device_context_t* alloc_screen_dc_ptr() = 0;
 	virtual BOOL release_dc( HGDIOBJ dc );
-	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
 	win32k_info_t* alloc_win32k_info();
@@ -165,8 +164,10 @@ public:
 	NTSTATUS copy_pixels( void* pixels );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy,
 		bitmap_t *src, INT xSrc, INT ySrc, ULONG rop );
+	virtual BOOL rectangle(INT left, INT top, INT right, INT bottom, brush_t* brush);
 protected:
 	virtual BOOL set_pixel_l( INT x, INT y, COLORREF color );
+	virtual void draw_hline(INT left, INT y, INT right, COLORREF color);
 };
 
 template<const int DEPTH>
@@ -220,7 +221,7 @@ public:
 	int save_dc();
 	BOOL restore_dc( int level );
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
-	virtual BOOL rectangle( INT x, INT y, INT width, INT height ) = 0;
+	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text ) = 0;
 	virtual HANDLE select_bitmap( bitmap_t *bitmap );
@@ -236,7 +237,6 @@ class memory_device_context_t : public device_context_t
 {
 public:
 	memory_device_context_t();
-	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );

@@ -304,9 +304,6 @@ NTSTATUS win32k_process_init(process_t *process)
 	if (!win32k_manager)
 		die("failed to allocate graphics driver\n");
 
-	if (!win32k_manager->init())
-		die("unable to allocate screen\n");
-
 	process->win32k_info = win32k_manager->alloc_win32k_info();
 
 	PPEB ppeb = (PPEB) process->peb_section->get_kernel_address();
@@ -341,6 +338,9 @@ NTSTATUS win32k_process_init(process_t *process)
 	}
 
 	ppeb->GdiSharedHandleTable = (void*) p;
+
+	if (!win32k_manager->init())
+		die("unable to allocate screen\n");
 
 	process->vm->set_tracer( p, ntgdishm_trace );
 
@@ -705,17 +705,31 @@ BOOL device_context_t::bitblt(
 	return dest_bm->bitblt( xDest, yDest, cx, cy, src_bm, xSrc, ySrc, rop );
 }
 
-memory_device_context_t::memory_device_context_t()
-{
-}
-
-BOOL memory_device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
+BOOL device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
 {
 	brush_t *brush = get_selected_brush();
 	if (!brush)
 		return FALSE;
-	dprintf("\n");
-	return TRUE;
+	bitmap_t *bm = get_bitmap();
+	if (!bm)
+		return FALSE;
+
+	if (left > right)
+		swap( left, right );
+	if (top > bottom)
+		swap( top, bottom );
+
+	// clip to the size of the rectangle
+	top = max( 0, top );
+	left = max( 0, left );
+	right = min( bm->get_width() - 1, right );
+	bottom = min( bm->get_height() - 1, bottom );
+
+	return bm->rectangle( left, top, right, bottom, brush );
+}
+
+memory_device_context_t::memory_device_context_t()
+{
 }
 
 BOOL memory_device_context_t::lineto(INT left, INT top)
