@@ -807,7 +807,7 @@ void DrawBoard( HDC hdc, HDC hMemDC, PAINTSTRUCT *ps, BOARD *p_board )
 {
     RECT tmp_rect;
 
-    DrawBoundary( hdc, p_board );
+    //DrawBoundary( hdc, p_board );
 
     if( IntersectRect( &tmp_rect, &ps->rcPaint, &p_board->counter_rect ) )
         DrawLeds( hdc, hMemDC, p_board, p_board->mines - p_board->num_flags,
