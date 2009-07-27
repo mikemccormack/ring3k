@@ -209,10 +209,85 @@ BOOL bitmap_t::bitblt(
 	return TRUE;
 }
 
-void bitmap_t::draw_hline(INT left, INT y, INT right, COLORREF color)
+void bitmap_t::draw_hline(INT x, INT y, INT right, COLORREF color)
 {
-	for (INT x = left; x <= right; x++)
+	if (x > right)
+		swap(x, right);
+	for ( ; x <= right; x++)
 		set_pixel_l( x, y, color );
+}
+
+void bitmap_t::draw_vline(INT x, INT y, INT bottom, COLORREF color)
+{
+	if (y > bottom)
+		swap(y, bottom);
+	for ( ; y <= bottom; y++)
+		set_pixel_l( x, y, color );
+}
+
+BOOL bitmap_t::line( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
+{
+	COLORREF color = pen->get_color();
+
+	//check for simple case
+	if (y0 == y1)
+	{
+		draw_hline(x0, y0, x1, color);
+		return TRUE;
+	}
+
+	if (x0 == x1)
+	{
+		draw_vline(x0, y0, y1, color);
+		return TRUE;
+	}
+
+	// http://en.wikipedia.org/wiki/Bresenham's_line_algorithm
+	INT dx = x1 - x0;
+	INT dy = y1 - y0;
+	INT steep = (abs(dy) >= abs(dx));
+	if (steep)
+	{
+		swap(x0, y0);
+		swap(x1, y1);
+		// recompute dx, dy after swap
+		dx = x1 - x0;
+		dy = y1 - y0;
+	}
+	INT xstep = 1;
+	if (dx < 0)
+	{
+		xstep = -1;
+		dx = -dx;
+	}
+	INT ystep = 1;
+	if (dy < 0)
+	{
+		ystep = -1;
+		dy = -dy;
+	}
+	INT E = 2*dy - dx; //2*dy - dx
+	INT y = y0;
+	for (int x = x0; x != x1; x += xstep)
+	{
+		if (steep)
+			set_pixel_l(y, x, color);
+		else
+			set_pixel_l(x, y, color);
+
+		// next
+		if (E > 0)
+		{
+			E += 2*dy - 2*dx; //E += 2*Dy - 2*dx;
+			y = y + ystep;
+		}
+		else
+		{
+			E += 2*dy; //E += 2*Dy;
+		}
+	}
+
+	return TRUE;
 }
 
 BOOL bitmap_t::rectangle(INT left, INT top, INT right, INT bottom, brush_t* brush)

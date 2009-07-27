@@ -732,9 +732,24 @@ memory_device_context_t::memory_device_context_t()
 {
 }
 
-BOOL memory_device_context_t::lineto(INT left, INT top)
+BOOL device_context_t::lineto(INT x, INT y)
 {
-    return TRUE;
+	bitmap_t *bm = get_bitmap();
+	if (!bm)
+		return FALSE;
+	pen_t *pen = get_selected_pen();
+	if (!pen)
+		return FALSE;
+
+	POINT& cur = get_current_pen_pos();
+
+	bm->line(cur.x, cur.y, x, y, pen);
+
+	// update the position
+	cur.x = x;
+	cur.y = y;
+
+	return TRUE;
 }
 
 BOOL device_context_t::set_pixel( INT x, INT y, COLORREF color )
@@ -861,20 +876,18 @@ brush_t* device_context_t::get_selected_brush()
 
 pen_t* device_context_t::get_selected_pen()
 {
-  GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
-  if (!dcshm)
-    return NULL;
+	GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
+	if (!dcshm)
+		return NULL;
 
-  return pen_from_handle( dcshm->Pen );;
+	return pen_from_handle( dcshm->Pen );;
 }
 
-LPPOINT device_context_t::get_current_pen_pos()
+POINT& device_context_t::get_current_pen_pos()
 {
-  GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
-  if (!dcshm)
-    return NULL;
-
-  return &dcshm->CurrentPenPos;
+	GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
+	assert(dcshm != NULL);
+	return dcshm->CurrentPenPos;
 }
 
 device_context_t* dc_from_handle( HGDIOBJ handle )
@@ -1466,6 +1479,10 @@ BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG Rop, PRECT Rectangle, ULONG,
 
 BOOLEAN NTAPI NtGdiMoveTo( HDC handle, int xpos, int ypos, LPPOINT pptOut)
 {
+	device_context_t* dc = dc_from_handle( handle );
+	if (!dc)
+		return FALSE;
+
 	return TRUE;
 }
 

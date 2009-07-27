@@ -60,6 +60,7 @@ public:
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy,
 		 bitmap_t *src, INT xSrc, INT ySrc, ULONG rop );
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height, brush_t* brush );
+	virtual BOOL line( INT x1, INT y1, INT x2, INT y2, pen_t *pen );
 protected:
 	virtual ULONG map_colorref( COLORREF color );
 };
@@ -76,7 +77,6 @@ public:
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
 	virtual int getcaps( int index );
-        virtual int lineto( INT x, INT y);
 protected:
 	void freetype_bitblt( int x, int y, FT_Bitmap* bitmap );
 };
@@ -107,7 +107,6 @@ public:
 	win32k_sdl_t();
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
-        virtual BOOL lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen );
 	virtual device_context_t* alloc_screen_dc_ptr();
 
 protected:
@@ -260,9 +259,15 @@ BOOL sdl_16bpp_bitmap_t::bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t 
 	return r;
 }
 
-BOOL win32k_sdl_t::lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen )
+BOOL sdl_16bpp_bitmap_t::line( INT x1, INT y1, INT x2, INT y2, pen_t *pen )
 {
-	return TRUE;
+	BOOL r;
+	lock();
+	r = bitmap_t::line(x1, y1, x2, y2, pen);
+	// FIXME: possible optimization when updating?
+	SDL_UpdateRect(surface, x1, y1, x2, y2);
+	unlock();
+	return r;
 }
 
 sdl_sleeper_t::sdl_sleeper_t( win32k_manager_t* mgr ) :
@@ -522,11 +527,6 @@ win32k_sdl_16bpp_t win32k_manager_sdl_16bpp;
 win32k_manager_t* init_sdl_win32k_manager()
 {
 	return &win32k_manager_sdl_16bpp;
-}
-
-BOOL sdl_device_context_t::lineto(INT x, INT y)
-{
-    return TRUE;
 }
 
 sdl_device_context_t::sdl_device_context_t( bitmap_t *b ) :
