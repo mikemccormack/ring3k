@@ -145,6 +145,11 @@ COLORREF bitmap_t::get_pixel( int x, int y )
 
 BOOL bitmap_t::set_pixel( int x, int y, COLORREF color )
 {
+	return set_pixel_l( x, y, color );
+}
+
+BOOL bitmap_t::set_pixel_l( int x, int y, COLORREF color )
+{
 	assert( magic == magic_val );
 	assert( width != 0 );
 	assert( height != 0 );
@@ -179,6 +184,29 @@ BOOL bitmap_t::set_pixel( int x, int y, COLORREF color )
 NTSTATUS bitmap_t::copy_pixels( void *pixels )
 {
 	return copy_from_user( bits, pixels, bitmap_size() );
+}
+
+BOOL bitmap_t::bitblt(
+	INT xDest, INT yDest,
+	INT cx, INT cy,
+	bitmap_t *src,
+	INT xSrc, INT ySrc, ULONG rop )
+{
+	dprintf("%d,%d %dx%d <- %d,%d\n", xDest, yDest, cx, cy, xSrc, ySrc );
+	if (rop != SRCCOPY)
+		dprintf("ROP %ld not supported\n", rop);
+
+	// copy the pixels
+	COLORREF pixel;
+	for (int i=0; i<cy; i++)
+	{
+		for (int j=0; j<cx; j++)
+		{
+			pixel = src->get_pixel( xSrc+j, ySrc+i );
+			set_pixel_l( xDest+j, yDest+i, pixel );
+		}
+	}
+	return TRUE;
 }
 
 bitmap_t* bitmap_from_handle( HANDLE handle )

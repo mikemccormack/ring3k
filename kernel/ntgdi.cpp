@@ -674,11 +674,35 @@ bitmap_t* device_context_t::get_bitmap()
 BOOL device_context_t::bitblt(
 	INT xDest, INT yDest,
 	INT cx, INT cy,
-	bitmap_t *src,
+	device_context_t *src,
 	INT xSrc, INT ySrc, ULONG rop )
 {
+	bitmap_t* dest_bm = get_bitmap();
+	if (!dest_bm)
+		return FALSE;
+
+	bitmap_t* src_bm = src->get_bitmap();
+	if (!src_bm)
+		return FALSE;
+
+	// keep everything on the destination bitmap
+	xDest = max( xDest, 0 );
+	yDest = max( yDest, 0 );
+	if ((xDest + cx) > dest_bm->get_width())
+		cx = dest_bm->get_width() - xDest;
+	if ((yDest + cy) > dest_bm->get_height())
+		cy = dest_bm->get_height() - yDest;
+
+	// keep everything on the source bitmap
+	xSrc = max( xSrc, 0 );
+	ySrc = max( ySrc, 0 );
+	if ((xSrc + cx) > src_bm->get_width())
+		cx = src_bm->get_width() - xSrc;
+	if ((ySrc + cy) > src_bm->get_height())
+		cy = src_bm->get_height() - ySrc;
+
 	// FIXME translate coordinates
-	return win32k_manager->bitblt( xDest, yDest, cx, cy, src, xSrc, ySrc, rop );
+	return dest_bm->bitblt( xDest, yDest, cx, cy, src_bm, xSrc, ySrc, rop );
 }
 
 memory_device_context_t::memory_device_context_t()
@@ -1158,7 +1182,7 @@ ULONG NTAPI NtGdiExtGetObjectW(HGDIOBJ Object, ULONG Size, PVOID Buffer)
 
 BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ hdcDest, INT xDest, INT yDest, INT cx, INT cy, HGDIOBJ hdcSrc, INT xSrc, INT ySrc, ULONG rop, ULONG, ULONG)
 {
-	device_context_t* dest = dc_from_handle( hdcSrc );
+	device_context_t* dest = dc_from_handle( hdcDest );
 	if (!dest)
 		return FALSE;
 
@@ -1166,7 +1190,7 @@ BOOLEAN NTAPI NtGdiBitBlt(HGDIOBJ hdcDest, INT xDest, INT yDest, INT cx, INT cy,
 	if (!src)
 		return FALSE;
 
-	return dest->bitblt( xDest, yDest, cx, cy, src->get_bitmap(), xSrc, ySrc, rop );
+	return dest->bitblt( xDest, yDest, cx, cy, src, xSrc, ySrc, rop );
 }
 
 HANDLE NTAPI NtGdiCreateDIBSection(

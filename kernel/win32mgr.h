@@ -59,7 +59,6 @@ public:
 	virtual BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t *brush ) = 0;
 	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
-	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop ) = 0;
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
 	win32k_info_t* alloc_win32k_info();
 	virtual void send_input( INPUT* input );
@@ -164,6 +163,10 @@ public:
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	bool is_valid() const { return magic == magic_val; }
 	NTSTATUS copy_pixels( void* pixels );
+	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy,
+		bitmap_t *src, INT xSrc, INT ySrc, ULONG rop );
+protected:
+	virtual BOOL set_pixel_l( INT x, INT y, COLORREF color );
 };
 
 template<const int DEPTH>
@@ -221,7 +224,7 @@ public:
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text ) = 0;
 	virtual HANDLE select_bitmap( bitmap_t *bitmap );
-	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t* src, INT xSrc, INT ySrc, ULONG rop );
+	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t* src, INT xSrc, INT ySrc, ULONG rop );
 	virtual COLORREF get_pixel( INT x, INT y );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
 	virtual int getcaps( int index ) = 0;
