@@ -30,6 +30,8 @@
 
 #include "windows.h"
 
+//#define REDUCE_FLICKER
+
 #define INITIAL_WINDOW_SIZE 200
 #define TIMER_ID 1
 
@@ -214,10 +216,10 @@ static BOOL CLOCK_ResetTimer(void)
 static VOID CLOCK_Paint(HWND hWnd)
 {
     PAINTSTRUCT ps;
-    HDC dcMem, dc;
+    HDC dc = BeginPaint(hWnd, &ps);
+#ifdef REDUCE_FLICKER
+    HDC dcMem;
     HBITMAP bmMem, bmOld;
-
-    dc = BeginPaint(hWnd, &ps);
 
     /* Use an offscreen dc to avoid flicker */
     dcMem = CreateCompatibleDC(dc);
@@ -243,6 +245,9 @@ static VOID CLOCK_Paint(HWND hWnd)
     SelectObject(dcMem, bmOld);
     DeleteObject(bmMem);
     DeleteDC(dcMem);
+#else
+    AnalogClock(dc, Globals.MaxX, Globals.MaxY, Globals.bSeconds, Globals.bWithoutTitle);
+#endif
 
     EndPaint(hWnd, &ps);
 }
