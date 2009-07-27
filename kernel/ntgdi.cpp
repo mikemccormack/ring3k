@@ -705,7 +705,7 @@ BOOL device_context_t::bitblt(
 	return dest_bm->bitblt( xDest, yDest, cx, cy, src_bm, xSrc, ySrc, rop );
 }
 
-BOOL device_context_t::rectangle(INT left, INT top, INT right, INT bottom )
+BOOL device_context_t::rectangle(INT left, INT top, INT right, INT bottom)
 {
 	brush_t *brush = get_selected_brush();
 	if (!brush)
@@ -759,9 +759,31 @@ BOOL memory_device_context_t::exttextout( INT x, INT y, UINT options,
 	return TRUE;
 }
 
-BOOL memory_device_context_t::polypatblt( ULONG Rop, PRECT rect )
+BOOL device_context_t::polypatblt( ULONG Rop, PRECT rect )
 {
-	return TRUE;
+	bitmap_t *bm = get_bitmap();
+	if (!bm)
+		return FALSE;
+
+	brush_t black(0,0,0);
+
+	LONG &left = rect->left;
+	LONG &right = rect->right;
+	LONG &top = rect->top;
+	LONG &bottom = rect->bottom;
+
+	if (left > right)
+		swap( left, right );
+	if (top > bottom)
+		swap( top, bottom );
+
+	// clip to the size of the rectangle
+	top = max( 0, top );
+	left = max( 0, left );
+	right = min( bm->get_width() - 1, right );
+	bottom = min( bm->get_height() - 1, bottom );
+
+	return bm->rectangle( left, top, right, bottom, &black );
 }
 
 int memory_device_context_t::getcaps( int index )

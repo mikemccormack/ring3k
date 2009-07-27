@@ -75,7 +75,6 @@ public:
 	virtual HANDLE select_bitmap( bitmap_t *bitmap );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
-	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index );
         virtual int lineto( INT x, INT y);
 protected:
@@ -108,14 +107,12 @@ public:
 	win32k_sdl_t();
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
-	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
         virtual BOOL lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen );
 	virtual device_context_t* alloc_screen_dc_ptr();
 
 protected:
 	Uint16 map_colorref( COLORREF );
 	virtual SDL_Surface* set_mode() = 0;
-	virtual BOOL polypatblt_l( ULONG Rop, PRECT rect ) = 0;
 	virtual int getcaps( int index );
 	void freetype_bitblt( int x, int y, FT_Bitmap* bitmap );
 	COLORREF freetype_get_pixel( int x, int y, FT_Bitmap* bitmap );
@@ -268,26 +265,6 @@ BOOL sdl_16bpp_bitmap_t::bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t 
 	SDL_UpdateRect(surface, xDest, yDest, xDest + cx, yDest + cy);
 	unlock();
 	return r;
-}
-
-BOOL win32k_sdl_t::polypatblt( ULONG Rop, PRECT rect )
-{
-	rect->left = max( rect->left, 0 );
-	rect->top = max( rect->top, 0 );
-	rect->right = min( screen->w, rect->right );
-	rect->bottom = min( screen->h, rect->bottom );
-
-	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
-		return FALSE;
-
-	polypatblt_l( Rop, rect );
-
-	if ( SDL_MUSTLOCK(screen) )
-		SDL_UnlockSurface(screen);
-
-	SDL_UpdateRect( screen, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top );
-
-	return TRUE;
 }
 
 BOOL win32k_sdl_t::lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen )
@@ -534,7 +511,6 @@ class win32k_sdl_16bpp_t : public win32k_sdl_t
 {
 public:
 	virtual SDL_Surface* set_mode();
-	virtual BOOL polypatblt_l( ULONG Rop, PRECT rect );
 	Uint16 map_colorref( COLORREF color );
 };
 
@@ -548,36 +524,6 @@ Uint16 win32k_sdl_16bpp_t::map_colorref( COLORREF color )
 	return SDL_MapRGB(screen->format, GetRValue(color), GetGValue(color), GetBValue(color));
 }
 
-BOOL win32k_sdl_16bpp_t::polypatblt_l( ULONG Rop, PRECT rect )
-{
-	dprintf("%08lx %ld,%ld-%ld,%ld\n", Rop, rect->left, rect->top, rect->bottom, rect->right );
-
-	COLORREF val;
-	val = map_colorref( RGB( 0, 0, 0 ) );
-
-	Uint16 *ptr = (Uint16 *)screen->pixels + rect->top*screen->pitch/2;
-
-	// FIXME: behaviour should depend on Rop
-
-	// fill rectangle with black
-	LONG line = rect->top;
-	while (line < rect->bottom )
-	{
-		INT count;
-		for (count = rect->left; count < rect->right; count++)
-			ptr[count] = val;
-
-		// right border drawn by pen
-		ptr[ count ] = val;
-
-		//next line
-		line++;
-		ptr += screen->pitch/2;
-	}
-
-	return TRUE;
-}
-
 win32k_sdl_16bpp_t win32k_manager_sdl_16bpp;
 
 win32k_manager_t* init_sdl_win32k_manager()
@@ -588,11 +534,6 @@ win32k_manager_t* init_sdl_win32k_manager()
 BOOL sdl_device_context_t::lineto(INT x, INT y)
 {
     return TRUE;
-}
-
-BOOL sdl_device_context_t::polypatblt( ULONG Rop, PRECT rect )
-{
-	return win32k_manager->polypatblt( Rop, rect );
 }
 
 sdl_device_context_t::sdl_device_context_t( bitmap_t *b ) :

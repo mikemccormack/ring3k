@@ -58,7 +58,6 @@ public:
 	virtual device_context_t* alloc_screen_dc_ptr() = 0;
 	virtual BOOL release_dc( HGDIOBJ dc );
 	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
-	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
 	win32k_info_t* alloc_win32k_info();
 	virtual void send_input( INPUT* input );
 	ULONG get_async_key_state( ULONG Key );
@@ -227,7 +226,7 @@ public:
 	virtual HANDLE select_bitmap( bitmap_t *bitmap );
 	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t* src, INT xSrc, INT ySrc, ULONG rop );
 	virtual COLORREF get_pixel( INT x, INT y );
-	virtual BOOL polypatblt( ULONG Rop, PRECT rect ) = 0;
+	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index ) = 0;
 	virtual BOOL stretch_di_bits( stretch_di_bits_args& args );
         virtual BOOL lineto( INT xpos, INT ypos ) = 0;
@@ -239,7 +238,6 @@ public:
 	memory_device_context_t();
 	virtual BOOL exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text );
-	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index );
         virtual BOOL lineto( INT x, INT y);
 };
