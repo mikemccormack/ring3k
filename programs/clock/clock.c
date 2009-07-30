@@ -30,7 +30,7 @@
 
 #include "windows.h"
 
-//#define REDUCE_FLICKER
+#define REDUCE_FLICKER 0
 
 #define INITIAL_WINDOW_SIZE 200
 #define TIMER_ID 1
@@ -217,7 +217,7 @@ static VOID CLOCK_Paint(HWND hWnd)
 {
     PAINTSTRUCT ps;
     HDC dc = BeginPaint(hWnd, &ps);
-#ifdef REDUCE_FLICKER
+#if REDUCE_FLICKER
     HDC dcMem;
     HBITMAP bmMem, bmOld;
 
@@ -283,7 +283,7 @@ static LRESULT WINAPI CLOCK_WndProc (HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
             /* Could just invalidate what has changed,
              * but it doesn't really seem worth the effort
              */
-	    InvalidateRect(Globals.hMainWnd, NULL, FALSE);
+	    InvalidateRect(Globals.hMainWnd, NULL, !REDUCE_FLICKER);
 	    break;
         }
 
@@ -292,10 +292,8 @@ static LRESULT WINAPI CLOCK_WndProc (HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
             break;
         }
 
-/*
         default:
             return DefWindowProc (hWnd, msg, wParam, lParam);
-*/
     }
     return 0;
 }
@@ -326,7 +324,7 @@ int PASCAL WinMain (HINSTANCE hInstance, HINSTANCE prev, LPSTR cmdline, int show
         class.hInstance     = hInstance;
         class.hIcon         = LoadIcon (0, IDI_APPLICATION);
         class.hCursor       = LoadCursor (0, IDC_ARROW);
-        class.hbrBackground = 0;
+        class.hbrBackground = GetStockObject( BLACK_BRUSH );
         class.lpszMenuName  = 0;
         class.lpszClassName = szClassName;
     }
