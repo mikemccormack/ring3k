@@ -837,7 +837,7 @@ brush_t* brush_from_handle( HGDIOBJ handle )
 
 pen_t::pen_t( UINT _style, UINT _width, COLORREF _color ) :
 	style( _style ),
-    width( _width ),
+	width( _width ),
 	color( _color )
 {
 }
@@ -854,16 +854,15 @@ HANDLE pen_t::alloc( UINT style, UINT width, COLORREF color, BOOL stock )
 
 pen_t* pen_from_handle( HGDIOBJ handle )
 {
-  gdi_handle_table_entry *entry = get_handle_table_entry( handle );
-  if (!entry) 
-    return NULL;
+	gdi_handle_table_entry *entry = get_handle_table_entry( handle );
+	if (!entry)
+		return NULL;
 
-  if (entry->Type != GDI_OBJECT_PEN)
-    return NULL;
+	if (entry->Type != GDI_OBJECT_PEN)
+		return NULL;
 
-
-  gdi_object_t* obj = reinterpret_cast<gdi_object_t*>( entry->kernel_info );
-  return static_cast<pen_t*>( obj );
+	gdi_object_t* obj = reinterpret_cast<gdi_object_t*>( entry->kernel_info );
+	return static_cast<pen_t*>( obj );
 }
 
 brush_t* device_context_t::get_selected_brush()
