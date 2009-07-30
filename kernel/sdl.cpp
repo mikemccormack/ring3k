@@ -265,7 +265,11 @@ BOOL sdl_16bpp_bitmap_t::line( INT x1, INT y1, INT x2, INT y2, pen_t *pen )
 	lock();
 	r = bitmap_t::line(x1, y1, x2, y2, pen);
 	// FIXME: possible optimization when updating?
-	SDL_UpdateRect(surface, x1, y1, x2, y2);
+	if (x1 > x2)
+		swap(x1, x2);
+	if (y1 > y2)
+		swap(y1, y2);
+	SDL_UpdateRect(surface, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 	unlock();
 	return r;
 }
