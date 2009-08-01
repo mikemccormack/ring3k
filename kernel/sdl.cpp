@@ -40,11 +40,6 @@
 #include "ntwin32.h"
 #include "sdl.h"
 
-// the freetype project certainly has their own way of doing things :/
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_GLYPH_H
-
 #if defined (HAVE_SDL) && defined (HAVE_SDL_SDL_H)
 #include <SDL/SDL.h>
 
@@ -74,11 +69,7 @@ public:
 	sdl_device_context_t( bitmap_t *b );
 	virtual bitmap_t* get_bitmap();
 	virtual HANDLE select_bitmap( bitmap_t *bitmap );
-	virtual BOOL exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text );
 	virtual int getcaps( int index );
-protected:
-	void freetype_bitblt( int x, int y, FT_Bitmap* bitmap );
 };
 
 class sdl_sleeper_t : public sleeper_t
@@ -97,24 +88,18 @@ class win32k_sdl_t : public win32k_manager_t
 {
 protected:
 	SDL_Surface *screen;
-	FT_Library ftlib;
-	FT_Face face;
 	sdl_sleeper_t sdl_sleeper;
 	bitmap_t* sdl_bitmap;
 public:
 	virtual BOOL init();
 	virtual void fini();
 	win32k_sdl_t();
-	virtual BOOL exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text );
 	virtual device_context_t* alloc_screen_dc_ptr();
 
 protected:
 	Uint16 map_colorref( COLORREF );
 	virtual SDL_Surface* set_mode() = 0;
 	virtual int getcaps( int index );
-	void freetype_bitblt( int x, int y, FT_Bitmap* bitmap );
-	COLORREF freetype_get_pixel( int x, int y, FT_Bitmap* bitmap );
 };
 
 win32k_sdl_t::win32k_sdl_t() :
@@ -149,101 +134,6 @@ BOOL sdl_16bpp_bitmap_t::rectangle(INT left, INT top, INT right, INT bottom, bru
 	r = bitmap_t::rectangle( left, top, right, bottom, brush );
 	unlock();
 	SDL_UpdateRect( surface, left, top, right - left, bottom - top );
-	return TRUE;
-}
-
-COLORREF win32k_sdl_t::freetype_get_pixel( int x, int y, FT_Bitmap* bitmap )
-{
-	int bytes_per_row;
-	int val;
-	switch (bitmap->pixel_mode)
-	{
-	case FT_PIXEL_MODE_MONO:
-		bytes_per_row = bitmap->pitch;
-		val = (bitmap->buffer[bytes_per_row*y + (x>>3)] << (x&7)) & 0x80;
-		return val ? RGB( 255, 255, 255 ) : RGB( 0, 0, 0 );
-	default:
-		trace("unknown freetype pixel mode %d\n", bitmap->pixel_mode);
-		return 0;
-	}
-}
-
-void win32k_sdl_t::freetype_bitblt( int x, int y, FT_Bitmap* bitmap )
-{
-	INT bmpX, bmpY;
-	BYTE *buf;
-	INT j, i;
-
-	trace("glyph is %dx%d\n", bitmap->rows, bitmap->width);
-	trace("pixel mode is %d\n", bitmap->pixel_mode );
-	trace("destination is %d,%d\n", x, y );
-	trace("pitch is %d\n", bitmap->pitch );
-
-	/* loop for every pixel in bitmap */
-	buf = bitmap->buffer;
-	for (bmpY = 0, i = y; bmpY < bitmap->rows; bmpY++, i++)
-	{
-		for (bmpX = 0, j = x; bmpX < bitmap->width; bmpX++, j++)
-		{
-			// FIXME: assumes text color is black
-			COLORREF color = freetype_get_pixel( bmpX, bmpY, bitmap );
-			sdl_bitmap->set_pixel( j, i, color );
-		}
-	}
-
-}
-
-static char vgasys[] = "drive/winnt/system32/vgasys.fon";
-
-BOOL win32k_sdl_t::exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text )
-{
-	trace("text: %pus\n", &text );
-
-	FT_Open_Args args;
-	memset( &args, 0, sizeof args );
-	args.flags = FT_OPEN_PATHNAME;
-	args.pathname = vgasys;
-
-	FT_Error r = FT_Open_Face( ftlib, &args, 0, &face );
-	if (r)
-		return FALSE;
-
-	if ( SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0 )
-		return FALSE;
-
-	int dx = 0, dy = 0;
-	for (int i=0; i<text.Length/2; i++)
-	{
-		WCHAR ch = text.Buffer[i];
-		FT_UInt glyph_index = FT_Get_Char_Index( face, ch );
-
-		r = FT_Load_Glyph( face, glyph_index, FT_LOAD_DEFAULT );
-		if (r)
-			continue;
-
-		FT_Glyph glyph;
-		r = FT_Get_Glyph( face->glyph, &glyph );
-		if (r)
-			continue;
-
-		if (glyph->format != FT_GLYPH_FORMAT_BITMAP )
-			continue;
-
-		FT_BitmapGlyph bitmap = (FT_BitmapGlyph) glyph;
-		freetype_bitblt( x+dx+bitmap->left, y+dy+bitmap->top, &bitmap->bitmap );
-
-		dx += bitmap->bitmap.width;
-		dy += 0;
-
-		FT_Done_Glyph( glyph );
-	}
-
-	if ( SDL_MUSTLOCK(screen) )
-		SDL_UnlockSurface(screen);
-
-	SDL_UpdateRect( screen, x, y, x+dx, y+dy);
-
 	return TRUE;
 }
 
@@ -462,10 +352,6 @@ BOOL win32k_sdl_t::init()
 
 	screen = set_mode();
 
-	FT_Error r = FT_Init_FreeType( &ftlib );
-	if (r != 0)
-		return FALSE;
-
 	sdl_bitmap = new sdl_16bpp_bitmap_t( screen );
 
 	// FIXME: move this to caller
@@ -481,7 +367,6 @@ void win32k_sdl_t::fini()
 {
 	if ( !SDL_WasInit(SDL_INIT_VIDEO) )
 		return;
-	FT_Done_FreeType( ftlib );
 	SDL_Quit();
 }
 
@@ -550,11 +435,6 @@ HANDLE sdl_device_context_t::select_bitmap( bitmap_t *bitmap )
 	return 0;
 }
 
-BOOL sdl_device_context_t::exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text )
-{
-	return win32k_manager->exttextout( x, y, options, rect, text );
-}
 
 int sdl_device_context_t::getcaps( int index )
 {

@@ -157,10 +157,15 @@ BOOLEAN NTAPI NtGdiInit()
 win32k_manager_t::win32k_manager_t()
 {
 	memset( key_state, 0, sizeof key_state );
+
+	FT_Error r = FT_Init_FreeType( &ftlib );
+	if (r)
+		throw;
 }
 
 win32k_manager_t::~win32k_manager_t()
 {
+	FT_Done_FreeType( ftlib );
 }
 
 win32k_info_t::win32k_info_t() :
@@ -768,9 +773,110 @@ COLORREF device_context_t::get_pixel( INT x, INT y )
 	return 0;
 }
 
-BOOL memory_device_context_t::exttextout( INT x, INT y, UINT options,
+/* FIXME: derive the freetype bitmap from a bitmap_t and use bitblt here */
+static COLORREF freetype_get_pixel( int x, int y, FT_Bitmap* ftbm )
+{
+	int bytes_per_row;
+	int val;
+	switch (ftbm->pixel_mode)
+	{
+	case FT_PIXEL_MODE_MONO:
+		bytes_per_row = ftbm->pitch;
+		val = (ftbm->buffer[bytes_per_row*y + (x>>3)] << (x&7)) & 0x80;
+		return val ? RGB( 255, 255, 255 ) : RGB( 0, 0, 0 );
+	default:
+		trace("unknown freetype pixel mode %d\n", ftbm->pixel_mode);
+		return 0;
+	}
+}
+
+static void freetype_bitblt( bitmap_t* bm, int x, int y, FT_Bitmap* ftbm )
+{
+	INT bmpX, bmpY;
+	BYTE *buf;
+	INT j, i;
+
+	trace("glyph is %dx%d\n", ftbm->rows, ftbm->width);
+	trace("pixel mode is %d\n", ftbm->pixel_mode );
+	trace("destination is %d,%d\n", x, y );
+	trace("pitch is %d\n", ftbm->pitch );
+
+	/* loop for every pixel in bitmap */
+	buf = ftbm->buffer;
+	for (bmpY = 0, i = y; bmpY < ftbm->rows; bmpY++, i++)
+	{
+		for (bmpX = 0, j = x; bmpX < ftbm->width; bmpX++, j++)
+		{
+			// FIXME: assumes text color is black
+			COLORREF color = freetype_get_pixel( bmpX, bmpY, ftbm );
+			bm->set_pixel( j, i, color );
+		}
+	}
+}
+
+FT_Face win32k_manager_t::get_face()
+{
+	static char vgasys[] = "drive/winnt/system32/vgasys.fon";
+
+	if (!face)
+	{
+		FT_Open_Args args;
+		memset( &args, 0, sizeof args );
+		args.flags = FT_OPEN_PATHNAME;
+		args.pathname = vgasys;
+
+		FT_Error r = FT_Open_Face( ftlib, &args, 0, &face );
+		if (r)
+			face = NULL;
+	}
+	return face;
+}
+
+BOOL device_context_t::exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text )
 {
+	trace("text: %pus\n", &text );
+
+	bitmap_t *bitmap = get_bitmap();
+	if (!bitmap)
+		return FALSE;
+
+	FT_Face face = win32k_manager->get_face();
+	//if (SDL_MUSTLOCK(screen) && SDL_LockSurface(screen) < 0)
+		//return FALSE;
+
+	int dx = 0, dy = 0;
+	for (int i=0; i<text.Length/2; i++)
+	{
+		WCHAR ch = text.Buffer[i];
+		FT_UInt glyph_index = FT_Get_Char_Index( face, ch );
+
+		FT_Error r = FT_Load_Glyph( face, glyph_index, FT_LOAD_DEFAULT );
+		if (r)
+			continue;
+
+		FT_Glyph glyph;
+		r = FT_Get_Glyph( face->glyph, &glyph );
+		if (r)
+			continue;
+
+		if (glyph->format != FT_GLYPH_FORMAT_BITMAP )
+			continue;
+
+		FT_BitmapGlyph ftbmg = (FT_BitmapGlyph) glyph;
+		freetype_bitblt( bitmap, x+dx+ftbmg->left, y+dy+ftbmg->top, &ftbmg->bitmap );
+
+		dx += ftbmg->bitmap.width;
+		dy += 0;
+
+		FT_Done_Glyph( glyph );
+	}
+
+	//if ( SDL_MUSTLOCK(screen) )
+		//SDL_UnlockSurface(screen);
+
+	//SDL_UpdateRect( screen, x, y, x+dx, y+dy);
+
 	return TRUE;
 }
 

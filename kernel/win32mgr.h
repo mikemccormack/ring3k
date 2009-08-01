@@ -24,6 +24,11 @@
 #include "ntwin32.h"
 #include "alloc_bitmap.h"
 
+// the freetype project certainly has their own way of doing things :/
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_GLYPH_H
+
 template<typename T> static inline void swap( T& a, T& b )
 {
 	T x = a;
@@ -51,6 +56,8 @@ class device_context_t;
 class win32k_manager_t
 {
 	ULONG key_state[0x100];
+	FT_Library ftlib;
+	FT_Face face;
 public:
 	win32k_manager_t();
 	void init_stock_objects();
@@ -64,11 +71,11 @@ public:
 	virtual HGDIOBJ alloc_screen_dc();
 	virtual device_context_t* alloc_screen_dc_ptr() = 0;
 	virtual BOOL release_dc( HGDIOBJ dc );
-	virtual BOOL exttextout( INT x, INT y, UINT options, LPRECT rect, UNICODE_STRING& text ) = 0;
 	win32k_info_t* alloc_win32k_info();
 	virtual void send_input( INPUT* input );
 	ULONG get_async_key_state( ULONG Key );
 	virtual int getcaps( int index ) = 0;
+	FT_Face get_face();
 };
 
 extern win32k_manager_t* win32k_manager;
@@ -231,9 +238,10 @@ public:
 	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
 	virtual BOOL rectangle( INT x, INT y, INT width, INT height );
 	virtual BOOL exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text ) = 0;
+		 LPRECT rect, UNICODE_STRING& text );
 	virtual HANDLE select_bitmap( bitmap_t *bitmap );
-	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, device_context_t* src, INT xSrc, INT ySrc, ULONG rop );
+	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy,
+		 device_context_t* src, INT xSrc, INT ySrc, ULONG rop );
 	virtual COLORREF get_pixel( INT x, INT y );
 	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index ) = 0;
@@ -245,8 +253,6 @@ class memory_device_context_t : public device_context_t
 {
 public:
 	memory_device_context_t();
-	virtual BOOL exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text );
 	virtual int getcaps( int index );
 };
 
