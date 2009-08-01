@@ -347,6 +347,10 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 
 		if (sig == SIGTRAP)
 		{
+			// trapped after single stepping
+			if (single_step)
+				break;
+
 			siginfo_t siginfo;
 			memset(&siginfo, 0, sizeof siginfo);
 			int r = ptrace_get_signal_info( get_child_pid(), &siginfo );
