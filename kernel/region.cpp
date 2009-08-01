@@ -130,7 +130,7 @@ void rect_tt::set( int l, int t, int r, int b )
 
 void rect_tt::dump() const
 {
-	dprintf("%ld,%ld-%ld,%ld\n", left, top, right, bottom);
+	trace("%ld,%ld-%ld,%ld\n", left, top, right, bottom);
 }
 
 void rect_tt::fix()
@@ -382,7 +382,7 @@ BOOL region_tt::overlaps_rect( const RECT& rect )
 
 INT region_tt::intersect_rgn( region_tt *reg1, region_tt *reg2 )
 {
-	dprintf("%ld %ld\n", reg1->numRects, reg2->numRects);
+	trace("%ld %ld\n", reg1->numRects, reg2->numRects);
 	/* check for trivial reject */
 	if ( !reg1->numRects || !reg2->numRects ||
 		!reg1->rgn->extents.overlaps( reg2->rgn->extents ))

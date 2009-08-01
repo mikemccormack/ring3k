@@ -297,7 +297,7 @@ NTSTATUS nttimer_t::set(
 	ULONG Period,
 	BOOLEAN& prev)
 {
-	//dprintf("%ld %p %p %d %ld\n", (ULONG)DueTime.QuadPart, apc, context, Resume, Period );
+	//trace("%ld %p %p %d %ld\n", (ULONG)DueTime.QuadPart, apc, context, Resume, Period );
 
 	prev = expired;
 	interval = Period;
@@ -372,7 +372,7 @@ NTSTATUS NTAPI NtCreateTimer(
 	POBJECT_ATTRIBUTES ObjectAttributes,
 	TIMER_TYPE Type)
 {
-	dprintf("%p %08lx %p %u\n", TimerHandle, AccessMask, ObjectAttributes, Type );
+	trace("%p %08lx %p %u\n", TimerHandle, AccessMask, ObjectAttributes, Type );
 
 	timer_factory factory( Type );
 	return factory.create( TimerHandle, AccessMask, ObjectAttributes );
@@ -383,7 +383,7 @@ NTSTATUS NtOpenTimer(
 	ACCESS_MASK AccessMask,
 	POBJECT_ATTRIBUTES ObjectAttributes)
 {
-	dprintf("\n");
+	trace("\n");
 	return nt_open_object<nttimer_t>( TimerHandle, AccessMask, ObjectAttributes );
 }
 
@@ -429,7 +429,7 @@ NTSTATUS NtSetTimer(
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("due = %llx\n", due.QuadPart);
+	trace("due = %llx\n", due.QuadPart);
 
 	nttimer_t* timer = 0;
 	r = object_from_handle( timer, TimerHandle, TIMER_MODIFY_STATE );

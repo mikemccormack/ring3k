@@ -109,7 +109,7 @@ NTSTATUS NTAPI NtCreateMutant(
 	POBJECT_ATTRIBUTES ObjectAttributes,
 	BOOLEAN InitialOwner)
 {
-	dprintf("%p %08lx %p %u\n", MutantHandle,
+	trace("%p %08lx %p %u\n", MutantHandle,
 			AccessMask, ObjectAttributes, InitialOwner);
 
 	mutant_factory factory( InitialOwner );
@@ -124,7 +124,7 @@ NTSTATUS NTAPI NtReleaseMutant(
 	ULONG prev = 0;
 	NTSTATUS r;
 
-	dprintf("%p %p\n", MutantHandle, PreviousState);
+	trace("%p %p\n", MutantHandle, PreviousState);
 
 	r = object_from_handle( mutant, MutantHandle, MUTEX_MODIFY_STATE );
 	if (r < STATUS_SUCCESS)
@@ -149,7 +149,7 @@ NTSTATUS NTAPI NtOpenMutant(
 	ACCESS_MASK DesiredAccess,
 	POBJECT_ATTRIBUTES ObjectAttributes)
 {
-	dprintf("%p %08lx %p\n", MutantHandle, DesiredAccess, ObjectAttributes );
+	trace("%p %08lx %p\n", MutantHandle, DesiredAccess, ObjectAttributes );
 	return nt_open_object<mutant_t>( MutantHandle, DesiredAccess, ObjectAttributes );
 }
 

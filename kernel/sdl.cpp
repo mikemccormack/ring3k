@@ -143,7 +143,7 @@ COLORREF sdl_16bpp_bitmap_t::get_pixel( INT x, INT y )
 
 BOOL sdl_16bpp_bitmap_t::rectangle(INT left, INT top, INT right, INT bottom, brush_t* brush )
 {
-	dprintf("sdl_16bpp_bitmap_t::rectangle\n");
+	trace("sdl_16bpp_bitmap_t::rectangle\n");
 	BOOL r;
 	lock();
 	r = bitmap_t::rectangle( left, top, right, bottom, brush );
@@ -163,7 +163,7 @@ COLORREF win32k_sdl_t::freetype_get_pixel( int x, int y, FT_Bitmap* bitmap )
 		val = (bitmap->buffer[bytes_per_row*y + (x>>3)] << (x&7)) & 0x80;
 		return val ? RGB( 255, 255, 255 ) : RGB( 0, 0, 0 );
 	default:
-		dprintf("unknown freetype pixel mode %d\n", bitmap->pixel_mode);
+		trace("unknown freetype pixel mode %d\n", bitmap->pixel_mode);
 		return 0;
 	}
 }
@@ -174,10 +174,10 @@ void win32k_sdl_t::freetype_bitblt( int x, int y, FT_Bitmap* bitmap )
 	BYTE *buf;
 	INT j, i;
 
-	dprintf("glyph is %dx%d\n", bitmap->rows, bitmap->width);
-	dprintf("pixel mode is %d\n", bitmap->pixel_mode );
-	dprintf("destination is %d,%d\n", x, y );
-	dprintf("pitch is %d\n", bitmap->pitch );
+	trace("glyph is %dx%d\n", bitmap->rows, bitmap->width);
+	trace("pixel mode is %d\n", bitmap->pixel_mode );
+	trace("destination is %d,%d\n", x, y );
+	trace("pitch is %d\n", bitmap->pitch );
 
 	/* loop for every pixel in bitmap */
 	buf = bitmap->buffer;
@@ -198,7 +198,7 @@ static char vgasys[] = "drive/winnt/system32/vgasys.fon";
 BOOL win32k_sdl_t::exttextout( INT x, INT y, UINT options,
 		 LPRECT rect, UNICODE_STRING& text )
 {
-	dprintf("text: %pus\n", &text );
+	trace("text: %pus\n", &text );
 
 	FT_Open_Args args;
 	memset( &args, 0, sizeof args );
@@ -307,11 +307,11 @@ WORD sdl_sleeper_t::sdl_keysum_to_vkey( SDLKey sym )
 	mk(RIGHT)
 	//mk(ESCAPE)
 	case SDLK_ESCAPE:
-		dprintf("escape!\n");
+		trace("escape!\n");
 		return VK_ESCAPE;
 #undef mk
 	default:
-		dprintf("%d unhandled\n", sym);
+		trace("%d unhandled\n", sym);
 		return 0;
 	}
 }
@@ -327,7 +327,7 @@ ULONG sdl_sleeper_t::get_mouse_button( Uint8 button, bool up )
 	case SDL_BUTTON_MIDDLE:
 		return up ? MOUSEEVENTF_MIDDLEUP : MOUSEEVENTF_MIDDLEDOWN;
 	default:
-		dprintf("unknown mouse button %d\n", button );
+		trace("unknown mouse button %d\n", button );
 		return 0;
 	}
 }
@@ -343,7 +343,7 @@ bool sdl_sleeper_t::handle_sdl_event( SDL_Event& event )
 
 	case SDL_KEYDOWN:
 	case SDL_KEYUP:
-		dprintf("got SDL keyboard event\n");
+		trace("got SDL keyboard event\n");
 		input.type = INPUT_KEYBOARD;
 		input.ki.time = timeout_t::get_tick_count();
 		input.ki.wVk = sdl_keysum_to_vkey( event.key.keysym.sym );
@@ -355,7 +355,7 @@ bool sdl_sleeper_t::handle_sdl_event( SDL_Event& event )
 
 	case SDL_MOUSEBUTTONDOWN:
 	case SDL_MOUSEBUTTONUP:
-		dprintf("got SDL mouse button event\n");
+		trace("got SDL mouse button event\n");
 		input.type = INPUT_MOUSE;
 		input.mi.dx = event.button.x;
 		input.mi.dy = event.button.y;
@@ -367,7 +367,7 @@ bool sdl_sleeper_t::handle_sdl_event( SDL_Event& event )
 		break;
 
 	case SDL_MOUSEMOTION:
-		dprintf("got SDL mouse motion event\n");
+		trace("got SDL mouse motion event\n");
 		input.type = INPUT_MOUSE;
 		input.mi.dx = event.motion.x;
 		input.mi.dy = event.motion.y;
@@ -429,7 +429,7 @@ bool sdl_sleeper_t::check_events( bool wait )
 	}
 	else
 	{
-		dprintf("SDL_WaitEvent returned error\n");
+		trace("SDL_WaitEvent returned error\n");
 		quit = true;
 	}
 
@@ -447,7 +447,7 @@ int win32k_sdl_t::getcaps( int index )
 	case BITSPIXEL:
 		return screen->format->BitsPerPixel;
 	default:
-		dprintf("%d\n", index );
+		trace("%d\n", index );
 		return 0;
 	}
 }
@@ -546,7 +546,7 @@ bitmap_t* sdl_device_context_t::get_bitmap()
 
 HANDLE sdl_device_context_t::select_bitmap( bitmap_t *bitmap )
 {
-	dprintf("trying to change device's bitmap...\n");
+	trace("trying to change device's bitmap...\n");
 	return 0;
 }
 
@@ -563,7 +563,7 @@ int sdl_device_context_t::getcaps( int index )
 
 device_context_t* win32k_sdl_t::alloc_screen_dc_ptr()
 {
-	dprintf("allocating SDL DC sdl_bitmap = %p\n", sdl_bitmap);
+	trace("allocating SDL DC sdl_bitmap = %p\n", sdl_bitmap);
 	return new sdl_device_context_t( sdl_bitmap );
 }
 

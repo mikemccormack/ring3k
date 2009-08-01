@@ -182,7 +182,7 @@ ULONG regkey_t::num_subkeys(ULONG& max_name_len, ULONG& max_class_len)
 
 void regkey_t::query( KEY_FULL_INFORMATION& info, UNICODE_STRING& keycls )
 {
-	dprintf("full information\n");
+	trace("full information\n");
 	info.LastWriteTime.QuadPart = 0LL;
 	info.TitleIndex = 0;
 	info.ClassOffset = FIELD_OFFSET( KEY_FULL_INFORMATION, Class );
@@ -190,12 +190,12 @@ void regkey_t::query( KEY_FULL_INFORMATION& info, UNICODE_STRING& keycls )
 	info.SubKeys = num_subkeys(info.MaxNameLen, info.MaxClassLen);
 	info.Values = num_values(info.MaxValueNameLen, info.MaxValueDataLen);
 	keycls = cls;
-	dprintf("class = %pus\n", &cls );
+	trace("class = %pus\n", &cls );
 }
 
 void regkey_t::query( KEY_BASIC_INFORMATION& info, UNICODE_STRING& namestr )
 {
-	dprintf("basic information\n");
+	trace("basic information\n");
 	info.LastWriteTime.QuadPart = 0LL;
 	info.TitleIndex = 0;
 	info.NameLength = name.Length;
@@ -306,7 +306,7 @@ NTSTATUS open_parse_key( regkey_t *&key, UNICODE_STRING *name, bool case_insensi
 
 	if (name->Length)
 	{
-		dprintf("remaining = %pus\n", name);
+		trace("remaining = %pus\n", name);
 		if (name->Length == get_next_segment( name ))
 			return STATUS_OBJECT_NAME_NOT_FOUND;
 
@@ -411,13 +411,13 @@ NTSTATUS delete_value( regkey_t *key, UNICODE_STRING *us )
 {
 	regval_t *val;
 
-	//dprintf("%p %pus\n", key, us);
+	//trace("%p %pus\n", key, us);
 
 	val = key_find_value( key, us );
 	if (!val)
 		return STATUS_OBJECT_NAME_NOT_FOUND;
 
-	dprintf("deleting %pus\n", &val->name);
+	trace("deleting %pus\n", &val->name);
 	key->values.unlink( val );
 	delete val;
 	return STATUS_SUCCESS;
@@ -440,7 +440,7 @@ NTSTATUS reg_query_value(
 
 	len = 0;
 
-	dprintf("%pus\n", &val->name );
+	trace("%pus\n", &val->name );
 
 	memset( &info, 0, sizeof info );
 
@@ -516,7 +516,7 @@ NTSTATUS NTAPI NtCreateKey(
 	NTSTATUS r;
 	regkey_t *key = NULL;
 
-	dprintf("%p %08lx %p %lu %p %lu %p\n", KeyHandle, DesiredAccess,
+	trace("%p %08lx %p %lu %p %lu %p\n", KeyHandle, DesiredAccess,
 			ObjectAttributes, TitleIndex, Class, CreateOptions, Disposition );
 
 	if (Disposition)
@@ -530,7 +530,7 @@ NTSTATUS NTAPI NtCreateKey(
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("len %08lx root %p attr %08lx %pus\n",
+	trace("len %08lx root %p attr %08lx %pus\n",
 			oa.Length, oa.RootDirectory, oa.Attributes, oa.ObjectName);
 
 	unicode_string_t cls;
@@ -567,7 +567,7 @@ NTSTATUS NTAPI NtOpenKey(
 	NTSTATUS r;
 	regkey_t *key = NULL;
 
-	dprintf("%p %08lx %p\n", KeyHandle, DesiredAccess, ObjectAttributes );
+	trace("%p %08lx %p\n", KeyHandle, DesiredAccess, ObjectAttributes );
 
 	// copies the unicode string before validating object attributes struct
 	r = copy_from_user( &oa, ObjectAttributes, sizeof oa );
@@ -582,12 +582,12 @@ NTSTATUS NTAPI NtOpenKey(
 	if (oa.Length != sizeof oa)
 		return STATUS_INVALID_PARAMETER;
 
-	dprintf("len %08lx root %p attr %08lx %pus\n",
+	trace("len %08lx root %p attr %08lx %pus\n",
 			oa.Length, oa.RootDirectory, oa.Attributes, oa.ObjectName);
 
 	r = open_key( &key, &oa );
 
-	dprintf("open_key returned %08lx\n", r);
+	trace("open_key returned %08lx\n", r);
 
 	if (r == STATUS_SUCCESS)
 	{
@@ -601,7 +601,7 @@ NTSTATUS NTAPI NtOpenKey(
 NTSTATUS NTAPI NtInitializeRegistry(
 	BOOLEAN Setup )
 {
-	dprintf("%d\n", Setup);
+	trace("%d\n", Setup);
 	return STATUS_SUCCESS;
 }
 
@@ -617,7 +617,7 @@ NTSTATUS check_key_value_info_class( KEY_VALUE_INFORMATION_CLASS KeyValueInforma
 		break;
 	case KeyValueFullInformationAlign64:
 	case KeyValuePartialInformationAlign64:
-		dprintf("not implemented %d\n", KeyValueInformationClass);
+		trace("not implemented %d\n", KeyValueInformationClass);
 		return STATUS_NOT_IMPLEMENTED;
 	default:
 		return STATUS_INVALID_PARAMETER;
@@ -639,7 +639,7 @@ NTSTATUS NTAPI NtQueryValueKey(
 	regkey_t *key;
 	regval_t *val;
 
-	dprintf("%p %p %d %p %lu %p\n", KeyHandle, ValueName, KeyValueInformationClass,
+	trace("%p %p %d %p %lu %p\n", KeyHandle, ValueName, KeyValueInformationClass,
 			KeyValueInformation, KeyValueInformationLength, ResultLength );
 
 	r = check_key_value_info_class( KeyValueInformationClass );
@@ -658,7 +658,7 @@ NTSTATUS NTAPI NtQueryValueKey(
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("%pus\n", &us );
+	trace("%pus\n", &us );
 
 	val = key_find_value( key, &us );
 	if (!val)
@@ -684,7 +684,7 @@ NTSTATUS NTAPI NtSetValueKey(
 	regkey_t *key;
 	NTSTATUS r;
 
-	dprintf("%p %p %lu %lu %p %lu\n", KeyHandle, ValueName, TitleIndex, Type, Data, DataSize );
+	trace("%p %p %lu %lu %p %lu\n", KeyHandle, ValueName, TitleIndex, Type, Data, DataSize );
 
 	r = object_from_handle( key, KeyHandle, KEY_SET_VALUE );
 	if (r < STATUS_SUCCESS)
@@ -726,7 +726,7 @@ NTSTATUS NTAPI NtEnumerateValueKey(
 	ULONG len = 0;
 	NTSTATUS r = STATUS_SUCCESS;
 
-	dprintf("%p %lu %u %p %lu %p\n", KeyHandle, Index, KeyValueInformationClass,
+	trace("%p %lu %u %p %lu %p\n", KeyHandle, Index, KeyValueInformationClass,
 			KeyValueInformation, KeyValueInformationLength, ResultLength );
 
 	r = object_from_handle( key, KeyHandle, KEY_QUERY_VALUE );
@@ -760,7 +760,7 @@ NTSTATUS NTAPI NtDeleteValueKey(
 	NTSTATUS r;
 	regkey_t *key;
 
-	dprintf("%p %p\n", KeyHandle, ValueName);
+	trace("%p %p\n", KeyHandle, ValueName);
 
 	r = us.copy_from_user( ValueName );
 	if (r < STATUS_SUCCESS)
@@ -795,7 +795,7 @@ NTSTATUS NTAPI NtFlushKey(
 	NTSTATUS r = object_from_handle( key, KeyHandle, 0 );
 	if (r < STATUS_SUCCESS)
 		return r;
-	dprintf("flush!\n");
+	trace("flush!\n");
 	return r;
 }
 
@@ -803,7 +803,7 @@ NTSTATUS NTAPI NtSaveKey(
 	HANDLE KeyHandle,
 	HANDLE FileHandle)
 {
-	dprintf("%p %p\n", KeyHandle, FileHandle);
+	trace("%p %p\n", KeyHandle, FileHandle);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -812,7 +812,7 @@ NTSTATUS NTAPI NtSaveMergedKeys(
 	HANDLE KeyHandle2,
 	HANDLE FileHandle)
 {
-	dprintf("%p %p %p\n", KeyHandle1, KeyHandle2, FileHandle);
+	trace("%p %p %p\n", KeyHandle1, KeyHandle2, FileHandle);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -821,7 +821,7 @@ NTSTATUS NTAPI NtRestoreKey(
 	HANDLE FileHandle,
 	ULONG Flags)
 {
-	dprintf("%p %p %08lx\n", KeyHandle, FileHandle, Flags);
+	trace("%p %p %08lx\n", KeyHandle, FileHandle, Flags);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -829,14 +829,14 @@ NTSTATUS NTAPI NtLoadKey(
 	POBJECT_ATTRIBUTES KeyObjectAttributes,
 	POBJECT_ATTRIBUTES FileObjectAttributes)
 {
-	dprintf("%p %p\n", KeyObjectAttributes, FileObjectAttributes);
+	trace("%p %p\n", KeyObjectAttributes, FileObjectAttributes);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS NTAPI NtUnloadKey(
 	POBJECT_ATTRIBUTES KeyObjectAttributes)
 {
-	dprintf("%p\n", KeyObjectAttributes);
+	trace("%p\n", KeyObjectAttributes);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -844,7 +844,7 @@ NTSTATUS NTAPI NtQueryOpenSubKeys(
 	POBJECT_ATTRIBUTES KeyObjectAttributes,
 	PULONG NumberOfKeys)
 {
-	dprintf("%p %p\n", KeyObjectAttributes, NumberOfKeys);
+	trace("%p %p\n", KeyObjectAttributes, NumberOfKeys);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -853,7 +853,7 @@ NTSTATUS NTAPI NtReplaceKey(
 	HANDLE KeyHandle,
 	POBJECT_ATTRIBUTES OldFileObjectAttributes)
 {
-	dprintf("%p %p %p\n", NewFileObjectAttributes,
+	trace("%p %p %p\n", NewFileObjectAttributes,
 			KeyHandle, OldFileObjectAttributes);
 	return STATUS_NOT_IMPLEMENTED;
 }
@@ -917,7 +917,7 @@ NTSTATUS NTAPI NtNotifyChangeKey(
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("does nothing...\n");
+	trace("does nothing...\n");
 
 	return STATUS_SUCCESS;
 }
@@ -1008,13 +1008,13 @@ NTSTATUS regkey_t::query(
 		if (r < STATUS_SUCCESS)
 			break;
 
-		dprintf("keycls = %pus\n", &keycls);
+		trace("keycls = %pus\n", &keycls);
 		r = copy_to_user( (BYTE*)KeyInformation + FIELD_OFFSET( KEY_FULL_INFORMATION, Class ), keycls.Buffer, keycls.Length );
 
 		break;
 
 	case KeyNodeInformation:
-		dprintf("KeyNodeInformation\n");
+		trace("KeyNodeInformation\n");
 	default:
 		assert(0);
 	}
@@ -1061,10 +1061,10 @@ ULONG hex_to_binary( xmlChar *str, ULONG len, BYTE *buf )
 			break;
 		if (buf)
 			buf[n] = (msb<<4) | lsb;
-		//dprintf("%02x ", (msb<<4) | lsb);
+		//trace("%02x ", (msb<<4) | lsb);
 		n++;
 	}
-	//dprintf("\n");
+	//trace("\n");
 	assert( len == 0 || n <= len );
 	return n;
 }
@@ -1113,7 +1113,7 @@ void dump_val( regval_t *val )
 {
 	ULONG i;
 
-	dprintf("%pus = ", &val->name );
+	trace("%pus = ", &val->name );
 	switch( val->type )
 	{
 	case 7:
@@ -1131,7 +1131,7 @@ void dump_val( regval_t *val )
 		break;
 	case 1:
 	case 2:
-		dprintf("%pws\n", val->data );
+		trace("%pws\n", val->data );
 		break;
 	}
 }

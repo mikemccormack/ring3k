@@ -187,7 +187,7 @@ ULONG unicode_string_t::utf8_to_wchar( const unsigned char *str, ULONG len, WCHA
 			n++;
 			continue;
 		}
-		dprintf("invalid utf8 string %02x %02x %02x\n", str[i], str[i+1], str[i+2]);
+		trace("invalid utf8 string %02x %02x %02x\n", str[i], str[i+1], str[i+2]);
 		break;
 	}
 	if (buf)

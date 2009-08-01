@@ -40,13 +40,13 @@ public:
 
 NTSTATUS mailslot_t::read( PVOID Buffer, ULONG Length, ULONG *Read )
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS mailslot_t::write( PVOID Buffer, ULONG Length, ULONG *Written )
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -75,7 +75,7 @@ NTSTATUS NTAPI NtCreateMailslotFile(
 	ULONG MaxMessageSize,
 	PLARGE_INTEGER ReadTimeout)
 {
-	dprintf("%p %08lx %p %p %08lx %lu %lu %p\n", MailslotHandle, AccessMask,
+	trace("%p %08lx %p %p %08lx %lu %lu %p\n", MailslotHandle, AccessMask,
 			ObjectAttributes, IoStatusBlock, CreateOptions,
 			InBufferSize, MaxMessageSize, ReadTimeout);
 

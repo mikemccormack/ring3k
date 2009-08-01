@@ -232,14 +232,14 @@ mblock::~mblock()
 
 void mblock::dump()
 {
-	dprintf("%p %08lx %08lx %08lx %08lx\n", BaseAddress, RegionSize, Protect, State, Type );
+	trace("%p %08lx %08lx %08lx %08lx\n", BaseAddress, RegionSize, Protect, State, Type );
 }
 
 mblock *mblock::split( size_t target_length )
 {
 	mblock *ret;
 
-	dprintf("splitting block\n");
+	trace("splitting block\n");
 
 	assert( target_length >= 0x1000);
 	assert( !(target_length&0xfff) );
@@ -253,7 +253,7 @@ mblock *mblock::split( size_t target_length )
 	ret = do_split( BaseAddress + target_length, RegionSize - target_length );
 	if (!ret)
 	{
-		dprintf("split failed!\n");
+		trace("split failed!\n");
 		return NULL;
 	}
 
@@ -298,7 +298,7 @@ ULONG mblock::mmap_flag_from_page_prot( ULONG prot )
 	case PAGE_EXECUTE_READWRITE:
 		return PROT_EXEC | PROT_READ | PROT_WRITE;
 	case PAGE_EXECUTE_WRITECOPY:
-		dprintf("FIXME, PAGE_EXECUTE_WRITECOPY not supported\n");
+		trace("FIXME, PAGE_EXECUTE_WRITECOPY not supported\n");
 		return PROT_EXEC | PROT_READ | PROT_WRITE;
 	case PAGE_NOACCESS:
 		return 0;
@@ -307,10 +307,10 @@ ULONG mblock::mmap_flag_from_page_prot( ULONG prot )
 	case PAGE_READWRITE:
 		return PROT_READ | PROT_WRITE;
 	case PAGE_WRITECOPY:
-		dprintf("FIXME, PAGE_WRITECOPY not supported\n");
+		trace("FIXME, PAGE_WRITECOPY not supported\n");
 		return PROT_READ | PROT_WRITE;
 	}
-	dprintf("shouldn't get here\n");
+	trace("shouldn't get here\n");
 	return STATUS_INVALID_PAGE_PROTECTION;
 }
 
@@ -326,7 +326,7 @@ void mblock::commit( address_space *vm )
 		State = MEM_COMMIT;
 		Type = MEM_PRIVATE;
 
-		//dprintf("committing %p/%p %08lx\n", kernel_address, BaseAddress, RegionSize);
+		//trace("committing %p/%p %08lx\n", kernel_address, BaseAddress, RegionSize);
 		if (0 > local_map( PROT_READ | PROT_WRITE ) &&
 			0 > local_map( PROT_READ ))
 			die("couldn't map user memory into kernel %d\n", errno);

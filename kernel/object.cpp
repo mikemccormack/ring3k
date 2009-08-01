@@ -52,15 +52,15 @@ open_info_t::~open_info_t()
 void object_t::addref( object_t *obj )
 {
 	obj->refcount ++;
-	//dprintf("%p has %ld refs\n", obj, obj->refcount);
+	//trace("%p has %ld refs\n", obj, obj->refcount);
 }
 
 void object_t::release( object_t *obj )
 {
-	//dprintf("%p has %ld refs left\n", obj, obj->refcount - 1);
+	//trace("%p has %ld refs left\n", obj, obj->refcount - 1);
 	if (!--obj->refcount)
 	{
-		//dprintf("destroying %p\n", obj);
+		//trace("destroying %p\n", obj);
 		delete obj;
 	}
 }
@@ -69,7 +69,7 @@ NTSTATUS object_t::open( object_t *&out, open_info_t& info )
 {
 	if (info.path.Length != 0)
 	{
-		dprintf("length not zero\n");
+		trace("length not zero\n");
 		return STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 	addref( this );
@@ -229,7 +229,7 @@ NTSTATUS object_factory::create(
 		if (r < STATUS_SUCCESS)
 			return r;
 
-		dprintf("name = %pus\n", oa.ObjectName);
+		trace("name = %pus\n", oa.ObjectName);
 	}
 
 	if (oa.ObjectName && oa.ObjectName->Length)
@@ -250,7 +250,7 @@ NTSTATUS object_factory::create(
 	// maybe this should be done in alloc_object ?
 	NTSTATUS r2 = alloc_user_handle( obj, AccessMask, Handle );
 	if (r2 == STATUS_SUCCESS && (oa.Attributes & OBJ_PERMANENT ))
-		dprintf("permanent object\n");
+		trace("permanent object\n");
 	else
 		release( obj );
 
@@ -290,7 +290,7 @@ bool object_t::check_access( ACCESS_MASK required, ACCESS_MASK handle, ACCESS_MA
 
 bool object_t::access_allowed( ACCESS_MASK access, ACCESS_MASK handle_access )
 {
-	dprintf("fixme: no access check\n");
+	trace("fixme: no access check\n");
 	return true;
 }
 
@@ -335,7 +335,7 @@ BOOLEAN sync_object_t::satisfy( void )
 
 NTSTATUS NTAPI NtClose( HANDLE Handle )
 {
-	dprintf("%p\n", Handle );
+	trace("%p\n", Handle );
 	return current->process->handle_table.free_handle( Handle );
 }
 
@@ -346,7 +346,7 @@ NTSTATUS NTAPI NtQueryObject(
 	ULONG ObjectInformationLength,
 	PULONG ReturnLength)
 {
-	dprintf("%p %d %p %lu %p\n", Object, ObjectInformationClass,
+	trace("%p %d %p %lu %p\n", Object, ObjectInformationClass,
 			ObjectInformation, ObjectInformationLength, ReturnLength);
 
 	union {
@@ -399,7 +399,7 @@ NTSTATUS NTAPI NtSetInformationObject(
 	PVOID ObjectInformation,
 	ULONG ObjectInformationLength)
 {
-	dprintf("%p %d %p %lu\n", Object, ObjectInformationClass,
+	trace("%p %d %p %lu\n", Object, ObjectInformationClass,
 			ObjectInformation, ObjectInformationLength);
 
 	union {
@@ -416,7 +416,7 @@ NTSTATUS NTAPI NtSetInformationObject(
 	case ObjectNameInformation:
 	case ObjectTypeInformation:
 	case ObjectAllTypesInformation:
-		dprintf("unimplemented class %d\n", ObjectInformationClass);
+		trace("unimplemented class %d\n", ObjectInformationClass);
 	default:
 		return STATUS_INVALID_INFO_CLASS;
 	}
@@ -454,7 +454,7 @@ NTSTATUS NTAPI NtDuplicateObject(
 	ULONG Attributes,
 	ULONG Options)
 {
-	dprintf("%p %p %p %p %08lx %08lx %08lx\n",
+	trace("%p %p %p %p %08lx %08lx %08lx\n",
 			SourceProcessHandle, SourceHandle, TargetProcessHandle,
 			TargetHandle, DesiredAccess, Attributes, Options);
 
@@ -465,7 +465,7 @@ NTSTATUS NTAPI NtDuplicateObject(
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("source process %p\n", sp );
+	trace("source process %p\n", sp );
 
 	object_t *obj = 0;
 	r = sp->handle_table.object_from_handle( obj, SourceHandle, DesiredAccess );
@@ -484,12 +484,12 @@ NTSTATUS NTAPI NtDuplicateObject(
 	// put the object into the target process's handle table
 	process_t *tp = 0;
 	r = process_from_handle( TargetProcessHandle, &tp );
-	dprintf("target process %p\n", tp );
+	trace("target process %p\n", tp );
 	if (r == STATUS_SUCCESS)
 	{
 		HANDLE handle;
 		r = process_alloc_user_handle( tp, obj, DesiredAccess, TargetHandle, &handle );
-		dprintf("new handle is %p\n", handle );
+		trace("new handle is %p\n", handle );
 	}
 
 	release( obj );
@@ -520,7 +520,7 @@ NTSTATUS NTAPI NtQuerySecurityObject(
 	ULONG sz = sizeof sdr;
 
 #define SINF(x) ((SecurityInformation & (x)) ? #x " " : "")
-	dprintf("%08lx = %s%s%s%s\n", SecurityInformation,
+	trace("%08lx = %s%s%s%s\n", SecurityInformation,
 		SINF(OWNER_SECURITY_INFORMATION),
 		SINF(GROUP_SECURITY_INFORMATION),
 		SINF(SACL_SECURITY_INFORMATION),
@@ -565,7 +565,7 @@ NTSTATUS NTAPI NtPrivilegeObjectAuditAlarm(
 	r = us.copy_from_user( SubsystemName );
 	if (r < STATUS_SUCCESS)
 		return r;
-	dprintf("SubsystemName = %pus\n", &us);
+	trace("SubsystemName = %pus\n", &us);
 
 	return STATUS_UNSUCCESSFUL;
 }
@@ -577,7 +577,7 @@ NTSTATUS NTAPI NtPrivilegedServiceAuditAlarm(
 	PPRIVILEGE_SET Privileges,
 	BOOLEAN AccessGranted)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_UNSUCCESSFUL;
 }
 
@@ -592,7 +592,7 @@ NTSTATUS NTAPI NtCloseObjectAuditAlarm(
 	r = us.copy_from_user( SubsystemName );
 	if (r < STATUS_SUCCESS)
 		return r;
-	dprintf("SubsystemName = %pus\n", &us);
+	trace("SubsystemName = %pus\n", &us);
 
 	return STATUS_SUCCESS;
 }

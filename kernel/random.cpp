@@ -43,13 +43,13 @@ random_dev_t::random_dev_t()
 
 NTSTATUS random_dev_t::read( PVOID Buffer, ULONG Length, ULONG *read )
 {
-	dprintf("random_dev_t\n");
+	trace("random_dev_t\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS random_dev_t::write( PVOID Buffer, ULONG Length, ULONG *written )
 {
-	dprintf("random_dev_t\n");
+	trace("random_dev_t\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 

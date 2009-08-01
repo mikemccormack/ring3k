@@ -24,7 +24,7 @@ template<class T> NTSTATUS nt_open_object(
 		oa.ObjectName = &us;
 	}
 
-	dprintf("object = %pus\n", oa.ObjectName );
+	trace("object = %pus\n", oa.ObjectName );
 
 	object_t *object = NULL;
 

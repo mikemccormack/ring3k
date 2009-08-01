@@ -73,7 +73,7 @@ NTSTATUS NTAPI NtRaiseHardError(
 	NTSTATUS r;
 	ULONG i;
 
-	dprintf("%08lx %lu %lu %p %u %p\n", Status, NumberOfArguments,
+	trace("%08lx %lu %lu %p %u %p\n", Status, NumberOfArguments,
 			StringArgumentsMask, Arguments, ResponseOption, Response);
 
 	if (NumberOfArguments>32)
@@ -137,7 +137,7 @@ NTSTATUS NTAPI NtQuerySystemInformation(
 	} info;
 	ULONG len = 0;
 
-	dprintf("%d %p %lu %p\n", SystemInformationClass, SystemInformation,
+	trace("%d %p %lu %p\n", SystemInformationClass, SystemInformation,
 			SystemInformationLength, ReturnLength);
 
 	if (ReturnLength)
@@ -209,7 +209,7 @@ NTSTATUS NTAPI NtQuerySystemInformation(
 		break;
 
 	default:
-		dprintf("SystemInformationClass = %d not handled\n", SystemInformationClass);
+		trace("SystemInformationClass = %d not handled\n", SystemInformationClass);
 		r = STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -225,7 +225,7 @@ NTSTATUS NTAPI NtSetSystemInformation(
 	PVOID SystemInformation,
 	ULONG SystemInformationLength )
 {
-	dprintf("%d %p %lu\n", SystemInformationClass, SystemInformation, SystemInformationLength );
+	trace("%d %p %lu\n", SystemInformationClass, SystemInformation, SystemInformationLength );
 	return STATUS_SUCCESS;
 }
 
@@ -234,7 +234,7 @@ NTSTATUS NTAPI NtFlushInstructionCache(
 	PVOID BaseAddress,
 	SIZE_T NumberOfBytesToFlush )
 {
-	dprintf("%p %p %08lx\n", Process, BaseAddress, NumberOfBytesToFlush);
+	trace("%p %p %08lx\n", Process, BaseAddress, NumberOfBytesToFlush);
 	return STATUS_SUCCESS;
 }
 
@@ -247,7 +247,7 @@ NTSTATUS NTAPI NtDisplayString( PUNICODE_STRING String )
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("%pus\n", &us );
+	trace("%pus\n", &us );
 
 	return STATUS_SUCCESS;
 }
@@ -275,7 +275,7 @@ NTSTATUS NTAPI NtCreatePagingFile(
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("unimplemented - %pus %llu %llu %08lx\n",
+	trace("unimplemented - %pus %llu %llu %08lx\n",
 			 &us, init_sz.QuadPart, max_sz.QuadPart, Reserved);
 
 	return STATUS_SUCCESS;
@@ -299,7 +299,7 @@ NTSTATUS NTAPI NtShutdownSystem(
 	default:
 		return STATUS_INVALID_PARAMETER;
 	}
-	dprintf("%s\n", action);
+	trace("%s\n", action);
 	exit(1);
 }
 
@@ -335,6 +335,6 @@ NTSTATUS NTAPI NtQueryDebugFilterState(
 	ULONG Component,
 	ULONG Level)
 {
-	dprintf("%08lx %08lx\n", Component, Level);
+	trace("%08lx %08lx\n", Component, Level);
 	return STATUS_SUCCESS;
 }

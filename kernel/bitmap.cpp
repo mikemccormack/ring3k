@@ -138,7 +138,7 @@ COLORREF bitmap_t::get_pixel( int x, int y )
 		return RGB( (val & 0xf800) >> 8, (val & 0x07e0) >> 3, (val & 0x1f) << 3 );
 		}
 	default:
-		dprintf("%d bpp not implemented\n", bpp);
+		trace("%d bpp not implemented\n", bpp);
 	}
 	return 0;
 }
@@ -176,7 +176,7 @@ BOOL bitmap_t::set_pixel_l( int x, int y, COLORREF color )
 			((GetBValue(color)&0xf8) >> 3);
 		break;
 	default:
-		dprintf("%d bpp not implemented\n", bpp);
+		trace("%d bpp not implemented\n", bpp);
 	}
 	return TRUE;
 }
@@ -192,9 +192,9 @@ BOOL bitmap_t::bitblt(
 	bitmap_t *src,
 	INT xSrc, INT ySrc, ULONG rop )
 {
-	dprintf("%d,%d %dx%d <- %d,%d\n", xDest, yDest, cx, cy, xSrc, ySrc );
+	trace("%d,%d %dx%d <- %d,%d\n", xDest, yDest, cx, cy, xSrc, ySrc );
 	if (rop != SRCCOPY)
-		dprintf("ROP %ld not supported\n", rop);
+		trace("ROP %ld not supported\n", rop);
 
 	// copy the pixels
 	COLORREF pixel;
@@ -297,7 +297,7 @@ BOOL bitmap_t::rectangle(INT left, INT top, INT right, INT bottom, brush_t* brus
 	// FIXME: use correct pen color
 	pen_val = RGB( 0, 0, 0 );
 	brush_val = brush->get_color();
-	dprintf("brush color = %08lx\n", brush->get_color());
+	trace("brush color = %08lx\n", brush->get_color());
 
 	// top line
 	draw_hline(left, top, right, pen_val);

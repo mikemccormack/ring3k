@@ -172,7 +172,7 @@ NTSTATUS pipe_device_t::open( object_t *&out, open_info_t& info )
 		return object_dir_impl_t::open( out, info );
 
 	// appears to be a flat namespace under the pipe device
-	dprintf("pipe = %pus\n", &info.path );
+	trace("pipe = %pus\n", &info.path );
 	out = lookup( info.path, info.case_insensitive() );
 
 	// not the NtCreateNamedPipeFile case?
@@ -184,7 +184,7 @@ NTSTATUS pipe_device_t::open( object_t *&out, open_info_t& info )
 
 NTSTATUS pipe_container_t::open( object_t *&out, open_info_t& info )
 {
-	dprintf("allocating pipe client = %pus\n", &info.path );
+	trace("allocating pipe client = %pus\n", &info.path );
 	pipe_client_t *pipe = 0;
 	NTSTATUS r = create_client( pipe );
 	if (r < STATUS_SUCCESS)
@@ -279,7 +279,7 @@ NTSTATUS wait_server_info_t::copy_from_user( PFILE_PIPE_WAIT_FOR_BUFFER pwfb, UL
 
 void wait_server_info_t::dump()
 {
-	dprintf("pipe server wait name=%pus\n", &name );
+	trace("pipe server wait name=%pus\n", &name );
 }
 
 NTSTATUS pipe_device_t::wait_server_available( PFILE_PIPE_WAIT_FOR_BUFFER pwfb, ULONG Length )
@@ -295,7 +295,7 @@ NTSTATUS pipe_device_t::wait_server_available( PFILE_PIPE_WAIT_FOR_BUFFER pwfb, 
 	object_t* obj = lookup( info.name, true );
 	if (!obj)
 	{
-		dprintf("no pipe server (%pus)\n", &info.name );
+		trace("no pipe server (%pus)\n", &info.name );
 		return STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -319,7 +319,7 @@ NTSTATUS pipe_device_t::fs_control( event_t* event, IO_STATUS_BLOCK iosb, ULONG 
 	if (FsControlCode == FSCTL_PIPE_WAIT)
 		return wait_server_available( (PFILE_PIPE_WAIT_FOR_BUFFER) InputBuffer, InputBufferLength );
 
-	dprintf("unimplemented %08lx\n", FsControlCode);
+	trace("unimplemented %08lx\n", FsControlCode);
 
 	return STATUS_NOT_IMPLEMENTED;
 }
@@ -338,7 +338,7 @@ void pipe_container_t::unlink( pipe_server_t *pipe )
 
 NTSTATUS pipe_container_t::create_server( pipe_server_t *& pipe, ULONG max_inst )
 {
-	dprintf("creating pipe server\n");
+	trace("creating pipe server\n");
 	if (max_inst != max_instances)
 		return STATUS_INVALID_PARAMETER;
 
@@ -378,7 +378,7 @@ void pipe_server_t::set_client( pipe_client_t* pipe_client )
 	client = pipe_client;
 	client->server = this;
 	state = pipe_connected;
-	dprintf("connect server %p to client %p\n", this, client );
+	trace("connect server %p to client %p\n", this, client );
 }
 
 pipe_server_t* pipe_container_t::find_idle_server()
@@ -416,7 +416,7 @@ pipe_server_t::~pipe_server_t()
 NTSTATUS pipe_server_t::open( object_t *&out, open_info_t& info )
 {
 	// should return a pointer to a pipe client
-	dprintf("implement\n");
+	trace("implement\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -525,14 +525,14 @@ NTSTATUS pipe_server_t::disconnect()
 NTSTATUS pipe_server_t::fs_control( event_t* event, IO_STATUS_BLOCK iosb, ULONG FsControlCode,
 		 PVOID InputBuffer, ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength )
 {
-	dprintf("pipe_server_t %08lx\n", FsControlCode);
+	trace("pipe_server_t %08lx\n", FsControlCode);
 	if (FsControlCode == FSCTL_PIPE_LISTEN)
 		return connect();
 
 	if (FsControlCode == FSCTL_PIPE_DISCONNECT)
 		return disconnect();
 
-	dprintf("implement\n");
+	trace("implement\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -631,7 +631,7 @@ NTSTATUS pipe_client_t::write( PVOID buffer, ULONG length, ULONG *written )
 NTSTATUS pipe_client_t::fs_control( event_t* event, IO_STATUS_BLOCK iosb, ULONG FsControlCode,
 		 PVOID InputBuffer, ULONG InputBufferLength, PVOID OutputBuffer, ULONG OutputBufferLength )
 {
-	dprintf("pipe_client_t %08lx\n", FsControlCode);
+	trace("pipe_client_t %08lx\n", FsControlCode);
 
 	if (FsControlCode == FSCTL_PIPE_TRANSCEIVE)
 		return transceive( InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength );
@@ -658,7 +658,7 @@ NTSTATUS pipe_client_t::transceive(
 
 NTSTATUS pipe_client_t::set_pipe_info( FILE_PIPE_INFORMATION& pipe_info )
 {
-	dprintf("%ld %ld\n", pipe_info.ReadModeMessage, pipe_info.WaitModeBlocking);
+	trace("%ld %ld\n", pipe_info.ReadModeMessage, pipe_info.WaitModeBlocking);
 	return STATUS_SUCCESS;
 }
 
@@ -677,7 +677,7 @@ NTSTATUS pipe_factory::on_open( object_dir_t* dir, object_t*& obj, open_info_t& 
 {
 	NTSTATUS r;
 
-	dprintf("pipe_factory()\n");
+	trace("pipe_factory()\n");
 	pipe_container_t *container = 0;
 	if (!obj)
 	{

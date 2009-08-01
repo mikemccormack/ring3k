@@ -156,7 +156,7 @@ NTSTATUS map_locale_data( address_space *vm, const char *name, void **addr )
 		die("failed to map locale data (%08lx)\n", r);
 
 	*addr = (void*) data;
-	dprintf("locale data %s at %p\n", name, data);
+	trace("locale data %s at %p\n", name, data);
 
 	return STATUS_SUCCESS;
 }
@@ -316,17 +316,17 @@ NTSTATUS process_alloc_user_handle(
 	handle = p->handle_table.alloc_handle( obj, access );
 	if (!handle)
 	{
-		dprintf("out of handles?\n");
+		trace("out of handles?\n");
 		return STATUS_INSUFFICIENT_RESOURCES;
 	}
 
-	dprintf("handle = %08lx\n", (ULONG)handle );
+	trace("handle = %08lx\n", (ULONG)handle );
 
 	// write the handle into our process's VM
 	r = copy_to_user( out, &handle, sizeof handle );
 	if (r < STATUS_SUCCESS)
 	{
-		dprintf("write to %p failed\n", out);
+		trace("write to %p failed\n", out);
 		p->handle_table.free_handle( handle );
 	}
 
@@ -523,7 +523,7 @@ NTSTATUS NTAPI NtCreateProcess(
 	section_t *section = 0;
 	NTSTATUS r;
 
-	dprintf("%p %08lx %p %p %u %p %p %p\n", ProcessHandle, DesiredAccess,
+	trace("%p %08lx %p %p %u %p %p %p\n", ProcessHandle, DesiredAccess,
 			ObjectAttributes, InheritFromProcessHandle, InheritHandles,
 			SectionHandle, DebugPort, ExceptionPort );
 
@@ -575,7 +575,7 @@ NTSTATUS NTAPI NtOpenProcess(
 	CLIENT_ID id;
 	NTSTATUS r;
 
-	dprintf("%p %08lx %p %p\n", ProcessHandle, DesiredAccess, ObjectAttributes, ClientId );
+	trace("%p %08lx %p %p\n", ProcessHandle, DesiredAccess, ObjectAttributes, ClientId );
 
 	r = copy_from_user( &oa, ObjectAttributes, sizeof oa );
 	if (r < STATUS_SUCCESS)
@@ -598,11 +598,11 @@ NTSTATUS NTAPI NtOpenProcess(
 			return r;
 	}
 
-	//dprintf("client id %p %p\n", id.UniqueProcess, id.UniqueThread);
+	//trace("client id %p %p\n", id.UniqueProcess, id.UniqueThread);
 
 	if (oa.ObjectName == 0)
 	{
-		//dprintf("cid\n");
+		//trace("cid\n");
 		if (id.UniqueThread)
 		{
 			thread_t *t = find_thread_by_client_id( &id );
@@ -623,7 +623,7 @@ NTSTATUS NTAPI NtOpenProcess(
 	}
 	else
 	{
-		//dprintf("objectname\n");
+		//trace("objectname\n");
 
 		if (!oa.ObjectName)
 			return STATUS_INVALID_PARAMETER;
@@ -668,7 +668,7 @@ NTSTATUS NTAPI NtSetInformationProcess(
 	} info;
 	ULONG sz = 0;
 
-	dprintf("%p %u %p %lu\n", Process, ProcessInformationClass, ProcessInformation, ProcessInformationLength );
+	trace("%p %u %p %lu\n", Process, ProcessInformationClass, ProcessInformation, ProcessInformationLength );
 
 	switch (ProcessInformationClass)
 	{
@@ -736,29 +736,29 @@ NTSTATUS NTAPI NtSetInformationProcess(
 		break;
 
 	case ProcessForegroundInformation:
-		dprintf("set ProcessForegroundInformation\n");
+		trace("set ProcessForegroundInformation\n");
 		break;
 
 	case ProcessPriorityClass:
-		dprintf("set ProcessPriorityClass\n");
+		trace("set ProcessPriorityClass\n");
 		break;
 
 	case ProcessDefaultHardErrorMode:
 		p->hard_error_mode = info.hard_error_mode;
-		dprintf("set ProcessDefaultHardErrorMode\n");
+		trace("set ProcessDefaultHardErrorMode\n");
 		break;
 
 	case ProcessUserModeIOPL:
-		dprintf("set ProcessUserModeIOPL\n");
+		trace("set ProcessUserModeIOPL\n");
 		break;
 
 	case ProcessEnableAlignmentFaultFixup:
-		dprintf("ProcessEnableAlignmentFaultFixup = %d\n",
+		trace("ProcessEnableAlignmentFaultFixup = %d\n",
 				info.enable_alignment_fault_fixup);
 		break;
 
 	case ProcessExecuteFlags:
-		dprintf("setting to %08lx (%s%s%s)\n", info.execute_flags,
+		trace("setting to %08lx (%s%s%s)\n", info.execute_flags,
 			(info.execute_flags & MEM_EXECUTE_OPTION_DISABLE) ? "disable " : "",
 			(info.execute_flags & MEM_EXECUTE_OPTION_ENABLE) ? "enable " : "",
 			(info.execute_flags & MEM_EXECUTE_OPTION_PERMANENT) ? "permanent" : "");
@@ -766,7 +766,7 @@ NTSTATUS NTAPI NtSetInformationProcess(
 		break;
 
 	default:
-		dprintf("unimplemented class %d\n", ProcessInformationClass);
+		trace("unimplemented class %d\n", ProcessInformationClass);
 	}
 
 	return STATUS_SUCCESS;
@@ -790,7 +790,7 @@ NTSTATUS NTAPI NtQueryInformationProcess(
 	NTSTATUS r;
 	process_t *p;
 
-	dprintf("%p %u %p %lu %p\n", Process, ProcessInformationClass,
+	trace("%p %u %p %lu %p\n", Process, ProcessInformationClass,
 			ProcessInformation, ProcessInformationLength, ReturnLength );
 
 	switch (ProcessInformationClass)
@@ -819,7 +819,7 @@ NTSTATUS NTAPI NtQueryInformationProcess(
 		return STATUS_INVALID_INFO_CLASS;
 
 	default:
-		dprintf("info class %d\n", ProcessInformationClass);
+		trace("info class %d\n", ProcessInformationClass);
 		return STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -879,11 +879,11 @@ NTSTATUS NTAPI NtTerminateProcess(
 	process_t *p;
 	NTSTATUS r;
 
-	dprintf("%p %08lx\n", Process, Status);
+	trace("%p %08lx\n", Process, Status);
 
 	if (Process == 0)
 	{
-		dprintf("called with Process=0\n");
+		trace("called with Process=0\n");
 		return STATUS_SUCCESS;
 	}
 

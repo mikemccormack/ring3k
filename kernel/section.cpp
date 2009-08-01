@@ -79,7 +79,7 @@ void section_t::release()
 
 NTSTATUS section_t::mapit( address_space *vm, BYTE *&addr, ULONG ZeroBits, ULONG State, ULONG prot )
 {
-	dprintf("anonymous map\n");
+	trace("anonymous map\n");
 	if ((prot&0xff) > (Protect&0xff))
 		return STATUS_INVALID_PARAMETER;
 	NTSTATUS r = vm->map_fd( &addr, ZeroBits, len, State, prot, this );
@@ -206,7 +206,7 @@ NTSTATUS create_section( section_t **section, object_t *obj, PLARGE_INTEGER psz,
 	addr = (BYTE*) mmap( NULL, len, mmap_prot, MAP_SHARED, fd, ofs );
 	if (addr == (BYTE*) -1)
 	{
-		dprintf("map failed!\n");
+		trace("map failed!\n");
 		return STATUS_UNSUCCESSFUL;
 	}
 
@@ -303,7 +303,7 @@ bool pe_section_t::add_relay_stub( address_space *vm, BYTE *stub_addr, ULONG fun
 	NTSTATUS r = vm->copy_to_user( stub_addr, &stub, sizeof stub );
 	if (r < STATUS_SUCCESS)
 	{
-		dprintf("stub copy failed %08lx\n", r);
+		trace("stub copy failed %08lx\n", r);
 		return false;
 	}
 
@@ -312,11 +312,11 @@ bool pe_section_t::add_relay_stub( address_space *vm, BYTE *stub_addr, ULONG fun
 	r = vm->copy_to_user( user_addr, &ofs, sizeof ofs );
 	if (r < STATUS_SUCCESS)
 	{
-		dprintf("failed to set address %08lx\n", r);
+		trace("failed to set address %08lx\n", r);
 		return false;
 	}
 
-	//dprintf("[%02ld] old = %08lx new = %p\n", i, stub.target, stub_addr);
+	//trace("[%02ld] old = %08lx new = %p\n", i, stub.target, stub_addr);
 	return true;
 }
 
@@ -337,13 +337,13 @@ void pe_section_t::add_relay(address_space *vm)
 	exp = (IMAGE_EXPORT_DIRECTORY*) virtual_addr_to_offset( export_data_dir->VirtualAddress );
 	if (!exp)
 	{
-		dprintf("no exports\n");
+		trace("no exports\n");
 		return;
 	}
 
 	BYTE *p = 0;
 	ULONG sz = (exp->NumberOfNames * sizeof (relay_stub) + 0xfff) & ~0xfff;
-	dprintf("relay stubs at %p, %08lx\n", p, sz);
+	trace("relay stubs at %p, %08lx\n", p, sz);
 	NTSTATUS r = vm->allocate_virtual_memory( &p, 0, sz, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	if (r < STATUS_SUCCESS)
 	{
@@ -361,11 +361,11 @@ void pe_section_t::add_relay(address_space *vm)
 	r = vm->copy_to_user( p, relay_code, relay_code_size );
 	if (r < STATUS_SUCCESS)
 	{
-		dprintf("relay copy failed %08lx\n", r);
+		trace("relay copy failed %08lx\n", r);
 		return;
 	}
 
-	//dprintf("%ld exported functions\n", exp->NumberOfFunctions);
+	//trace("%ld exported functions\n", exp->NumberOfFunctions);
 	for (i = 0; i<exp->NumberOfFunctions; i++)
 	{
 		ULONG *user_addr = (ULONG*) (nt->OptionalHeader.ImageBase + exp->AddressOfFunctions);
@@ -394,11 +394,11 @@ NTSTATUS pe_section_t::mapit( address_space *vm, BYTE *&base, ULONG ZeroBits, UL
 		return STATUS_UNSUCCESSFUL;
 
 	p = (BYTE*) nt->OptionalHeader.ImageBase;
-	dprintf("image at %p\n", p);
+	trace("image at %p\n", p);
 	r = vm->allocate_virtual_memory( &p, ZeroBits, 0x1000, MEM_COMMIT, PAGE_READONLY );
 	if (r < STATUS_SUCCESS)
 	{
-		dprintf("map failed\n");
+		trace("map failed\n");
 		goto fail;
 	}
 
@@ -409,19 +409,19 @@ NTSTATUS pe_section_t::mapit( address_space *vm, BYTE *&base, ULONG ZeroBits, UL
 
 	r = vm->copy_to_user( p, addr, 0x1000 );
 	if (r < STATUS_SUCCESS)
-		dprintf("copy_to_user failed\n");
+		trace("copy_to_user failed\n");
 
 	sections = (IMAGE_SECTION_HEADER*) (addr + dos->e_lfanew + sizeof (*nt));
 
 	if (option_trace)
-		 dprintf("read %d sections, load at %08lx\n",
+		 trace("read %d sections, load at %08lx\n",
 		   nt->FileHeader.NumberOfSections,
 		   nt->OptionalHeader.ImageBase);
 
 	for ( i=0; i<nt->FileHeader.NumberOfSections; i++ )
 	{
 		if (option_trace)
-			dprintf("%-8s %08lx %08lx %08lx %08lx\n",
+			trace("%-8s %08lx %08lx %08lx %08lx\n",
 			   sections[i].Name,
 			   sections[i].VirtualAddress,
 			   sections[i].PointerToRawData,
@@ -446,7 +446,7 @@ NTSTATUS pe_section_t::mapit( address_space *vm, BYTE *&base, ULONG ZeroBits, UL
 		{
 			r = vm->copy_to_user( p, addr + sections[i].PointerToRawData, sections[i].SizeOfRawData);
 			if (r < STATUS_SUCCESS)
-				dprintf("copy_to_user failed\n");
+				trace("copy_to_user failed\n");
 		}
 	}
 
@@ -496,7 +496,7 @@ IMAGE_EXPORT_DIRECTORY* pe_section_t::get_exports_table()
 
 DWORD pe_section_t::get_proc_address( const char *name )
 {
-	dprintf("%s\n", name);
+	trace("%s\n", name);
 
 	IMAGE_EXPORT_DIRECTORY *exp = get_exports_table();
 	if (!exp)
@@ -512,7 +512,7 @@ DWORD pe_section_t::get_proc_address( const char *name )
 	{
 		n = (left+right)/2;
 		char *x = (char*) virtual_addr_to_offset( p[n] );
-		//dprintf("compare %s,%s\n", name, x);
+		//trace("compare %s,%s\n", name, x);
 		r = strcmp(name, x);
 		if (r == 0)
 			break;
@@ -543,7 +543,7 @@ DWORD pe_section_t::get_proc_address( ULONG ordinal )
 	DWORD *funcs = (DWORD*) virtual_addr_to_offset( exp->AddressOfFunctions );
 	if (!funcs)
 		return 0;
-	//dprintf("returning %ld -> %04x -> %08lx\n", ordinal, ords[ordinal], funcs[ords[ordinal]]);
+	//trace("returning %ld -> %04x -> %08lx\n", ordinal, ords[ordinal], funcs[ords[ordinal]]);
 	return funcs[ords[ordinal]];
 }
 
@@ -586,11 +586,11 @@ const char *pe_section_t::get_symbol( ULONG address )
 
 const char *get_section_symbol( object_t *object, ULONG address )
 {
-	dprintf("%p %08lx\n", object, address);
+	trace("%p %08lx\n", object, address);
 	if (!object)
 		return 0;
 	section_t *section = dynamic_cast<section_t*>( object );
-	dprintf("%p %08lx\n", section, address);
+	trace("%p %08lx\n", section, address);
 	return section->get_symbol( address );
 }
 
@@ -670,7 +670,7 @@ NTSTATUS NTAPI NtCreateSection(
 	object_t *file = NULL;
 	LARGE_INTEGER sz;
 
-	dprintf("%p %08lx %p %p %08lx %08lx %p\n", SectionHandle, DesiredAccess,
+	trace("%p %08lx %p %p %08lx %08lx %p\n", SectionHandle, DesiredAccess,
 			ObjectAttributes, SectionSize, Protect, Attributes, FileHandle );
 
 	// check there's no bad flags
@@ -776,7 +776,7 @@ NTSTATUS NTAPI NtMapViewOfSection(
 	BYTE *addr = NULL;
 	NTSTATUS r;
 
-	dprintf("%p %p %p %lu %08lx %p %p %u %08lx %08lx\n",
+	trace("%p %p %p %lu %08lx %p %p %u %08lx %08lx\n",
 			SectionHandle, ProcessHandle, BaseAddress, ZeroBits, CommitSize,
 			SectionOffset, ViewSize, InheritDisposition, AllocationType, Protect );
 
@@ -794,7 +794,7 @@ NTSTATUS NTAPI NtMapViewOfSection(
 		return r;
 
 	if (addr)
-		dprintf("requested specific address %p\n", addr);
+		trace("requested specific address %p\n", addr);
 
 	r = verify_for_write( ViewSize, sizeof *ViewSize );
 	if (r < STATUS_SUCCESS)
@@ -807,7 +807,7 @@ NTSTATUS NTAPI NtMapViewOfSection(
 
 	r = copy_to_user( BaseAddress, &addr, sizeof addr );
 
-	dprintf("mapped at %p\n", addr );
+	trace("mapped at %p\n", addr );
 
 	return r;
 }
@@ -819,7 +819,7 @@ NTSTATUS NTAPI NtUnmapViewOfSection(
 	process_t *p = NULL;
 	NTSTATUS r;
 
-	dprintf("%p %p\n", ProcessHandle, BaseAddress );
+	trace("%p %p\n", ProcessHandle, BaseAddress );
 
 	r = process_from_handle( ProcessHandle, &p );
 	if (r < STATUS_SUCCESS)
@@ -844,7 +844,7 @@ NTSTATUS NTAPI NtQuerySection(
 	NTSTATUS r;
 	ULONG len;
 
-	dprintf("%p %u %p %lu %p\n", SectionHandle, SectionInformationClass,
+	trace("%p %u %p %lu %p\n", SectionHandle, SectionInformationClass,
 			SectionInformation, SectionInformationLength, ResultLength );
 
 	section_t *section = 0;

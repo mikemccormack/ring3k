@@ -315,7 +315,7 @@ NTSTATUS NTAPI NtCreateIoCompletion(
 	POBJECT_ATTRIBUTES ObjectAttributes,
 	ULONG NumberOfConcurrentThreads)
 {
-	dprintf("%p %08lx %p %ld\n", IoCompletionHandle, DesiredAccess,
+	trace("%p %08lx %p %ld\n", IoCompletionHandle, DesiredAccess,
 			ObjectAttributes, NumberOfConcurrentThreads);
 	completion_factory factory( NumberOfConcurrentThreads );
 	return factory.create( IoCompletionHandle, DesiredAccess, ObjectAttributes );
@@ -326,7 +326,7 @@ NTSTATUS NTAPI NtOpenIoCompletion(
 	ACCESS_MASK AccessMask,
 	POBJECT_ATTRIBUTES ObjectAttributes)
 {
-	dprintf("%p %08lx %p\n", IoCompletionHandle, AccessMask,
+	trace("%p %08lx %p\n", IoCompletionHandle, AccessMask,
 			ObjectAttributes);
 	return nt_open_object<completion_port_t>( IoCompletionHandle, AccessMask, ObjectAttributes );
 }
@@ -341,7 +341,7 @@ NTSTATUS NTAPI NtRemoveIoCompletion(
 {
 	NTSTATUS r;
 
-	dprintf("%p %p %p %p %p\n", IoCompletionHandle, IoCompletionKey,
+	trace("%p %p %p %p %p\n", IoCompletionHandle, IoCompletionKey,
 			IoCompletionValue, IoStatusBlock, TimeOut);
 
 	completion_port_impl_t *port = 0;
@@ -408,7 +408,7 @@ NTSTATUS NTAPI NtSetIoCompletion(
 {
 	NTSTATUS r;
 
-	dprintf("%p %08lx %08lx %08lx %08lx\n", IoCompletionHandle, IoCompletionKey,
+	trace("%p %08lx %08lx %08lx %08lx\n", IoCompletionHandle, IoCompletionKey,
 			IoCompletionValue, Status, Information);
 
 	completion_port_impl_t *port = 0;

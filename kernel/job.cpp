@@ -33,7 +33,7 @@ NTSTATUS NTAPI NtCreateJobObject(
 	ACCESS_MASK AccessMask,
 	POBJECT_ATTRIBUTES ObjectAttributes)
 {
-	dprintf("%p %08lx %p\n", JobHandle, AccessMask, ObjectAttributes);
+	trace("%p %08lx %p\n", JobHandle, AccessMask, ObjectAttributes);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -42,7 +42,7 @@ NTSTATUS NTAPI NtOpenJobObject(
 	ACCESS_MASK AccessMask,
 	POBJECT_ATTRIBUTES ObjectAttributes)
 {
-	dprintf("%p %08lx %p\n", JobHandle, AccessMask, ObjectAttributes);
+	trace("%p %08lx %p\n", JobHandle, AccessMask, ObjectAttributes);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -50,7 +50,7 @@ NTSTATUS NTAPI NtAssignProcessToJobObject(
 	HANDLE JobHandle,
 	HANDLE ProcessHandle)
 {
-	dprintf("%p %p\n", JobHandle, ProcessHandle);
+	trace("%p %p\n", JobHandle, ProcessHandle);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -58,7 +58,7 @@ NTSTATUS NTAPI NtTerminateJobObject(
 	HANDLE JobHandle,
 	NTSTATUS ExitStatus)
 {
-	dprintf("%p %08lx\n", JobHandle, ExitStatus);
+	trace("%p %08lx\n", JobHandle, ExitStatus);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -69,7 +69,7 @@ NTSTATUS NTAPI NtQueryInformationJobObject(
 	ULONG JobObjectInformationSize,
 	PULONG ReturnLength)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_ACCESS_DENIED;
 }
 

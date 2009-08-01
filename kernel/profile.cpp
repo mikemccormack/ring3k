@@ -39,6 +39,6 @@ NTSTATUS NTAPI NtCreateProfile(
 	KPROFILE_SOURCE Source,
 	ULONG ProcessorMask)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }

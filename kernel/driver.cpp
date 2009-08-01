@@ -31,21 +31,21 @@
 NTSTATUS NTAPI NtLoadDriver(
 	PUNICODE_STRING DriverServiceName)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS NTAPI NtUnloadDriver(
 	PUNICODE_STRING DriverServiceName)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS NTAPI NtCancelDeviceWakeupRequest(
 	HANDLE DeviceHandle)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -53,7 +53,7 @@ NTSTATUS NTAPI NtGetDevicePowerState(
 	HANDLE DeviceHandle,
 	PDEVICE_POWER_STATE DevicePowerState)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -63,7 +63,7 @@ NTSTATUS NTAPI NtInitiatePowerAction(
 	ULONG Flags,
 	BOOLEAN Asynchronous)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -74,7 +74,7 @@ NTSTATUS NTAPI NtPowerInformation(
 	PVOID OutputBuffer,
 	ULONG OutputBufferLength)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -83,12 +83,12 @@ NTSTATUS NTAPI NtSetSystemPowerState(
 	SYSTEM_POWER_STATE MinSystemState,
 	ULONG Flags)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
 BOOLEAN NTAPI NtIsSystemResumeAutomatic(void)
 {
-	dprintf("\n");
+	trace("\n");
 	return FALSE;
 }

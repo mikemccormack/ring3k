@@ -192,7 +192,7 @@ void win32k_manager_t::send_input(INPUT* input)
 		queue = t->queue;
 	}
 
-	dprintf("active window = %p\n", active_window);
+	trace("active window = %p\n", active_window);
 
 	// keyboard activity
 	switch (input->type)
@@ -263,7 +263,7 @@ void win32k_manager_t::send_input(INPUT* input)
 
 		break;
 	default:
-		dprintf("unknown input %ld\n", input->type);
+		trace("unknown input %ld\n", input->type);
 	}
 
 }
@@ -288,7 +288,7 @@ NTSTATUS win32k_process_init(process_t *process)
 	if (process->win32k_info)
 		return STATUS_SUCCESS;
 
-	dprintf("\n");
+	trace("\n");
 
 	if (!win32k_manager)
 	{
@@ -332,7 +332,7 @@ NTSTATUS win32k_process_init(process_t *process)
 	r = gdi_ht_section->mapit( process->vm, p, 0, MEM_COMMIT, PAGE_READWRITE );
 	if (r < STATUS_SUCCESS)
 	{
-		dprintf("r = %08lx\n", r);
+		trace("r = %08lx\n", r);
 		assert(0);
 		return FALSE;
 	}
@@ -387,7 +387,7 @@ BOOLEAN NTAPI NtGdiAddFontResourceW(
 	NTSTATUS r = copy_from_user( buf, Filename, FilenameLength );
 	if (r < STATUS_SUCCESS)
 		return FALSE;
-	dprintf("filename = %pws\n", buf);
+	trace("filename = %pws\n", buf);
 	return TRUE;
 }
 
@@ -543,7 +543,7 @@ void gdi_object_t::init_gdi_shared_mem()
 		r = g_gdi_section->mapit( current->process->vm, dc_shared_mem, 0, MEM_COMMIT, PAGE_READWRITE );
 		if (r < STATUS_SUCCESS)
 		{
-			dprintf("failed to map shared memory\n");
+			trace("failed to map shared memory\n");
 			assert( 0 );
 		}
 
@@ -629,7 +629,7 @@ device_context_t::device_context_t() :
 	if (!shm)
 		throw;
 
-	dprintf("dc offset %08x\n", shm - g_gdi_shared_memory );
+	trace("dc offset %08x\n", shm - g_gdi_shared_memory );
 	BYTE *user_shm = gdi_object_t::kernel_to_user( shm );
 
 	handle = alloc_gdi_handle( FALSE, GDI_OBJECT_DC, user_shm, this );
@@ -803,7 +803,7 @@ BOOL device_context_t::polypatblt( ULONG Rop, PRECT rect )
 
 int memory_device_context_t::getcaps( int index )
 {
-	dprintf("%d\n", index );
+	trace("%d\n", index );
 	return 0;
 }
 
@@ -820,7 +820,7 @@ HANDLE brush_t::alloc( UINT style, COLORREF color, ULONG hatch, BOOL stock )
 	if (!brush)
 		return NULL;
 	brush->handle = alloc_gdi_handle( stock, GDI_OBJECT_BRUSH, NULL, brush );
-	dprintf("created brush %p with color %08lx\n", brush->handle, color );
+	trace("created brush %p with color %08lx\n", brush->handle, color );
 	return brush->handle;
 }
 
@@ -848,7 +848,7 @@ HANDLE pen_t::alloc( UINT style, UINT width, COLORREF color, BOOL stock )
 	if (!pen)
 		return NULL;
 	pen->handle = alloc_gdi_handle( stock, GDI_OBJECT_PEN, NULL, pen );
-	dprintf("created pen %p with color %08lx\n", pen->handle, color );
+	trace("created pen %p with color %08lx\n", pen->handle, color );
 	return pen->handle;
 }
 
@@ -911,7 +911,7 @@ COLORREF get_di_pixel_4bpp( stretch_di_bits_args& args, int x, int y )
 	r = copy_from_user( &pixel, (BYTE*) args.bits + ofs, 1 );
 	if ( r < STATUS_SUCCESS)
 	{
-		dprintf("copy failed\n");
+		trace("copy failed\n");
 		return 0;
 	}
 
@@ -931,7 +931,7 @@ COLORREF get_di_pixel( stretch_di_bits_args& args, int x, int y )
 	case 4:
 		return get_di_pixel_4bpp( args, x, y );
 	default:
-		dprintf("%d bpp\n", args.info->biBitCount);
+		trace("%d bpp\n", args.info->biBitCount);
 	}
 	return 0;
 }
@@ -952,10 +952,10 @@ BOOL device_context_t::stretch_di_bits( stretch_di_bits_args& args )
 	args.src_width = min( args.src_width, args.info->biWidth - args.src_x );
 	args.src_height = min( args.src_height, args.info->biHeight - args.src_y );
 
-	dprintf("w,h %ld,%ld\n", args.info->biWidth, args.info->biHeight);
-	dprintf("bits, planes %d,%d\n", args.info->biBitCount, args.info->biPlanes);
-	dprintf("compression %08lx\n", args.info->biCompression );
-	dprintf("size %08lx\n", args.info->biSize );
+	trace("w,h %ld,%ld\n", args.info->biWidth, args.info->biHeight);
+	trace("bits, planes %d,%d\n", args.info->biBitCount, args.info->biPlanes);
+	trace("compression %08lx\n", args.info->biCompression );
+	trace("size %08lx\n", args.info->biSize );
 
 	// copy the pixels
 	COLORREF pixel;
@@ -1097,7 +1097,7 @@ BOOLEAN NTAPI NtGdiDeleteObjectApp(HGDIOBJ Object)
 		return FALSE;
 	if (entry->ProcessId != current->process->id)
 	{
-		dprintf("pirate deletion! %p\n", Object);
+		trace("pirate deletion! %p\n", Object);
 		return FALSE;
 	}
 
@@ -1205,7 +1205,7 @@ ULONG NTAPI NtGdiExtGetObjectW(HGDIOBJ Object, ULONG Size, PVOID Buffer)
 	switch (get_handle_type(Object))
 	{
 	case GDI_OBJECT_BITMAP:
-		dprintf("GDI_OBJECT_BITMAP\n");
+		trace("GDI_OBJECT_BITMAP\n");
 		len = sizeof info.bm;
 		info.bm.bmType = 0;
 		info.bm.bmWidth = 0x10;
@@ -1215,7 +1215,7 @@ ULONG NTAPI NtGdiExtGetObjectW(HGDIOBJ Object, ULONG Size, PVOID Buffer)
 		info.bm.bmBits = (PBYTE) 0xbbbb0001;
 		break;
 	default:
-		dprintf("should return data for ?\n");
+		trace("should return data for ?\n");
 	}
 
 	if (Size < len)
@@ -1428,7 +1428,7 @@ BOOLEAN NTAPI NtGdiExtTextOutW( HANDLE handle, INT x, INT y, UINT options,
 		return FALSE;
 
 	if (dx)
-		dprintf("character spacing provided but ignored\n");
+		trace("character spacing provided but ignored\n");
 
 	return dc->exttextout( x, y, options, rect, text );
 }
@@ -1543,7 +1543,7 @@ BOOLEAN NTAPI NtGdiStretchDIBitsInternal(
 
 	if (bmi.biBitCount <= 8)
 	{
-		dprintf("copying %d colors\n",  bmi.biBitCount);
+		trace("copying %d colors\n",  bmi.biBitCount);
 		r = copy_from_user( colors, &info->bmiColors, (1 << bmi.biBitCount) * sizeof (RGBQUAD));
 		if (r < STATUS_SUCCESS)
 			return FALSE;

@@ -45,6 +45,6 @@ void debugger_backtrace(PCONTEXT ctx);
 #define kalloc( size ) _kalloc( __FILE__, __LINE__, (size) )
 #define kfree( mem ) _kfree( __FILE__, __LINE__, (mem) )
 
-#define dprintf(...) debugprintf(__FILE__,__FUNCTION__,__LINE__,__VA_ARGS__)
+#define trace(...) debugprintf(__FILE__,__FUNCTION__,__LINE__,__VA_ARGS__)
 
 #endif // _DEBUG_H_

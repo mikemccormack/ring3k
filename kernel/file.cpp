@@ -121,7 +121,7 @@ file_create_info_t::file_create_info_t( ULONG _Attributes, ULONG _CreateOptions,
 
 NTSTATUS file_create_info_t::on_open( object_dir_t* dir, object_t*& obj, open_info_t& info )
 {
-	dprintf("file_create_info_t::on_open()\n");
+	trace("file_create_info_t::on_open()\n");
 	if (!obj)
 		return STATUS_OBJECT_NAME_NOT_FOUND;
 	return STATUS_SUCCESS;
@@ -190,7 +190,7 @@ NTSTATUS file_t::set_position( LARGE_INTEGER& ofs )
 	ret = lseek( fd, ofs.QuadPart, SEEK_SET );
 	if (ret < 0)
 	{
-		dprintf("seek failed\n");
+		trace("seek failed\n");
 		return STATUS_UNSUCCESSFUL;
 	}
 	return STATUS_SUCCESS;
@@ -451,7 +451,7 @@ bool directory_t::match(unicode_string_t &name) const
 			return false;
 
 		// match characters
-		//dprintf("%c <> %c\n", mask.Buffer[i], name.Buffer[j]);
+		//trace("%c <> %c\n", mask.Buffer[i], name.Buffer[j]);
 		if (lowercase(mask.Buffer[i]) != lowercase(name.Buffer[j]))
 			return false;
 
@@ -468,7 +468,7 @@ bool directory_t::match(unicode_string_t &name) const
 
 void directory_t::add_entry(const char *name)
 {
-	dprintf("adding dir entry: %s\n", name);
+	trace("adding dir entry: %s\n", name);
 	directory_entry_t *ent = new directory_entry_t;
 	ent->name.copy(name);
 	/* FIXME: Should symlinks be deferenced?
@@ -483,8 +483,8 @@ void directory_t::add_entry(const char *name)
 		delete ent;
 		return;
 	}
-	dprintf("matched mask %pus\n", &mask);
-	//dprintf("mode = %o\n", ent->st.st_mode);
+	trace("matched mask %pus\n", &mask);
+	//trace("mode = %o\n", ent->st.st_mode);
 	entries.append(ent);
 	count++;
 }
@@ -503,11 +503,11 @@ void directory_t::scandir()
 	r = lseek( get_fd(), 0, SEEK_SET );
 	if (r == -1)
 	{
-		dprintf("lseek failed (%d)\n", errno);
+		trace("lseek failed (%d)\n", errno);
 		return;
 	}
 
-	dprintf("reading entries:\n");
+	trace("reading entries:\n");
 	// . and .. always come first
 	add_entry(".");
 	add_entry("..");
@@ -517,7 +517,7 @@ void directory_t::scandir()
 		r = ::getdents64( get_fd(), buffer, sizeof buffer );
 		if (r < 0)
 		{
-			dprintf("getdents64 failed (%d)\n", r);
+			trace("getdents64 failed (%d)\n", r);
 			break;
 		}
 
@@ -661,11 +661,11 @@ int directory_t::open_unicode_file( const char *unix_path, int flags, bool &crea
 {
 	int r = -1;
 
-	dprintf("open file : %s\n", unix_path);
+	trace("open file : %s\n", unix_path);
 	r = ::open( unix_path, flags&~O_CREAT );
 	if (r < 0 && (flags & O_CREAT))
 	{
-		dprintf("create file : %s\n", unix_path);
+		trace("create file : %s\n", unix_path);
 		r = ::open( unix_path, flags, 0666 );
 		if (r >= 0)
 			created = true;
@@ -679,14 +679,14 @@ int directory_t::open_unicode_dir( const char *unix_path, int flags, bool &creat
 
 	if (flags & O_CREAT)
 	{
-		dprintf("create dir : %s\n", unix_path);
+		trace("create dir : %s\n", unix_path);
 		r = ::mkdir( unix_path, 0777 );
 		if (r == 0)
 			created = true;
 	}
-	dprintf("open name : %s\n", unix_path);
+	trace("open name : %s\n", unix_path);
 	r = ::open( unix_path, flags & ~O_CREAT );
-	dprintf("r = %d\n", r);
+	trace("r = %d\n", r);
 	return r;
 }
 
@@ -701,7 +701,7 @@ NTSTATUS directory_t::open_file(
 {
 	int file_fd;
 
-	dprintf("name = %pus\n", &path );
+	trace("name = %pus\n", &path );
 
 	int mode = O_RDONLY;
 	switch (CreateDisposition)
@@ -716,7 +716,7 @@ NTSTATUS directory_t::open_file(
 		mode = O_CREAT;
 		break;
 	default:
-		dprintf("CreateDisposition = %ld\n", CreateDisposition);
+		trace("CreateDisposition = %ld\n", CreateDisposition);
 		return STATUS_NOT_IMPLEMENTED;
 	}
 
@@ -731,7 +731,7 @@ NTSTATUS directory_t::open_file(
 		if (file_fd == -1)
 			return STATUS_OBJECT_PATH_NOT_FOUND;
 
-		dprintf("file_fd = %d\n", file_fd );
+		trace("file_fd = %d\n", file_fd );
 		file = new directory_t( file_fd );
 		if (!file)
 		{
@@ -761,7 +761,7 @@ NTSTATUS directory_t::open( object_t *&out, open_info_t& info )
 {
 	file_t *file = 0;
 
-	dprintf("directory_t::open %pus\n", &info.path );
+	trace("directory_t::open %pus\n", &info.path );
 
 	file_create_info_t *file_info = dynamic_cast<file_create_info_t*>( &info );
 	if (!file_info)
@@ -802,7 +802,7 @@ void init_drives()
 	r = factory.create_kernel( obj, dirname );
 	if (r < STATUS_SUCCESS)
 	{
-		dprintf( "failed to create %pus\n", &dirname);
+		trace( "failed to create %pus\n", &dirname);
 		die("fatal\n");
 	}
 
@@ -811,7 +811,7 @@ void init_drives()
 	r = create_symlink( c_link, dirname );
 	if (r < STATUS_SUCCESS)
 	{
-		dprintf( "failed to create symlink %pus (%08lx)\n", &c_link, r);
+		trace( "failed to create symlink %pus (%08lx)\n", &c_link, r);
 		die("fatal\n");
 	}
 }
@@ -837,7 +837,7 @@ NTSTATUS NTAPI NtCreateFile(
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("root %p attr %08lx %pus\n",
+	trace("root %p attr %08lx %pus\n",
 			oa.RootDirectory, oa.Attributes, oa.ObjectName);
 
 	r = verify_for_write( IoStatusBlock, sizeof *IoStatusBlock );
@@ -899,7 +899,7 @@ NTSTATUS NTAPI NtFsControlFile(
 	PVOID OutputBuffer,
 	ULONG OutputBufferLength )
 {
-	dprintf("%p %p %p %p %p %08lx %p %lu %p %lu\n", FileHandle,
+	trace("%p %p %p %p %p %08lx %p %lu %p %lu\n", FileHandle,
 			EventHandle, ApcRoutine, ApcContext, IoStatusBlock, FsControlCode,
 			InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength );
 
@@ -947,7 +947,7 @@ NTSTATUS NTAPI NtDeviceIoControlFile(
 	PVOID OutputBuffer,
 	ULONG OutputBufferLength )
 {
-	dprintf("%p %p %p %p %p %08lx %p %lu %p %lu\n",
+	trace("%p %p %p %p %p %08lx %p %lu %p %lu\n",
 			File, Event, ApcRoutine, ApcContext, IoStatusBlock, IoControlCode,
 			InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength );
 	return STATUS_SUCCESS;
@@ -965,7 +965,7 @@ NTSTATUS NTAPI NtWriteFile(
 	PULONG Key )
 {
 
-	dprintf("%p %p %p %p %p %p %lu %p %p\n", FileHandle, Event, ApcRoutine,
+	trace("%p %p %p %p %p %p %lu %p %p\n", FileHandle, Event, ApcRoutine,
 			ApcContext, IoStatusBlock, Buffer, Length, ByteOffset, Key);
 
 	io_object_t *io = 0;
@@ -1001,13 +1001,13 @@ NTSTATUS NTAPI NtQueryAttributesFile(
 	NTSTATUS r;
 	FILE_BASIC_INFORMATION info;
 
-	dprintf("%p %p\n", ObjectAttributes, FileInformation);
+	trace("%p %p\n", ObjectAttributes, FileInformation);
 
 	r = oa.copy_from_user( ObjectAttributes );
 	if (r)
 		return r;
 
-	dprintf("root %p attr %08lx %pus\n",
+	trace("root %p attr %08lx %pus\n",
 			oa.RootDirectory, oa.Attributes, oa.ObjectName);
 
 	if (!oa.ObjectName || !oa.ObjectName->Buffer)
@@ -1043,7 +1043,7 @@ NTSTATUS NTAPI NtQueryVolumeInformationFile(
 	ULONG VolumeInformationLength,
 	FS_INFORMATION_CLASS VolumeInformationClass )
 {
-	dprintf("%p %p %p %lu %u\n", FileHandle, IoStatusBlock, VolumeInformation,
+	trace("%p %p %p %lu %u\n", FileHandle, IoStatusBlock, VolumeInformation,
 			VolumeInformationLength, VolumeInformationClass );
 	return STATUS_NOT_IMPLEMENTED;
 }
@@ -1059,7 +1059,7 @@ NTSTATUS NTAPI NtReadFile(
 	PLARGE_INTEGER ByteOffset,
 	PULONG Key)
 {
-	dprintf("%p %p %p %p %p %p %lu %p %p\n", FileHandle, EventHandle,
+	trace("%p %p %p %p %p %p %lu %p %p\n", FileHandle, EventHandle,
 			ApcRoutine, ApcContext, IoStatusBlock,
 			Buffer, Length, ByteOffset, Key);
 
@@ -1094,13 +1094,13 @@ NTSTATUS NTAPI NtDeleteFile(
 	object_attributes_t oa;
 	NTSTATUS r;
 
-	dprintf("%p\n", ObjectAttributes);
+	trace("%p\n", ObjectAttributes);
 
 	r = oa.copy_from_user( ObjectAttributes );
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("root %p attr %08lx %pus\n",
+	trace("root %p attr %08lx %pus\n",
 			oa.RootDirectory, oa.Attributes, oa.ObjectName);
 
 	if (!oa.ObjectName || !oa.ObjectName->Buffer)
@@ -1128,7 +1128,7 @@ NTSTATUS NTAPI NtFlushBuffersFile(
 	HANDLE FileHandle,
 	PIO_STATUS_BLOCK IoStatusBlock)
 {
-	dprintf("%p %p\n", FileHandle, IoStatusBlock);
+	trace("%p %p\n", FileHandle, IoStatusBlock);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -1136,7 +1136,7 @@ NTSTATUS NTAPI NtCancelIoFile(
 	HANDLE FileHandle,
 	PIO_STATUS_BLOCK IoStatusBlock)
 {
-	dprintf("%p %p\n", FileHandle, IoStatusBlock);
+	trace("%p %p\n", FileHandle, IoStatusBlock);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -1176,7 +1176,7 @@ NTSTATUS NTAPI NtSetInformationFile(
 		len = sizeof info.pipe;
 		break;
 	default:
-		dprintf("Unknown information class %d\n", FileInformationClass );
+		trace("Unknown information class %d\n", FileInformationClass );
 		return STATUS_INVALID_PARAMETER;
 	}
 
@@ -1189,7 +1189,7 @@ NTSTATUS NTAPI NtSetInformationFile(
 	switch (FileInformationClass)
 	{
 	case FileDispositionInformation:
-		dprintf("delete = %d\n", info.dispos.DeleteFile);
+		trace("delete = %d\n", info.dispos.DeleteFile);
 		break;
 	case FileCompletionInformation:
 		r = object_from_handle( completion_port, info.completion.CompletionPort, IO_COMPLETION_MODIFY_STATE );
@@ -1217,7 +1217,7 @@ NTSTATUS NTAPI NtQueryInformationFile(
 	ULONG FileInformationLength,
 	FILE_INFORMATION_CLASS FileInformationClass)
 {
-	dprintf("%p %p %p %lu %u\n", FileHandle, IoStatusBlock,
+	trace("%p %p %p %lu %u\n", FileHandle, IoStatusBlock,
 			FileInformation, FileInformationLength, FileInformationClass);
 
 	file_t *file = 0;
@@ -1250,7 +1250,7 @@ NTSTATUS NTAPI NtQueryInformationFile(
 		r = file->query_information( info.attrib_info );
 		break;
 	default:
-		dprintf("Unknown information class %d\n", FileInformationClass );
+		trace("Unknown information class %d\n", FileInformationClass );
 		r = STATUS_INVALID_PARAMETER;
 	}
 
@@ -1269,7 +1269,7 @@ NTSTATUS NTAPI NtSetQuotaInformationFile(
 	PFILE_USER_QUOTA_INFORMATION FileInformation,
 	ULONG FileInformationLength)
 {
-	dprintf("%p %p %p %lu\n", FileHandle, IoStatusBlock,
+	trace("%p %p %p %lu\n", FileHandle, IoStatusBlock,
 			FileInformation, FileInformationLength);
 
 	return STATUS_NOT_IMPLEMENTED;
@@ -1277,7 +1277,7 @@ NTSTATUS NTAPI NtSetQuotaInformationFile(
 
 NTSTATUS NTAPI NtQueryQuotaInformationFile(HANDLE,PIO_STATUS_BLOCK,PFILE_USER_QUOTA_INFORMATION,ULONG,BOOLEAN,PFILE_QUOTA_LIST_INFORMATION,ULONG,PSID,BOOLEAN)
 {
-	dprintf("\n");
+	trace("\n");
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -1293,7 +1293,7 @@ NTSTATUS NTAPI NtLockFile(
 	BOOLEAN FailImmediately,
 	BOOLEAN ExclusiveLock)
 {
-	dprintf("just returns success...\n");
+	trace("just returns success...\n");
 	return STATUS_SUCCESS;
 }
 
@@ -1304,7 +1304,7 @@ NTSTATUS NTAPI NtUnlockFile(
 	PULARGE_INTEGER LockLength,
 	ULONG Key)
 {
-	dprintf("just returns success...\n");
+	trace("just returns success...\n");
 	return STATUS_SUCCESS;
 }
 
@@ -1336,12 +1336,12 @@ NTSTATUS NTAPI NtQueryDirectoryFile(
 		if (r < STATUS_SUCCESS)
 			return r;
 
-		dprintf("Filename = %pus (len=%d)\n", &mask, mask.Length);
+		trace("Filename = %pus (len=%d)\n", &mask, mask.Length);
 	}
 
 	if (FileInformationClass != FileBothDirectoryInformation)
 	{
-		dprintf("unimplemented FileInformationClass %d\n", FileInformationClass);
+		trace("unimplemented FileInformationClass %d\n", FileInformationClass);
 		return STATUS_NOT_IMPLEMENTED;
 	}
 
@@ -1403,7 +1403,7 @@ NTSTATUS NTAPI NtQueryFullAttributesFile(
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("name = %pus\n", oa.ObjectName);
+	trace("name = %pus\n", oa.ObjectName);
 
 	return STATUS_NOT_IMPLEMENTED;
 }

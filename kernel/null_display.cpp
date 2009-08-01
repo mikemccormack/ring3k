@@ -90,7 +90,7 @@ BOOL win32k_null_t::polypatblt( ULONG Rop, PRECT rect )
 
 int win32k_null_t::getcaps( int index )
 {
-	dprintf("%d\n", index);
+	trace("%d\n", index);
 	return 0;
 }
 

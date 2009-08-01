@@ -199,9 +199,9 @@ security_reference_monitor_t::security_reference_monitor_t( process_t *p ) :
 int security_reference_monitor_t::run()
 {
 	const int maxlen = 0x100;
-	//dprintf("starting kthread %p p = %p\n", this, process);
+	//trace("starting kthread %p p = %p\n", this, process);
 	current = static_cast<thread_t*>( this );
-	//dprintf("current->process = %p\n", current->process);
+	//trace("current->process = %p\n", current->process);
 	object_attributes_t rm_oa( (PCWSTR) L"\\SeRmCommandPort" );
 	HANDLE port = 0, client = 0;
 	NTSTATUS r = NtCreatePort( &port, &rm_oa, 0x100, 0x100, 0 );
@@ -257,7 +257,7 @@ int security_reference_monitor_t::run()
 		if (r < STATUS_SUCCESS)
 			die("NtReplyWaitReceivePort(SeRmCommandPort) failed r = %08lx\n", r);
 
-		dprintf("got message %ld\n", req->MessageId );
+		trace("got message %ld\n", req->MessageId );
 
 		// send something back...
 		r = NtReplyPort( port, req );
@@ -268,7 +268,7 @@ int security_reference_monitor_t::run()
 			die("NtReplyPort(SeRmCommandPort) failed r = %08lx\n", r);
 	}
 
-	dprintf("done\n");
+	trace("done\n");
 	return 0;
 }
 
@@ -310,7 +310,7 @@ int plug_and_play_t::run()
 	if (r == STATUS_THREAD_IS_TERMINATING)
 		return 0;
 	if (r < STATUS_SUCCESS)
-		dprintf("failed to create ntsvcs %08lx\n", r);
+		trace("failed to create ntsvcs %08lx\n", r);
 
 	if (terminated)
 		stop();
@@ -319,7 +319,7 @@ int plug_and_play_t::run()
 	if (r == STATUS_THREAD_IS_TERMINATING)
 		return 0;
 	if (r < STATUS_SUCCESS)
-		dprintf("failed to connect ntsvcs %08lx\n", r);
+		trace("failed to connect ntsvcs %08lx\n", r);
 
 	stop();
 	return 0;

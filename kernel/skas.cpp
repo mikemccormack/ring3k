@@ -150,7 +150,7 @@ pid_t skas3_address_space_impl::create_tracee(void)
 		CLONE_FILES | CLONE_STOPPED | SIGCHLD, NULL );
 	if (pid == -1)
 	{
-		dprintf("clone failed (%d)\n", errno);
+		trace("clone failed (%d)\n", errno);
 		return pid;
 	}
 	if (pid == 0)
@@ -162,7 +162,7 @@ pid_t skas3_address_space_impl::create_tracee(void)
 	int r = ::ptrace( PTRACE_ATTACH, pid, 0, 0 );
 	if (r < 0)
 	{
-		dprintf("ptrace_attach failed (%d)\n", errno);
+		trace("ptrace_attach failed (%d)\n", errno);
 		return -1;
 	}
 
@@ -230,11 +230,11 @@ bool init_skas()
 	int fd = ptrace_alloc_address_space_fd();
 	if (fd < 0)
 	{
-		dprintf("skas3 patch not present\n");
+		trace("skas3 patch not present\n");
 		return false;
 	}
 	close( fd );
-	dprintf("using skas3\n");
+	trace("using skas3\n");
 	ptrace_address_space_impl::set_signals();
 	pcreate_address_space = &create_skas3_address_space;
 	return true;

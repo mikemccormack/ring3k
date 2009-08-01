@@ -33,7 +33,7 @@ NTSTATUS NTAPI NtAddAtom(
 	ULONG StringLength,
 	PUSHORT Atom)
 {
-	dprintf("%p %lu %p\n", String, StringLength, Atom);
+	trace("%p %lu %p\n", String, StringLength, Atom);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -42,14 +42,14 @@ NTSTATUS NTAPI NtFindAtom(
 	ULONG StringLength,
 	PUSHORT Atom)
 {
-	dprintf("%p %lu %p\n", String, StringLength, Atom);
+	trace("%p %lu %p\n", String, StringLength, Atom);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS NTAPI NtDeleteAtom(
 	USHORT Atom)
 {
-	dprintf("%u\n", Atom);
+	trace("%u\n", Atom);
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -60,6 +60,6 @@ NTSTATUS NTAPI NtQueryInformationAtom(
 	ULONG AtomInformationLength,
 	PULONG ReturnLength)
 {
-	dprintf("%u\n", Atom);
+	trace("%u\n", Atom);
 	return STATUS_NOT_IMPLEMENTED;
 }

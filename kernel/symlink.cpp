@@ -62,7 +62,7 @@ NTSTATUS symlink_t::open( object_t *&out, open_info_t& info )
 	if (info.path.Length != 0)
 	{
 		// follow the link
-		dprintf("following %pus\n", &target );
+		trace("following %pus\n", &target );
 		symlink_opener target_info;
 		target_info.Attributes = info.Attributes;
 		target_info.path.set( target );
@@ -77,10 +77,10 @@ NTSTATUS symlink_t::open( object_t *&out, open_info_t& info )
 		return target_object->open( out, info );
 	}
 
-	dprintf("opening symlinks oa.Attributes = %08lx\n", info.Attributes);
+	trace("opening symlinks oa.Attributes = %08lx\n", info.Attributes);
 	if (info.Attributes & OBJ_OPENLINK)
 	{
-		dprintf("OBJ_OPENLINK specified\n");
+		trace("OBJ_OPENLINK specified\n");
 		return STATUS_INVALID_PARAMETER;
 	}
 
@@ -104,7 +104,7 @@ symlink_factory_t::symlink_factory_t(const UNICODE_STRING& _target) :
 
 NTSTATUS symlink_factory_t::alloc_object(object_t** obj)
 {
-	dprintf("allocating object\n");
+	trace("allocating object\n");
 	if (target.Length == 0)
 		return STATUS_INVALID_PARAMETER;
 

@@ -262,7 +262,7 @@ BOOLEAN thread_message_queue_tt::set_timer( HWND Window, UINT Identifier, UINT E
 		timer_list.unlink( timer );
 	else
 		timer = new win_timer_tt( Window, Identifier );
-	dprintf("adding timer %p hwnd %p id %d\n", timer, Window, Identifier );
+	trace("adding timer %p hwnd %p id %d\n", timer, Window, Identifier );
 	timer->period = Elapse;
 	timer->lparam = TimerProc;
 	timer_add( timer );
@@ -274,7 +274,7 @@ BOOLEAN thread_message_queue_tt::kill_timer( HWND Window, UINT Identifier )
 	win_timer_tt* timer = find_timer( Window, Identifier );
 	if (!timer)
 		return FALSE;
-	dprintf("deleting timer %p hwnd %p id %d\n", timer, Window, Identifier );
+	trace("deleting timer %p hwnd %p id %d\n", timer, Window, Identifier );
 	timer_list.unlink( timer );
 	delete timer;
 	return TRUE;
@@ -297,19 +297,19 @@ bool thread_message_queue_tt::get_message_timeout( HWND Window, LARGE_INTEGER& t
 BOOLEAN thread_message_queue_tt::get_message_no_wait(
 	MSG& Message, HWND Window, ULONG MinMessage, ULONG MaxMessage)
 {
-	//dprintf("checking posted messages\n");
+	//trace("checking posted messages\n");
 	if (get_posted_message( Window, Message ))
 		return true;
 
-	//dprintf("checking quit messages\n");
+	//trace("checking quit messages\n");
 	if (get_quit_message( Message ))
 		return true;
 
-	//dprintf("checking paint messages\n");
+	//trace("checking paint messages\n");
 	if (get_paint_message( Window, Message ))
 		return true;
 
-	//dprintf("checking timer messages\n");
+	//trace("checking timer messages\n");
 	if (get_timer_message( Window, Message ))
 		return true;
 
@@ -338,7 +338,7 @@ BOOLEAN thread_message_queue_tt::get_message(
 	LARGE_INTEGER t;
 	if (get_message_timeout( Window, t ))
 	{
-		//dprintf("setting timeout %lld\n", t.QuadPart);
+		//trace("setting timeout %lld\n", t.QuadPart);
 		set_timeout( &t );
 	}
 

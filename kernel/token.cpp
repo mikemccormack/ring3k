@@ -64,7 +64,7 @@ public:
 
 void luid_and_privileges_t::dump()
 {
-	dprintf("%08lx %08lx %08lx\n", Luid.LowPart, Luid.HighPart, Attributes );
+	trace("%08lx %08lx %08lx\n", Luid.LowPart, Luid.HighPart, Attributes );
 }
 
 class token_privileges_t
@@ -214,7 +214,7 @@ sid_t::sid_t() :
 void sid_t::dump()
 {
 	BYTE* b = IdentifierAuthority.Value;
-	dprintf("sid: %02x %02x %02x-%02x-%02x-%02x-%02x-%02x\n",
+	trace("sid: %02x %02x %02x-%02x-%02x-%02x-%02x-%02x\n",
 		Revision, SubAuthorityCount, b[0], b[1], b[2], b[3], b[4], b[6]);
 }
 
@@ -737,7 +737,7 @@ NTSTATUS NTAPI NtOpenProcessToken(
 {
 	NTSTATUS r;
 
-	dprintf("%p %08lx %p\n", Process, DesiredAccess, Token);
+	trace("%p %08lx %p\n", Process, DesiredAccess, Token);
 
 	r = verify_for_write( Token, sizeof *Token );
 	if (r < STATUS_SUCCESS)
@@ -766,7 +766,7 @@ NTSTATUS NTAPI NtOpenThreadToken(
 {
 	NTSTATUS r;
 
-	dprintf("%p %08lx %u %p\n", Thread, DesiredAccess, OpenAsSelf, TokenHandle);
+	trace("%p %08lx %u %p\n", Thread, DesiredAccess, OpenAsSelf, TokenHandle);
 
 	r = verify_for_write( TokenHandle, sizeof *TokenHandle );
 	if (r < STATUS_SUCCESS)
@@ -796,7 +796,7 @@ NTSTATUS NTAPI NtAdjustPrivilegesToken(
 {
 	NTSTATUS r;
 
-	dprintf("%p %u %p %lu %p %p\n", TokenHandle, DisableAllPrivileges,
+	trace("%p %u %p %lu %p %p\n", TokenHandle, DisableAllPrivileges,
 			NewState, BufferLength, PreviousState, ReturnLength );
 
 	if (ReturnLength)
@@ -830,7 +830,7 @@ NTSTATUS NTAPI NtAdjustPrivilegesToken(
 		token_privileges_t& prev_state = token->get_privs();
 
 		ULONG len = prev_state.get_length();
-		dprintf("old privs %ld bytes\n", len);
+		trace("old privs %ld bytes\n", len);
 		prev_state.dump();
 		if (len > BufferLength)
 			return STATUS_BUFFER_TOO_SMALL;
@@ -845,7 +845,7 @@ NTSTATUS NTAPI NtAdjustPrivilegesToken(
 
 	r = token->adjust( privs );
 
-	dprintf("new privs\n");
+	trace("new privs\n");
 	privs.dump();
 
 	return r;
@@ -878,7 +878,7 @@ NTSTATUS NTAPI NtQueryInformationToken(
 	NTSTATUS r;
 	TOKEN_STATISTICS stats;
 
-	dprintf("%p %u %p %lu %p\n", TokenHandle, TokenInformationClass,
+	trace("%p %u %p %lu %p\n", TokenHandle, TokenInformationClass,
 			TokenInformation, TokenInformationLength, ReturnLength );
 
 	r = object_from_handle( token, TokenHandle, TOKEN_QUERY );
@@ -888,22 +888,22 @@ NTSTATUS NTAPI NtQueryInformationToken(
 	switch( TokenInformationClass )
 	{
 	case TokenOwner:
-		dprintf("TokenOwner\n");
+		trace("TokenOwner\n");
 		r = copy_ptr_to_user( token->get_owner(), TokenInformation, TokenInformationLength, len );
 		break;
 
 	case TokenPrimaryGroup:
-		dprintf("TokenPrimaryGroup\n");
+		trace("TokenPrimaryGroup\n");
 		r = copy_ptr_to_user( token->get_primary_group(), TokenInformation, TokenInformationLength, len );
 		break;
 
 	case TokenDefaultDacl:
-		dprintf("TokenDefaultDacl\n");
+		trace("TokenDefaultDacl\n");
 		r = copy_ptr_to_user( token->get_default_dacl(), TokenInformation, TokenInformationLength, len );
 		break;
 
 	case TokenUser:
-		dprintf("TokenUser\n");
+		trace("TokenUser\n");
 		len = token->get_user().get_length();
 		if (len > TokenInformationLength)
 		{
@@ -915,11 +915,11 @@ NTSTATUS NTAPI NtQueryInformationToken(
 		break;
 
 	case TokenImpersonationLevel:
-		dprintf("TokenImpersonationLevel\n");
+		trace("TokenImpersonationLevel\n");
 		return STATUS_INVALID_INFO_CLASS;
 
 	case TokenStatistics:
-		dprintf("TokenStatistics\n");
+		trace("TokenStatistics\n");
 		len = sizeof stats;
 		if (len != TokenInformationLength)
 			return STATUS_INFO_LENGTH_MISMATCH;
@@ -932,7 +932,7 @@ NTSTATUS NTAPI NtQueryInformationToken(
 		break;
 
 	case TokenGroups:
-		dprintf("TokenGroups\n");
+		trace("TokenGroups\n");
 		len = token->get_groups().get_length();
 		if (len > TokenInformationLength)
 		{
@@ -944,7 +944,7 @@ NTSTATUS NTAPI NtQueryInformationToken(
 		break;
 
 	default:
-		dprintf("info class %d\n", TokenInformationClass);
+		trace("info class %d\n", TokenInformationClass);
 		return STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -959,7 +959,7 @@ NTSTATUS NTAPI NtSetSecurityObject(
 	SECURITY_INFORMATION SecurityInformation,
 	PSECURITY_DESCRIPTOR SecurityDescriptor )
 {
-	dprintf("%p %08lx %p\n", Handle, SecurityInformation, SecurityDescriptor );
+	trace("%p %08lx %p\n", Handle, SecurityInformation, SecurityDescriptor );
 	return STATUS_SUCCESS;
 }
 

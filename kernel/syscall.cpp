@@ -137,7 +137,7 @@ NTSTATUS do_nt_syscall(ULONG id, ULONG func, ULONG *uargs, ULONG retaddr)
 	}
 	else
 	{
-		dprintf("invalid syscall %ld ret=%08lx\n", func, retaddr);
+		trace("invalid syscall %ld ret=%08lx\n", func, retaddr);
 		return r;
 	}
 

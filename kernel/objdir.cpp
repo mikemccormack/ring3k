@@ -55,7 +55,7 @@ object_dir_impl_t::object_dir_impl_t()
 
 object_dir_impl_t::~object_dir_impl_t()
 {
-	//dprintf("destroying directory %pus\n", &name );
+	//trace("destroying directory %pus\n", &name );
 	object_iter_t i(object_list);
 	while( i )
 	{
@@ -89,12 +89,12 @@ bool object_dir_impl_t::access_allowed( ACCESS_MASK required, ACCESS_MASK handle
 
 object_t *object_dir_impl_t::lookup( UNICODE_STRING& name, bool ignore_case )
 {
-	//dprintf("searching for %pus\n", &name );
+	//trace("searching for %pus\n", &name );
 	for( object_iter_t i(object_list); i; i.next() )
 	{
 		object_t *obj = i;
 		unicode_string_t& entry_name  = obj->get_name();
-		//dprintf("checking %pus\n", &entry_name );
+		//trace("checking %pus\n", &entry_name );
 		if (!entry_name.compare( &name, ignore_case ))
 			continue;
 		return obj;
@@ -187,7 +187,7 @@ NTSTATUS object_dir_impl_t::open( object_t*& obj, open_info_t& info )
 	ULONG n = 0;
 	UNICODE_STRING& path = info.path;
 
-	dprintf("path = %pus\n", &path );
+	trace("path = %pus\n", &path );
 
 	while (n < path.Length/2 && path.Buffer[n] != '\\')
 		n++;
@@ -223,7 +223,7 @@ public:
 
 NTSTATUS find_object_t::on_open( object_dir_t *dir, object_t*& obj, open_info_t& info )
 {
-	dprintf("find_object_t::on_open %pus %s\n", &info.path,
+	trace("find_object_t::on_open %pus %s\n", &info.path,
 		 obj ? "exists" : "doesn't exist");
 	if (!obj)
 		return STATUS_OBJECT_NAME_NOT_FOUND;
@@ -277,11 +277,11 @@ name_object_t::name_object_t( object_t *in ) :
 
 NTSTATUS name_object_t::on_open( object_dir_t *dir, object_t*& obj, open_info_t& info )
 {
-	dprintf("name_object_t::on_open %pus\n", &info.path);
+	trace("name_object_t::on_open %pus\n", &info.path);
 
 	if (obj)
 	{
-		dprintf("object already exists\n");
+		trace("object already exists\n");
 		return STATUS_OBJECT_NAME_COLLISION;
 	}
 
@@ -310,7 +310,7 @@ NTSTATUS name_object( object_t *obj, const OBJECT_ATTRIBUTES *oa )
 	if (!oa->ObjectName->Length)
 		return STATUS_SUCCESS;
 
-	dprintf("name_object_t %pus\n", oa->ObjectName);
+	trace("name_object_t %pus\n", oa->ObjectName);
 
 	name_object_t oi( obj );
 	oi.Attributes = oa->Attributes;
@@ -352,7 +352,7 @@ NTSTATUS NTAPI NtCreateDirectoryObject(
 	ACCESS_MASK DesiredAccess,
 	POBJECT_ATTRIBUTES ObjectAttributes )
 {
-	dprintf("%p %08lx %p\n", DirectoryHandle, DesiredAccess, ObjectAttributes );
+	trace("%p %08lx %p\n", DirectoryHandle, DesiredAccess, ObjectAttributes );
 
 	object_dir_factory factory;
 	return factory.create( DirectoryHandle, DesiredAccess, ObjectAttributes );
@@ -375,7 +375,7 @@ NTSTATUS NTAPI NtQueryDirectoryObject(
 	PULONG Offset,  // called Context in Native API reference
 	PULONG ReturnLength)
 {
-	dprintf("%p %p %lu %u %u %p %p\n", DirectoryHandle, Buffer, BufferLength,
+	trace("%p %p %lu %u %u %p %p\n", DirectoryHandle, Buffer, BufferLength,
 			ReturnSingleEntry, RestartScan, Offset, ReturnLength);
 
 	ULONG ofs = 0;
@@ -388,7 +388,7 @@ NTSTATUS NTAPI NtQueryDirectoryObject(
 	if (r < STATUS_SUCCESS)
 		return r;
 
-	dprintf("fixme\n");
+	trace("fixme\n");
 
 	return STATUS_NO_MORE_ENTRIES;
 }

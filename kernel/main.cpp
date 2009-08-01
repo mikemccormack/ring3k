@@ -175,7 +175,7 @@ NTSTATUS create_initial_process( thread_t **t, UNICODE_STRING& us )
 	ctx.Eip = (DWORD) get_entry_point( p );
 	ctx.Esp = (DWORD) pstack + stack_size - 8;
 
-	dprintf("entry point = %08lx\n", ctx.Eip);
+	trace("entry point = %08lx\n", ctx.Eip);
 
 	/* when starting nt processes, make the PEB the first arg of NtProcessStartup */
 	r = p->vm->copy_to_user( (BYTE*) ctx.Esp + 4, &p->PebBaseAddress, sizeof p->PebBaseAddress );
@@ -208,7 +208,7 @@ NTSTATUS init_ntdll( void )
 		die("failed to create ntdll section\n");
 
 	KiIntSystemCall = get_proc_address( ntdll_section, "KiIntSystemCall" );
-	dprintf("KiIntSystemCall = %08lx\n", KiIntSystemCall);
+	trace("KiIntSystemCall = %08lx\n", KiIntSystemCall);
 	init_syscalls(KiIntSystemCall != 0);
 
 	release( file );

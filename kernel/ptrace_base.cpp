@@ -155,7 +155,7 @@ int ptrace_address_space_impl::get_context( PCONTEXT ctx )
 		//DataOffset;
 		//DataSelector;
 		//Cr0NpxState;
-		dprintf("not complete\n");
+		trace("not complete\n");
 	}
 
 	if (flags & ~CONTEXT86_FULL)
@@ -198,9 +198,9 @@ void ptrace_address_space_impl::wait_for_signal( pid_t pid, int signal )
 		}
 
 		if (WIFSTOPPED(status) && WEXITSTATUS(status) == SIGALRM)
-			dprintf("stray SIGALRM\n");
+			trace("stray SIGALRM\n");
 		else
-			dprintf("stray signal %d\n", WEXITSTATUS(status));
+			trace("stray signal %d\n", WEXITSTATUS(status));
 
 		// start the child again so we can get the next signal
 		r = ptrace( PTRACE_CONT, pid, 0, 0 );
@@ -281,7 +281,7 @@ void ptrace_address_space_impl::sigitimer_handler(int signal)
 
 void ptrace_address_space_impl::handle( int signal )
 {
-	//dprintf("signal %d\n", signal);
+	//trace("signal %d\n", signal);
 	pid_t pid = get_child_pid();
 	assert( pid != -1);
 #ifdef HAVE_SIGQUEUE
@@ -341,7 +341,7 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 
 		if (sig == SIGCONT)
 		{
-			dprintf("got SIGCONT\n");
+			trace("got SIGCONT\n");
 			continue;
 		}
 
@@ -355,7 +355,7 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 			if (siginfo.si_code == 0x80)
 			{
 				// assumes int $3 (0xcc, not 0xcd 0x03)
-				dprintf("breakpoint!\n");
+				trace("breakpoint!\n");
 				ctx->Eip--;
 				exec->handle_breakpoint();
 			}
@@ -363,7 +363,7 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 			{
 				// assumes int $0x80 (0xcd 0x80)
 				ctx->Eip -= 2;
-				dprintf("syscall!\n");
+				trace("syscall!\n");
 				exec->handle_fault();
 			}
 			continue;
@@ -381,7 +381,7 @@ void ptrace_address_space_impl::run( void *TebBaseAddress, PCONTEXT ctx, int sin
 		if (single_step)
 			break;
 
-		dprintf("stopped, signal %d\n", WEXITSTATUS(status));
+		trace("stopped, signal %d\n", WEXITSTATUS(status));
 		exec->handle_breakpoint();
 		break;
 	}

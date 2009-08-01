@@ -109,7 +109,7 @@ tt_address_space_impl::tt_address_space_impl()
 tt_address_space_impl::~tt_address_space_impl()
 {
 	assert( sig_target == 0 );
-	//dprintf(stderr,"~tt_address_space_impl()\n");
+	//trace(stderr,"~tt_address_space_impl()\n");
 	destroy();
 	ptrace( PTRACE_KILL, child_pid, 0, 0 );
 	assert( child_pid != -1 );
@@ -119,7 +119,7 @@ tt_address_space_impl::~tt_address_space_impl()
 
 address_space_impl* create_tt_address_space()
 {
-	//dprintf("create_tt_address_space\n");
+	//trace("create_tt_address_space\n");
 	// Set up the signal handler and unmask it first.
 	// The child's signal handler will be unmasked too.
 	return new tt_address_space_impl();
@@ -149,7 +149,7 @@ int tt_address_space_impl::userside_req( int type )
 
 int tt_address_space_impl::mmap( BYTE *address, size_t length, int prot, int flags, int file, off_t offset )
 {
-	//dprintf("tt_address_space_impl::mmap()\n");
+	//trace("tt_address_space_impl::mmap()\n");
 
 	// send our pid to the stub
 	struct tt_req *ureq = (struct tt_req *) stub_regs[EBX];
@@ -164,7 +164,7 @@ int tt_address_space_impl::mmap( BYTE *address, size_t length, int prot, int fla
 
 int tt_address_space_impl::munmap( BYTE *address, size_t length )
 {
-	//dprintf("tt_address_space_impl::munmap()\n");
+	//trace("tt_address_space_impl::munmap()\n");
 	struct tt_req *ureq = (struct tt_req *) stub_regs[EBX];
 	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.addr, (int) address );
 	ptrace( PTRACE_POKEDATA, child_pid, &ureq->u.map.len, length );
@@ -212,7 +212,7 @@ bool init_tt( const char *kernel_path )
 {
 	get_stub_path( kernel_path );
 	check_proc();
-	dprintf("using thread tracing, kernel %s, client %s\n", kernel_path, stub_path );
+	trace("using thread tracing, kernel %s, client %s\n", kernel_path, stub_path );
 	ptrace_address_space_impl::set_signals();
 	pcreate_address_space = &create_tt_address_space;
 	return true;
