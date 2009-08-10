@@ -43,14 +43,7 @@ public:
 	virtual BOOL init();
 	virtual void fini();
 	virtual device_context_t* alloc_screen_dc_ptr();
-	virtual BOOL set_pixel( INT x, INT y, COLORREF color );
-	virtual BOOL rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush );
-	virtual BOOL exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text );
-	virtual BOOL bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop );
-	virtual BOOL polypatblt( ULONG Rop, PRECT rect );
 	virtual int getcaps( int index );
-        virtual BOOL lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen );
 };
 
 BOOL win32k_null_t::init()
@@ -62,40 +55,10 @@ void win32k_null_t::fini()
 {
 }
 
-BOOL win32k_null_t::set_pixel( INT x, INT y, COLORREF color )
-{
-	return TRUE;
-}
-
-BOOL win32k_null_t::rectangle( INT left, INT top, INT right, INT bottom, brush_t* brush )
-{
-	return TRUE;
-}
-
-BOOL win32k_null_t::exttextout( INT x, INT y, UINT options,
-		 LPRECT rect, UNICODE_STRING& text )
-{
-	return TRUE;
-}
-
-BOOL win32k_null_t::bitblt( INT xDest, INT yDest, INT cx, INT cy, bitmap_t *src, INT xSrc, INT ySrc, ULONG rop )
-{
-	return TRUE;
-}
-
-BOOL win32k_null_t::polypatblt( ULONG Rop, PRECT rect )
-{
-	return TRUE;
-}
-
 int win32k_null_t::getcaps( int index )
 {
 	trace("%d\n", index);
 	return 0;
-}
-
-BOOL win32k_null_t::lineto( INT x1, INT y1, INT x2, INT y2, pen_t *pen ) {
-    return TRUE;
 }
 
 device_context_t* win32k_null_t::alloc_screen_dc_ptr()
