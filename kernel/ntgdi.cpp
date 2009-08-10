@@ -414,10 +414,15 @@ HGDIOBJ alloc_gdi_handle( BOOL stock, ULONG type, void *user_info, gdi_object_t*
 	if (index < 0)
 		return 0;
 
+	// strangeness: handle indicates pen, but it's a brush in the table
+	ULONG reported_type = type;
+	if (type == GDI_OBJECT_PEN)
+		type = GDI_OBJECT_BRUSH;
+
 	gdi_handle_table_entry *table = (gdi_handle_table_entry*) gdi_handle_table;
 	table[index].ProcessId = current->process->id;
 	table[index].Type = type;
-	HGDIOBJ handle = makeHGDIOBJ(0,stock,type,index);
+	HGDIOBJ handle = makeHGDIOBJ(0,stock,reported_type,index);
         table[index].Count = 0;
 	table[index].Upper = (ULONG)handle >> 16;
 	table[index].user_info = user_info;
@@ -953,6 +958,8 @@ HANDLE pen_t::alloc( UINT style, UINT width, COLORREF color, BOOL stock )
 	pen_t* pen = new pen_t( style, width, color );
 	if (!pen)
 		return NULL;
+
+	// strangeness: handle indicates pen, but it's a brush in the table
 	pen->handle = alloc_gdi_handle( stock, GDI_OBJECT_PEN, NULL, pen );
 	trace("created pen %p with color %08lx\n", pen->handle, color );
 	return pen->handle;
@@ -964,7 +971,7 @@ pen_t* pen_from_handle( HGDIOBJ handle )
 	if (!entry)
 		return NULL;
 
-	if (entry->Type != GDI_OBJECT_PEN)
+	if (entry->Type != GDI_OBJECT_BRUSH)
 		return NULL;
 
 	gdi_object_t* obj = reinterpret_cast<gdi_object_t*>( entry->kernel_info );
@@ -1191,6 +1198,7 @@ gdi_handle_table_entry *get_handle_table_entry(HGDIOBJ handle)
 	ULONG upper = (ULONG)handle>>16;
 	if (index >= MAX_GDI_HANDLE)
 		return 0;
+
 	if (upper != table[index].Upper)
 		return 0;
 	return &table[index];

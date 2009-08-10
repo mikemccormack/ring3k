@@ -378,9 +378,8 @@ void *get_user_info( HANDLE handle )
 	return table[Index].user_info;
 }
 
-BOOLEAN check_gdi_handle(HANDLE handle)
+BOOLEAN check_gdi_handle_any(HANDLE handle)
 {
-	ULONG ObjectType = get_handle_type(handle);
 	ULONG Index = get_handle_index(handle);
 	ULONG Top = (((ULONG)handle)>>16);
 
@@ -397,12 +396,6 @@ BOOLEAN check_gdi_handle(HANDLE handle)
 		dprintf("ProcessId is zero\n");
 		return FALSE;
 	}*/
-	if ((table[Index].Type&0x7f) != ObjectType)
-	{
-		dprintf("ObjectType = %04lx\n", ObjectType);
-		dprintf("table[Index].Type = %04x\n", table[Index].Type);
-		return FALSE;
-	}
 	if (table[Index].Count != 0)
 	{
 		dprintf("%d\n", __LINE__);
@@ -412,6 +405,32 @@ BOOLEAN check_gdi_handle(HANDLE handle)
 	{
 		dprintf("Top = %04lx\n", Top);
 		dprintf("table[Index].Upper = %04x\n", table[Index].Upper);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+BOOLEAN check_gdi_handle(HANDLE handle)
+{
+	return check_gdi_handle_any(handle);
+}
+
+BOOLEAN check_pen_handle(HANDLE handle)
+{
+	ULONG ObjectType = get_handle_type(handle);
+	ULONG Index = get_handle_index(handle);
+	gdi_handle_table_entry *table = get_gdi_shared_handle_table();
+
+	if (!check_gdi_handle_any(handle))
+		return FALSE;
+	if ((table[Index].Type&0x7f) != GDI_OBJECT_BRUSH)
+	{
+		dprintf("table[Index].Type = %04x\n", table[Index].Type);
+		return FALSE;
+	}
+	if (GDI_OBJECT_PEN != ObjectType)
+	{
+		dprintf("ObjectType = %04lx\n", ObjectType);
 		return FALSE;
 	}
 	return TRUE;
@@ -1052,6 +1071,21 @@ void test_bitmap(void)
 	NtGdiDeleteObjectApp( bitmap );
 }
 
+void test_pen(void)
+{
+	ULONG r;
+	HPEN pen;
+
+	pen = NtGdiCreatePen( 0, 0, 0, 0 );
+	ok( check_pen_handle( pen ), "invalid gdi pen %p\n", pen );
+
+	pen = NtGdiCreatePen( 0, 2, 0, 0 );
+	ok( check_pen_handle( pen ), "invalid gdi pen %p\n", pen );
+
+	r = NtGdiDeleteObjectApp( pen );
+	ok( r == TRUE, "delete failed\n");
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -1069,5 +1103,6 @@ void NtProcessStartup( void )
 	test_multiregion();
 	test_savedc();
 	test_bitmap();
+	test_pen();
 	log_fini();
 }
