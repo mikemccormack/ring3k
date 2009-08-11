@@ -1095,11 +1095,21 @@ void test_dc_position(void)
 	hdc = NtUserGetDC( 0 );
 	info = get_user_info( hdc );
 
+	r = NtGdiMoveTo(0, 1, 2, 0);
+	ok( r == FALSE, "NtGdiMoveTo failed\n");
+
 	ok( info->WindowOriginOffset.x == 0, "initial x offset wrong\n");
 	ok( info->WindowOriginOffset.y == 0, "initial y offset wrong\n");
 
 	ok( info->CurrentPenPos.x == 0, "initial x offset wrong\n");
 	ok( info->CurrentPenPos.y == 0, "initial y offset wrong\n");
+
+	r = NtGdiMoveTo(hdc, 3, 4, (void*)1);
+	ok( r == FALSE, "NtGdiMoveTo failed\n");
+
+	/* returns FALSE, but the position has changed */
+	ok( info->CurrentPenPos.x == 3, "x offset wrong %ld\n", info->CurrentPenPos.x);
+	ok( info->CurrentPenPos.y == 4, "y offset wrong %ld\n", info->CurrentPenPos.y);
 
 	r = NtGdiMoveTo(hdc, 1, 2, 0);
 	ok( r == TRUE, "NtGdiMoveTo failed\n");

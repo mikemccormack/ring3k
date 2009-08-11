@@ -1598,7 +1598,7 @@ BOOLEAN NTAPI NtGdiPolyPatBlt( HANDLE handle, ULONG Rop, PRECT Rectangle, ULONG,
 	RECT rect;
 	NTSTATUS r;
 	r = copy_from_user( &rect, Rectangle, sizeof rect );
-	if (r != STATUS_SUCCESS)
+	if (r < STATUS_SUCCESS)
 		return FALSE;
 
 	return dc->polypatblt( Rop, &rect );
@@ -1611,11 +1611,19 @@ BOOLEAN NTAPI NtGdiMoveTo( HDC handle, int xpos, int ypos, LPPOINT pptOut)
 		return FALSE;
 
 	POINT pt;
-	BOOL r = dc->moveto( xpos, ypos, pt );
-	if (r)
-		copy_to_user( pptOut, &pt );
+	BOOL ret = dc->moveto( xpos, ypos, pt );
+	if (!ret)
+		return FALSE;
 
-	return r;
+	/* copy the original point back */
+	if (pptOut)
+	{
+		NTSTATUS r = copy_to_user( pptOut, &pt );
+		if (r < STATUS_SUCCESS)
+			return FALSE;
+	}
+
+	return ret;
 }
 
 BOOLEAN NTAPI NtGdiLineTo( HDC handle, int xpos, int ypos )
