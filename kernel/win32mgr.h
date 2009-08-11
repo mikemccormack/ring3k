@@ -231,6 +231,7 @@ public:
 	virtual bitmap_t* get_bitmap();
         virtual pen_t* get_selected_pen();
 	POINT& get_current_pen_pos();
+	POINT& get_window_offset();
 	void set_bounds_rect( RECT& r ) {BoundsRect = r;}
 	RECT& get_bounds_rect() {return BoundsRect;}
 	int save_dc();

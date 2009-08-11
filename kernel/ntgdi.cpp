@@ -754,8 +754,9 @@ BOOL device_context_t::lineto(INT x, INT y)
 		return FALSE;
 
 	POINT& cur = get_current_pen_pos();
+	POINT& winofs = get_window_offset();
 
-	bm->line(cur.x, cur.y, x, y, pen);
+	bm->line(cur.x + winofs.x, cur.y + winofs.y, x + winofs.x, y + winofs.y, pen);
 
 	// update the position
 	cur.x = x;
@@ -1014,6 +1015,13 @@ POINT& device_context_t::get_current_pen_pos()
 	GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
 	assert(dcshm != NULL);
 	return dcshm->CurrentPenPos;
+}
+
+POINT& device_context_t::get_window_offset()
+{
+	GDI_DEVICE_CONTEXT_SHARED *dcshm = get_dc_shared_mem();
+	assert(dcshm != NULL);
+	return dcshm->WindowOriginOffset;
 }
 
 device_context_t* dc_from_handle( HGDIOBJ handle )

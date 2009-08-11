@@ -113,7 +113,7 @@ typedef struct _GDI_DEVICE_CONTEXT_SHARED {
         UCHAR unk6[30];
         POINT CurrentPenPos;
         UCHAR unk7[2];
-	ULONG unk8[0x57];
+	ULONG unk8[0x4b];
 	POINT WindowOriginOffset;	/* 0x174 */
 	ULONG unk9[8];
 } GDI_DEVICE_CONTEXT_SHARED;
