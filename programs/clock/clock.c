@@ -53,11 +53,8 @@ typedef struct
 
 CLOCK_GLOBALS Globals;
 
-#define FaceColor (GetSysColor(COLOR_3DFACE))
-#define HandColor (GetSysColor(COLOR_3DHIGHLIGHT))
-#define TickColor (GetSysColor(COLOR_3DHIGHLIGHT))
-#define ShadowColor (GetSysColor(COLOR_3DDKSHADOW))
-#define BackgroundColor (GetSysColor(COLOR_3DFACE))
+//#define FaceColor (GetSysColor(COLOR_3DFACE))
+//#define BackgroundColor (GetSysColor(COLOR_3DFACE))
 
 static const int SHADOW_DEPTH = 2;
 
@@ -67,6 +64,37 @@ typedef struct {
 } HandData;
 
 HandData HourHand, MinuteHand, SecondHand;
+
+void dprintf(const char *format, ...)
+{
+    char str[0x100];
+    va_list va;
+    va_start( va, format );
+    vsprintf( str, format, va );
+    va_end( va );
+    OutputDebugString( str );
+}
+
+static COLORREF HandColor(void)
+{
+    COLORREF color = GetSysColor(COLOR_3DHIGHLIGHT);
+    dprintf("COLOR_3DHIGHLIGHT = %08lx\n", color);
+    return color;
+}
+
+static COLORREF ShadowColor(void)
+{
+    COLORREF color = GetSysColor(COLOR_3DDKSHADOW);
+    dprintf("COLOR_3DDKSHADOW = %08lx\n", color);
+    return color;
+}
+
+static COLORREF TickColor(void)
+{
+    COLORREF color = GetSysColor(COLOR_3DHIGHLIGHT);
+    dprintf("COLOR_3DHIGHLIGHT = %08lx\n", color);
+    return color;
+}
 
 static void DrawTicks(HDC dc, const POINT* centre, int radius)
 {
@@ -100,16 +128,16 @@ static void DrawTicks(HDC dc, const POINT* centre, int radius)
 static void DrawFace(HDC dc, const POINT* centre, int radius, int border)
 {
     /* Ticks */
-    SelectObject(dc, CreatePen(PS_SOLID, 2, ShadowColor));
+    SelectObject(dc, CreatePen(PS_SOLID, 2, ShadowColor()));
     OffsetWindowOrgEx(dc, -SHADOW_DEPTH, -SHADOW_DEPTH, NULL);
     DrawTicks(dc, centre, radius);
-    DeleteObject(SelectObject(dc, CreatePen(PS_SOLID, 2, TickColor)));
+    DeleteObject(SelectObject(dc, CreatePen(PS_SOLID, 2, TickColor())));
     OffsetWindowOrgEx(dc, SHADOW_DEPTH, SHADOW_DEPTH, NULL);
     DrawTicks(dc, centre, radius);
     if (border)
     {
         SelectObject(dc, GetStockObject(NULL_BRUSH));
-        DeleteObject(SelectObject(dc, CreatePen(PS_SOLID, 5, ShadowColor)));
+        DeleteObject(SelectObject(dc, CreatePen(PS_SOLID, 5, ShadowColor())));
         Ellipse(dc, centre->x - radius, centre->y - radius, centre->x + radius, centre->y + radius);
     }
     DeleteObject(SelectObject(dc, GetStockObject(NULL_PEN)));
@@ -124,18 +152,18 @@ static void DrawHand(HDC dc,HandData* hand)
 static void DrawHands(HDC dc, BOOL bSeconds)
 {
     if (bSeconds) {
-	SelectObject(dc, CreatePen(PS_SOLID, 1, HandColor));
+	SelectObject(dc, CreatePen(PS_SOLID, 1, HandColor()));
         DrawHand(dc, &SecondHand);
 	DeleteObject(SelectObject(dc, GetStockObject(NULL_PEN)));
     }
 
-    SelectObject(dc, CreatePen(PS_SOLID, 4, ShadowColor));
+    SelectObject(dc, CreatePen(PS_SOLID, 4, ShadowColor()));
 
     OffsetWindowOrgEx(dc, -SHADOW_DEPTH, -SHADOW_DEPTH, NULL);
     DrawHand(dc, &MinuteHand);
     DrawHand(dc, &HourHand);
 
-    DeleteObject(SelectObject(dc, CreatePen(PS_SOLID, 4, HandColor)));
+    DeleteObject(SelectObject(dc, CreatePen(PS_SOLID, 4, HandColor())));
     OffsetWindowOrgEx(dc, SHADOW_DEPTH, SHADOW_DEPTH, NULL);
     DrawHand(dc, &MinuteHand);
     DrawHand(dc, &HourHand);
