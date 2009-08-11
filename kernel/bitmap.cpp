@@ -225,24 +225,25 @@ void bitmap_t::draw_vline(INT x, INT y, INT bottom, COLORREF color)
 		set_pixel_l( x, y, color );
 }
 
-BOOL bitmap_t::line( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
+BOOL bitmap_t::pen_dot( INT x, INT y, pen_t *pen )
 {
+	ULONG width = pen->get_width();
 	COLORREF color = pen->get_color();
 
-	//check for simple case
-	if (y0 == y1)
-	{
-		draw_hline(x0, y0, x1, color);
-		return TRUE;
-	}
+	if (width == 1)
+		return set_pixel_l(y, x, color);
 
-	if (x0 == x1)
-	{
-		draw_vline(x0, y0, y1, color);
-		return TRUE;
-	}
+	// FIXME: avoid redrawing dots
+	for (ULONG i=0; i<width; i++)
+		for (ULONG j=0; j<width; j++)
+			set_pixel_l(y+i-width/2, x+j-width/2, color);
 
-	// http://en.wikipedia.org/wiki/Bresenham's_line_algorithm
+	return TRUE;
+}
+
+// http://en.wikipedia.org/wiki/Bresenham's_line_algorithm
+BOOL bitmap_t::line_bresenham( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
+{
 	INT dx = x1 - x0;
 	INT dy = y1 - y0;
 	INT steep = (abs(dy) >= abs(dx));
@@ -271,9 +272,9 @@ BOOL bitmap_t::line( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
 	for (int x = x0; x != x1; x += xstep)
 	{
 		if (steep)
-			set_pixel_l(y, x, color);
+			pen_dot(y, x, pen);
 		else
-			set_pixel_l(x, y, color);
+			pen_dot(x, y, pen);
 
 		// next
 		if (E > 0)
@@ -286,8 +287,27 @@ BOOL bitmap_t::line( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
 			E += 2*dy; //E += 2*Dy;
 		}
 	}
-
 	return TRUE;
+}
+
+BOOL bitmap_t::line( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
+{
+	COLORREF color = pen->get_color();
+
+	//check for simple case
+	if (y0 == y1)
+	{
+		draw_hline(x0, y0, x1, color);
+		return TRUE;
+	}
+
+	if (x0 == x1)
+	{
+		draw_vline(x0, y0, y1, color);
+		return TRUE;
+	}
+
+	return line_bresenham( x0, y0, x1, y1, pen );
 }
 
 BOOL bitmap_t::rectangle(INT left, INT top, INT right, INT bottom, brush_t* brush)

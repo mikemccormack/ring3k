@@ -146,6 +146,7 @@ public:
 	pen_t( UINT style, UINT width, COLORREF color );
 	static HANDLE alloc( UINT style, UINT width, COLORREF color, BOOL stock = FALSE );
 	COLORREF get_color() {return color;}
+	ULONG get_width() {return width;}
 };
 
 class bitmap_t : public gdi_object_t
@@ -180,9 +181,11 @@ public:
 	virtual BOOL rectangle(INT left, INT top, INT right, INT bottom, brush_t* brush);
         virtual BOOL line( INT x1, INT y1, INT x2, INT y2, pen_t *pen );
 protected:
+	BOOL pen_dot( INT x, INT y, pen_t *pen );
 	virtual BOOL set_pixel_l( INT x, INT y, COLORREF color );
 	virtual void draw_hline(INT left, INT y, INT right, COLORREF color);
 	virtual void draw_vline(INT x, INT top, INT bottom, COLORREF color);
+	virtual BOOL line_bresenham( INT x0, INT y0, INT x1, INT y1, pen_t *pen );
 };
 
 template<const int DEPTH>
