@@ -1086,6 +1086,31 @@ void test_pen(void)
 	ok( r == TRUE, "delete failed\n");
 }
 
+void test_dc_position(void)
+{
+	GDI_DEVICE_CONTEXT_SHARED *info;
+	HDC hdc;
+	ULONG r;
+
+	hdc = NtUserGetDC( 0 );
+	info = get_user_info( hdc );
+
+	ok( info->WindowOriginOffset.x == 0, "initial x offset wrong\n");
+	ok( info->WindowOriginOffset.y == 0, "initial y offset wrong\n");
+
+	ok( info->CurrentPenPos.x == 0, "initial x offset wrong\n");
+	ok( info->CurrentPenPos.y == 0, "initial y offset wrong\n");
+
+	r = NtGdiMoveTo(hdc, 1, 2, 0);
+	ok( r == TRUE, "NtGdiMoveTo failed\n");
+
+	ok( info->CurrentPenPos.x == 1, "x offset wrong %ld\n", info->CurrentPenPos.x);
+	ok( info->CurrentPenPos.y == 2, "y offset wrong %ld\n", info->CurrentPenPos.y);
+
+	r = NtGdiDeleteObjectApp( hdc );
+	ok( r == TRUE, "delete failed\n");
+}
+
 void NtProcessStartup( void )
 {
 	log_init();
@@ -1104,5 +1129,6 @@ void NtProcessStartup( void )
 	test_savedc();
 	test_bitmap();
 	test_pen();
+	test_dc_position();
 	log_fini();
 }

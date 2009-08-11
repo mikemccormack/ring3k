@@ -651,6 +651,8 @@ device_context_t::device_context_t() :
 	dcshm->Pen = (HPEN) win32k_manager->get_stock_object( WHITE_PEN );
 	dcshm->TextColor = RGB( 0, 0, 0 );
 	dcshm->BackgroundColor = RGB( 255, 255, 255 );
+	dcshm->CurrentPenPos.x = 0;
+	dcshm->CurrentPenPos.y = 0;
 }
 
 BOOL device_context_t::release()
@@ -754,6 +756,18 @@ BOOL device_context_t::lineto(INT x, INT y)
 	POINT& cur = get_current_pen_pos();
 
 	bm->line(cur.x, cur.y, x, y, pen);
+
+	// update the position
+	cur.x = x;
+	cur.y = y;
+
+	return TRUE;
+}
+
+BOOL device_context_t::moveto(INT x, INT y, POINT& pt)
+{
+	POINT& cur = get_current_pen_pos();
+	pt = cur;
 
 	// update the position
 	cur.x = x;
@@ -1596,7 +1610,12 @@ BOOLEAN NTAPI NtGdiMoveTo( HDC handle, int xpos, int ypos, LPPOINT pptOut)
 	if (!dc)
 		return FALSE;
 
-	return TRUE;
+	POINT pt;
+	BOOL r = dc->moveto( xpos, ypos, pt );
+	if (r)
+		copy_to_user( pptOut, &pt );
+
+	return r;
 }
 
 BOOLEAN NTAPI NtGdiLineTo( HDC handle, int xpos, int ypos )

@@ -247,6 +247,7 @@ public:
 	virtual int getcaps( int index ) = 0;
 	virtual BOOL stretch_di_bits( stretch_di_bits_args& args );
         virtual BOOL lineto( INT xpos, INT ypos );
+        virtual BOOL moveto( INT xpos, INT ypos, POINT& pt );
 };
 
 class memory_device_context_t : public device_context_t
