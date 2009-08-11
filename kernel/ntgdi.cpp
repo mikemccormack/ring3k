@@ -1695,3 +1695,15 @@ BOOLEAN NTAPI NtGdiStretchDIBitsInternal(
 
 	return dc->stretch_di_bits( args );
 }
+
+BOOLEAN NTAPI NtGdiScaleViewportExtEx(HDC handle, int xnum, int ynum,
+			 int xdiv, int ydiv, PSIZE pSize)
+{
+	return FALSE;
+}
+
+BOOLEAN NTAPI NtGdiScaleWindowExtEx(HDC handle, int xnum, int ynum,
+			 int xdiv, int ydiv, PSIZE pSize)
+{
+	return FALSE;
+}
