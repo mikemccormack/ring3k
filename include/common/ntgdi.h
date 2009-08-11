@@ -113,7 +113,9 @@ typedef struct _GDI_DEVICE_CONTEXT_SHARED {
         UCHAR unk6[30];
         POINT CurrentPenPos;
         UCHAR unk7[2];
-	ULONG unk8[0x35];
+	ULONG unk8[0x57];
+	POINT WindowOriginOffset;	/* 0x174 */
+	ULONG unk9[8];
 } GDI_DEVICE_CONTEXT_SHARED;
 
 BOOLEAN NTAPI NtGdiAddFontResourceW(PVOID,ULONG,ULONG,ULONG,PVOID,ULONG);

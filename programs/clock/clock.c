@@ -129,7 +129,9 @@ static void DrawFace(HDC dc, const POINT* centre, int radius, int border)
 {
     /* Ticks */
     SelectObject(dc, CreatePen(PS_SOLID, 2, ShadowColor()));
+    dprintf("OffsetWindowOrgEx begin\n");
     OffsetWindowOrgEx(dc, -SHADOW_DEPTH, -SHADOW_DEPTH, NULL);
+    dprintf("OffsetWindowOrgEx done\n");
     DrawTicks(dc, centre, radius);
     DeleteObject(SelectObject(dc, CreatePen(PS_SOLID, 2, TickColor())));
     OffsetWindowOrgEx(dc, SHADOW_DEPTH, SHADOW_DEPTH, NULL);
