@@ -30,7 +30,7 @@
 
 #include "windows.h"
 
-#define REDUCE_FLICKER 0
+#define REDUCE_FLICKER 1
 
 #define INITIAL_WINDOW_SIZE 200
 #define TIMER_ID 1
