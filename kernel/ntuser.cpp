@@ -89,6 +89,9 @@ struct user_shared_mem_t {
 	ULONG x1;
 	ULONG x2;
 	ULONG max_window_handle;
+	ULONG x3[459];
+	COLORREF ButtonHilight;
+	COLORREF ButtonDkShadow;
 };
 
 static const ULONG user_shared_mem_size = 0x20000;
@@ -254,6 +257,10 @@ void *init_user_shared_memory()
 
 		// create the window stations directory too
 		create_directory_object( (PWSTR) L"\\Windows\\WindowStations" );
+
+		// see wine/dlls/user32/sysparams.c
+		user_shared->ButtonHilight = RGB(255,255,255);
+		user_shared->ButtonDkShadow = RGB(64,64,64);
 	}
 
 	trace("user_handle_table at %p\n", user_handle_table );
