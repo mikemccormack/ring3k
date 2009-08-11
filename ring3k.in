@@ -60,7 +60,8 @@ fi
 
 # update minitris when it changes to help testing ...
 #winlogon_replacement="programs/minitris/minitris.exe"
-winlogon_replacement="programs/winemine/winemine.exe"
+#winlogon_replacement="programs/winemine/winemine.exe"
+winlogon_replacement="programs/clock/clock.exe"
 if test -f "$winlogon_replacement"
 then
 	echo "Replacing winlogon.exe with $winlogon_replacement"
