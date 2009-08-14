@@ -186,6 +186,7 @@ protected:
 	virtual void draw_hline(INT left, INT y, INT right, COLORREF color);
 	virtual void draw_vline(INT x, INT top, INT bottom, COLORREF color);
 	virtual BOOL line_bresenham( INT x0, INT y0, INT x1, INT y1, pen_t *pen );
+	virtual BOOL line_wide( INT x0, INT y0, INT x1, INT y1, pen_t *pen );
 };
 
 template<const int DEPTH>

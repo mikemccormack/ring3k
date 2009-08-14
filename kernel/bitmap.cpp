@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -290,6 +291,68 @@ BOOL bitmap_t::line_bresenham( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
 	return TRUE;
 }
 
+/* see http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html */
+static double line_error(INT x0, INT y0, INT x1, INT y1, INT x, INT y)
+{
+	double top = abs((x1 - x0)*(y0 - y) - (x0 - x)*(y1 - y0));
+	double bottom = sqrt( pow(x1 - x0, 2.0) + pow(y1 - y0, 2.0));
+	return top/bottom;
+}
+
+BOOL bitmap_t::line_wide( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
+{
+	if (x0 > x1)
+	{
+		swap(x0, x1);
+		swap(y0, y1);
+	}
+
+	int ydelta;
+	if (y0 > y1)
+	{
+		// traverse bottom to top
+		ydelta = -1;
+	}
+	else
+	{
+		// traverse top to bottom
+		ydelta = 1;
+	}
+
+	trace("%d,%d-%d,%d\n", x0, y0, x1, y1);
+
+	INT width = pen->get_width();
+	INT color = pen->get_color();
+	INT xstart = x0;
+	double error_next_line = 0.0;	// starting at x0,y0 gives an error of 0
+	double limit = width/2;
+
+	for (INT y=y0; y!=y1; y += ydelta)
+	{
+		INT x = xstart;
+		float error = error_next_line;
+		error_next_line = limit*2.0;
+
+		// traverse left to right
+		while (error <= limit && x < x1)
+		{
+			set_pixel_l(x, y, color);
+
+			// update the error for the next line if it's too big at the moment
+			if (error_next_line > limit)
+			{
+				error_next_line = line_error(x0, y0, x1, y1, x, y+ydelta);
+				xstart = x;
+			}
+
+			// figure out whether x+1,y is in range
+			x++;
+			error = line_error(x0, y0, x1, y1, x, y);
+		}
+	}
+	return TRUE;
+}
+
 BOOL bitmap_t::line( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
 {
 	COLORREF color = pen->get_color();
@@ -307,7 +370,10 @@ BOOL bitmap_t::line( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
 		return TRUE;
 	}
 
-	return line_bresenham( x0, y0, x1, y1, pen );
+	if (pen->get_width() == 1)
+		return line_bresenham( x0, y0, x1, y1, pen );
+
+	return line_wide( x0, y0, x1, y1, pen );
 }
 
 BOOL bitmap_t::rectangle(INT left, INT top, INT right, INT bottom, brush_t* brush)
