@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -292,11 +291,11 @@ BOOL bitmap_t::line_bresenham( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
 }
 
 /* see http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html */
-static double line_error(INT x0, INT y0, INT x1, INT y1, INT x, INT y)
+static INT line_error(INT x0, INT y0, INT x1, INT y1, INT x, INT y)
 {
-	double top = abs((x1 - x0)*(y0 - y) - (x0 - x)*(y1 - y0));
-	double bottom = sqrt( pow(x1 - x0, 2.0) + pow(y1 - y0, 2.0));
-	return top/bottom;
+	INT top = (x1 - x0)*(y0 - y) - (x0 - x)*(y1 - y0);
+	INT bottom = (x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0);
+	return (top*top)/bottom;
 }
 
 BOOL bitmap_t::line_wide( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
@@ -324,14 +323,14 @@ BOOL bitmap_t::line_wide( INT x0, INT y0, INT x1, INT y1, pen_t *pen )
 	INT width = pen->get_width();
 	INT color = pen->get_color();
 	INT xstart = x0;
-	double error_next_line = 0.0;	// starting at x0,y0 gives an error of 0
-	double limit = width/2;
+	INT error_next_line = 0;	// starting at x0,y0 gives an error of 0
+	INT limit = width*width/4;
 
 	for (INT y=y0; y!=y1; y += ydelta)
 	{
 		INT x = xstart;
-		float error = error_next_line;
-		error_next_line = limit*2.0;
+		INT error = error_next_line;
+		error_next_line = limit*2;
 
 		// traverse left to right
 		while (error <= limit && x < x1)
